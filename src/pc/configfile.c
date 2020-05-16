@@ -69,6 +69,9 @@ bool         configCameraInvertY = false;
 bool         configEnableCamera  = false;
 bool         configCameraMouse   = false;
 #endif
+#ifdef INDIGOPARADOX
+unsigned int configCoinDropMult = 1;
+#endif /* INDIGOPARADOX */
 
 static const struct ConfigOption options[] = {
     {.name = "fullscreen",           .type = CONFIG_TYPE_BOOL, .boolValue = &configFullscreen},
@@ -107,6 +110,9 @@ static const struct ConfigOption options[] = {
     {.name = "bettercam_aggression", .type = CONFIG_TYPE_UINT, .uintValue = &configCameraAggr},
     {.name = "bettercam_pan_level",  .type = CONFIG_TYPE_UINT, .uintValue = &configCameraPan},
     #endif
+#ifdef INDIGOPARADOX
+    {.name = "coin_drop_mult",       .type = CONFIG_TYPE_UINT, .uintValue = &configCoinDropMult},
+#endif /* INDIGOPARADOX */
 };
 
 // Reads an entire line from a file (excluding the newline character) and returns an allocated string

@@ -25,6 +25,9 @@
 #include "object_list_processor.h"
 #include "level_table.h"
 #include "dialog_ids.h"
+#ifdef INDIGOPARADOX
+#include "pc/configfile.h"
+#endif /* INDIGOPARADOX */
 
 #include "object_helpers.h"
 
@@ -1612,6 +1615,10 @@ static void obj_spawn_loot_coins(struct Object *obj, s32 numCoins, f32 sp30,
     f32 spawnHeight;
     struct Surface *floor;
     struct Object *coin;
+
+#ifdef INDIGOPARADOX
+    obj->oNumLootCoins *= configCoinDropMult;
+#endif /* INDIGOPARADOX */
 
     spawnHeight = find_floor(obj->oPosX, obj->oPosY, obj->oPosZ, &floor);
     if (obj->oPosY - spawnHeight > 100.0f) {
