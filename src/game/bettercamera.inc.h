@@ -9,8 +9,11 @@
 #include "include/text_strings.h"
 #include "engine/surface_collision.h"
 #include "pc/configfile.h"
+#if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR) 
+//quick and dirty fix for some older MinGW.org mingwrt
+#else
 #include <stdio.h>
-
+#endif
 
 
 /**
@@ -28,8 +31,6 @@ NC_MODE_NOTURN: Disables horizontal and vertical control of the camera.
 //#define NEWCAM_DEBUG //Some print values for puppycam. Not useful anymore, but never hurts to keep em around.
 //#define nosound //If for some reason you hate the concept of audio, you can disable it.
 //#define noaccel //Disables smooth movement of the camera with the C buttons.
-#define DEGRADE 0.1f //What percent of the remaining camera movement is degraded. Default is 10%
-
 
 //!Hardcoded camera angle stuff. They're essentially area boxes that when Mario is inside, will trigger some view changes.
 ///Don't touch this btw, unless you know what you're doing, this has to be above for religious reasons.
@@ -73,9 +74,9 @@ struct newcam_hardpos newcam_fixedcam[] =
 #endif // noaccel
 
 s16 newcam_yaw; //Z axis rotation
-s8 newcam_yaw_acc;
+s16 newcam_yaw_acc;
 s16 newcam_tilt = 1500; //Y axis rotation
-s8 newcam_tilt_acc;
+s16 newcam_tilt_acc;
 u16 newcam_distance = 750; //The distance the camera stays from the player
 u16 newcam_distance_target = 750; //The distance the player camera tries to reach.
 f32 newcam_pos_target[3]; //The position the camera is basing calculations off. *usually* Mario.
@@ -88,6 +89,7 @@ s16 newcam_yaw_target; // The yaw value the camera tries to set itself to when t
 f32 newcam_turnwait; // The amount of time to wait after landing before allowing the camera to turn again
 f32 newcam_pan_x;
 f32 newcam_pan_z;
+f32 newcam_degrade = 0.1f; //What percent of the remaining camera movement is degraded. Default is 10%
 u8 newcam_cstick_down = 0; //Just a value that triggers true when the player 2 stick is moved in 8 direction move to prevent holding it down.
 u8 newcam_target;
 
@@ -105,17 +107,6 @@ u16 newcam_mode;
 u16 newcam_intendedmode = 0; // which camera mode the camera's going to try to be in when not forced into another.
 u16 newcam_modeflags;
 
-u8 newcam_option_open = 0;
-s8 newcam_option_selection = 0;
-f32 newcam_option_timer = 0;
-u8 newcam_option_index = 0;
-u8 newcam_option_scroll = 0;
-u8 newcam_option_scroll_last = 0;
-u8 newcam_total = 8; //How many options there are in newcam_uptions.
-
-u8 newcam_options[][64] = {{NC_ANALOGUE}, {NC_MOUSE}, {NC_CAMX}, {NC_CAMY}, {NC_INVERTX}, {NC_INVERTY}, {NC_CAMC}, {NC_CAMP}};
-u8 newcam_flags[][64] = {{NC_DISABLED}, {NC_ENABLED}};
-u8 newcam_strings[][64] = {{NC_BUTTON}, {NC_BUTTON2}, {NC_OPTION}, {NC_HIGHLIGHT}};
 
 extern int mouse_x;
 extern int mouse_y;
@@ -138,7 +129,7 @@ void newcam_init(struct Camera *c, u8 dv)
         case LEVEL_CCM: if (gCurrAreaIndex == 1) {newcam_yaw = -0x4000; newcam_tilt = 2000; newcam_distance_target = newcam_distance_values[1];} else newcam_mode = NC_MODE_SLIDE; break;
         case LEVEL_WDW: newcam_yaw = 0x2000; newcam_tilt = 3000; newcam_distance_target = newcam_distance_values[1]; break;
         case 27: newcam_mode = NC_MODE_SLIDE; break;
-        case LEVEL_THI: if (gCurrAreaIndex == 2) newcam_mode = NC_MODE_SLIDE; break;
+        case LEVEL_TTM: if (gCurrAreaIndex == 2) newcam_mode = NC_MODE_SLIDE; break;
     }
 
     newcam_distance = newcam_distance_target;
@@ -166,18 +157,7 @@ void newcam_init_settings(void)
     newcam_invertY      = (u8)configCameraInvertY;
     newcam_mouse        = (u8)configCameraMouse;
     newcam_analogue     = (u8)configEnableCamera;
-}
-
-void newcam_save_settings(void)
-{
-    configCameraXSens   = newcam_sensitivityX;
-    configCameraYSens   = newcam_sensitivityY;
-    configCameraAggr    = newcam_aggression;
-    configCameraPan     = newcam_panlevel;
-    configCameraInvertX = newcam_invertX != 0;
-    configCameraInvertY = newcam_invertY != 0;
-    configEnableCamera  = newcam_analogue != 0;
-    configCameraMouse   = newcam_mouse != 0;
+    newcam_degrade      = (f32)configCameraDegrade / 100.0f;
 }
 
 /** Mathematic calculations. This stuffs so basic even *I* understand it lol
@@ -207,14 +187,20 @@ void newcam_diagnostics(void)
     print_text_fmt_int(32,32,"DISTANCE %d",newcam_distance);
 }
 
-static s16 newcam_adjust_value(s16 var, s16 val)
+static s16 newcam_adjust_value(s16 var, s16 val, s16 max)
 {
-    var += val;
-    if (var > 100)
-        var = 100;
-    if (var < -100)
-        var = -100;
-
+    if (val > 0)
+    {
+        var += val;
+        if (var > max)
+            var = max;
+    }
+    else if (val < 0)
+    {
+        var += val;
+        if (var < max)
+            var = max;
+    }
     return var;
 }
 
@@ -239,9 +225,9 @@ static int ivrt(u8 axis)
     if (axis == 0)
     {
         if (newcam_invertX == 0)
-            return 1;
-        else
             return -1;
+        else
+            return 1;
     }
     else
     {
@@ -254,6 +240,8 @@ static int ivrt(u8 axis)
 
 static void newcam_rotate_button(void)
 {
+    f32 intendedXMag;
+    f32 intendedYMag;
     if ((newcam_modeflags & NC_FLAG_8D || newcam_modeflags & NC_FLAG_4D) && newcam_modeflags & NC_FLAG_XTURN) //8 directional camera rotation input for buttons.
     {
         if ((gPlayer1Controller->buttonPressed & L_CBUTTONS) && newcam_analogue == 0)
@@ -284,27 +272,33 @@ static void newcam_rotate_button(void)
     if (newcam_modeflags & NC_FLAG_XTURN)
     {
         if ((gPlayer1Controller->buttonDown & L_CBUTTONS) && newcam_analogue == 0)
-            newcam_yaw_acc = newcam_adjust_value(newcam_yaw_acc,accel);
+            newcam_yaw_acc = newcam_adjust_value(newcam_yaw_acc,accel, 100);
         else if ((gPlayer1Controller->buttonDown & R_CBUTTONS) && newcam_analogue == 0)
-            newcam_yaw_acc = newcam_adjust_value(newcam_yaw_acc,-accel);
+            newcam_yaw_acc = newcam_adjust_value(newcam_yaw_acc,-accel, -100);
         else
+        if (!newcam_analogue)
+        {
             #ifdef noaccel
             newcam_yaw_acc = 0;
             #else
-            newcam_yaw_acc -= (newcam_yaw_acc*(DEGRADE));
+            newcam_yaw_acc -= (newcam_yaw_acc*newcam_degrade);
             #endif
+        }
     }
 
     if (gPlayer1Controller->buttonDown & U_CBUTTONS && newcam_modeflags & NC_FLAG_YTURN && newcam_analogue == 0)
-        newcam_tilt_acc = newcam_adjust_value(newcam_tilt_acc,accel);
+        newcam_tilt_acc = newcam_adjust_value(newcam_tilt_acc,accel, 100);
     else if (gPlayer1Controller->buttonDown & D_CBUTTONS && newcam_modeflags & NC_FLAG_YTURN && newcam_analogue == 0)
-        newcam_tilt_acc = newcam_adjust_value(newcam_tilt_acc,-accel);
+        newcam_tilt_acc = newcam_adjust_value(newcam_tilt_acc,-accel, -100);
     else
+    if (!newcam_analogue)
+    {
         #ifdef noaccel
         newcam_tilt_acc = 0;
         #else
-        newcam_tilt_acc -= (newcam_tilt_acc*(DEGRADE));
+        newcam_tilt_acc -= (newcam_tilt_acc*newcam_degrade);
         #endif
+    }
 
     newcam_framessincec[0] += 1;
     newcam_framessincec[1] += 1;
@@ -336,12 +330,14 @@ static void newcam_rotate_button(void)
 
     if (newcam_analogue == 1) //There's not much point in keeping this behind a check, but it wouldn't hurt, just incase any 2player shenanigans ever happen, it makes it easy to disable.
     { //The joystick values cap at 80, so divide by 8 to get the same net result at maximum turn as the button
+        intendedXMag = gPlayer2Controller->stickX*1.25;
+        intendedYMag = gPlayer2Controller->stickY*1.25;
         if (ABS(gPlayer2Controller->stickX) > 20 && newcam_modeflags & NC_FLAG_XTURN)
         {
             if (newcam_modeflags & NC_FLAG_8D)
             {
                 if (newcam_cstick_down == 0)
-                    {
+                {
                     newcam_cstick_down = 1;
                     newcam_centering = 1;
                     #ifndef nosound
@@ -364,18 +360,24 @@ static void newcam_rotate_button(void)
                 }
             }
             else
-                newcam_yaw_acc = newcam_adjust_value(newcam_yaw_acc,(-gPlayer2Controller->stickX/4));
+            {
+                newcam_yaw_acc = newcam_adjust_value(newcam_yaw_acc,-gPlayer2Controller->stickX/8, intendedXMag);
+            }
         }
         else
+        if (newcam_analogue)
         {
             newcam_cstick_down = 0;
-            newcam_yaw_acc -= (newcam_yaw_acc*(DEGRADE));
+            newcam_yaw_acc -= (newcam_yaw_acc*newcam_degrade);
         }
 
         if (ABS(gPlayer2Controller->stickY) > 20 && newcam_modeflags & NC_FLAG_YTURN)
-            newcam_tilt_acc = newcam_adjust_value(newcam_tilt_acc,(-gPlayer2Controller->stickY/4));
+            newcam_tilt_acc = newcam_adjust_value(newcam_tilt_acc,-gPlayer2Controller->stickY/8, intendedYMag);
         else
-            newcam_tilt_acc -= (newcam_tilt_acc*(DEGRADE));
+        if (newcam_analogue)
+        {
+            newcam_tilt_acc -= (newcam_tilt_acc*newcam_degrade);
+        }
     }
 
     if (newcam_mouse == 1)
@@ -401,8 +403,8 @@ static void newcam_zoom_button(void)
             newcam_distance = newcam_distance_target;
     }
 
-    //When you press L and R together, set the flag for centering the camera. Afterwards, start setting the yaw to the Player's yaw at the time.
-    if (gPlayer1Controller->buttonDown & L_TRIG && gPlayer1Controller->buttonDown & R_TRIG && newcam_modeflags & NC_FLAG_ZOOM)
+    //When you press L, set the flag for centering the camera. Afterwards, start setting the yaw to the Player's yaw at the time.
+    if (gPlayer1Controller->buttonDown & L_TRIG && newcam_modeflags & NC_FLAG_ZOOM)
     {
         newcam_yaw_target = -gMarioState->faceAngle[1]-0x4000;
         newcam_centering = 1;
@@ -437,9 +439,9 @@ static void newcam_update_values(void)
 {//For tilt, this just limits it so it doesn't go further than 90 degrees either way. 90 degrees is actually 16384, but can sometimes lead to issues, so I just leave it shy of 90.
     u8 waterflag = 0;
     if (newcam_modeflags & NC_FLAG_XTURN)
-        newcam_yaw += (ivrt(0)*(newcam_yaw_acc*(newcam_sensitivityX/10)));
+        newcam_yaw += ((ivrt(0)*(newcam_yaw_acc*(newcam_sensitivityX/10))));
     if (((newcam_tilt < 12000 && newcam_tilt_acc*ivrt(1) > 0) || (newcam_tilt > -12000 && newcam_tilt_acc*ivrt(1) < 0)) && newcam_modeflags & NC_FLAG_YTURN)
-        newcam_tilt += (ivrt(1)*(newcam_tilt_acc*(newcam_sensitivityY/10)));
+        newcam_tilt += ((ivrt(1)*(newcam_tilt_acc*(newcam_sensitivityY/10))));
     else
     {
         if (newcam_tilt > 12000)
@@ -640,7 +642,7 @@ static void newcam_apply_values(struct Camera *c)
     gLakituState.yaw = -newcam_yaw+0x4000;
 
     //Adds support for wing mario tower
-    if (gMarioState->floor->type == SURFACE_LOOK_UP_WARP) {
+    if (gMarioState->floor && gMarioState->floor->type == SURFACE_LOOK_UP_WARP) {
         if (save_file_get_total_star_count(gCurrSaveFileNum - 1, 0, 0x18) >= 10) {
             if (newcam_tilt < -8000 && gMarioState->forwardVel == 0) {
                 level_trigger_warp(gMarioState, 1);
@@ -670,234 +672,10 @@ void newcam_loop(struct Camera *c)
     newcam_position_cam();
     newcam_find_fixed();
     if (gMarioObject)
-    newcam_apply_values(c);
+        newcam_apply_values(c);
 
     //Just some visual information on the values of the camera. utilises ifdef because it's better at runtime.
     #ifdef NEWCAM_DEBUG
     newcam_diagnostics();
     #endif // NEWCAM_DEBUG
-}
-
-
-
-//Displays a box.
-void newcam_display_box(s16 x1, s16 y1, s16 x2, s16 y2, u8 r, u8 g, u8 b)
-{
-    gDPPipeSync(gDisplayListHead++);
-    gDPSetRenderMode(gDisplayListHead++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
-    gDPSetCycleType(gDisplayListHead++, G_CYC_FILL);
-    gDPSetFillColor(gDisplayListHead++, GPACK_RGBA5551(r, g, b, 255));
-    gDPFillRectangle(gDisplayListHead++, x1, y1, x2 - 1, y2 - 1);
-    gDPPipeSync(gDisplayListHead++);
-    gDPSetCycleType(gDisplayListHead++, G_CYC_1CYCLE);
-}
-
-//I actually took the time to redo this, properly. Lmao. Please don't bully me over this anymore :(
-void newcam_change_setting(u8 toggle)
-{
-    switch (newcam_option_selection)
-    {
-    case 0:
-        newcam_analogue ^= 1;
-        break;
-    case 1:
-        newcam_mouse ^= 1;
-        break;
-    case 2:
-        newcam_sensitivityX = newcam_clamp(newcam_sensitivityX + toggle, 10, 250);
-        break;
-    case 3:
-        newcam_sensitivityY = newcam_clamp(newcam_sensitivityY + toggle, 10, 250);
-        break;
-    case 4:
-        newcam_invertX ^= 1;
-        break;
-    case 5:
-        newcam_invertY ^= 1;
-        break;
-    case 6:
-        newcam_aggression = newcam_clamp(newcam_aggression + toggle, 0, 100);
-        break;
-    case 7:
-        newcam_panlevel = newcam_clamp(newcam_panlevel + toggle, 0, 100);
-        break;
-    }
-}
-
-void newcam_text(s16 x, s16 y, u8 str[], u8 col)
-{
-    u8 textX;
-    textX = get_str_x_pos_from_center(x,str,10.0f);
-    gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, 255);
-    print_generic_string(textX+1,y-1,str);
-    if (col != 0)
-    {
-        gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, 255);
-    }
-    else
-    {
-        gDPSetEnvColor(gDisplayListHead++, 255, 32, 32, 255);
-    }
-    print_generic_string(textX,y,str);
-}
-
-//Options menu
-void newcam_display_options()
-{
-    u8 i = 0;
-    u8 newstring[32];
-    s16 scroll;
-    s16 scrollpos;
-    gSPDisplayList(gDisplayListHead++, dl_rgba16_text_begin);
-    gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, 255);
-    print_hud_lut_string(HUD_LUT_GLOBAL, 118, 40, newcam_strings[2]);
-    gSPDisplayList(gDisplayListHead++, dl_rgba16_text_end);
-
-    if (newcam_total>4)
-    {
-        newcam_display_box(272,90,280,208,0x80,0x80,0x80);
-        scrollpos = (54)*((f32)newcam_option_scroll/(newcam_total-4));
-        newcam_display_box(272,90+scrollpos,280,154+scrollpos,0xFF,0xFF,0xFF);
-    }
-
-
-    gSPDisplayList(gDisplayListHead++, dl_ia_text_begin);
-    gDPSetScissor(gDisplayListHead++, G_SC_NON_INTERLACE, 0, 80, SCREEN_WIDTH, SCREEN_HEIGHT);
-    for (i = 0; i < newcam_total; i++)
-    {
-        scroll = 140-(32*i)+(newcam_option_scroll*32);
-        if (scroll <= 140 && scroll > 32)
-        {
-        newcam_text(160,scroll,newcam_options[i],newcam_option_selection-i);
-        switch (i)
-        {
-        case 0:
-            newcam_text(160,scroll-12,newcam_flags[newcam_analogue],newcam_option_selection-i);
-            break;
-        case 1:
-            newcam_text(160,scroll-12,newcam_flags[newcam_mouse],newcam_option_selection-i);
-            break;
-        case 2:
-            int_to_str(newcam_sensitivityX,newstring);
-            newcam_text(160,scroll-12,newstring,newcam_option_selection-i);
-            break;
-        case 3:
-            int_to_str(newcam_sensitivityY,newstring);
-            newcam_text(160,scroll-12,newstring,newcam_option_selection-i);
-            break;
-        case 4:
-            newcam_text(160,scroll-12,newcam_flags[newcam_invertX],newcam_option_selection-i);
-            break;
-        case 5:
-            newcam_text(160,scroll-12,newcam_flags[newcam_invertY],newcam_option_selection-i);
-            break;
-        case 6:
-            int_to_str(newcam_aggression,newstring);
-            newcam_text(160,scroll-12,newstring,newcam_option_selection-i);
-            break;
-        case 7:
-            int_to_str(newcam_panlevel,newstring);
-            newcam_text(160,scroll-12,newstring,newcam_option_selection-i);
-            break;
-        }
-        }
-    }
-    gDPSetScissor(gDisplayListHead++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-    gSPDisplayList(gDisplayListHead++, dl_ia_text_end);
-    gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, 255);
-    gSPDisplayList(gDisplayListHead++, dl_rgba16_text_begin);
-    print_hud_lut_string(HUD_LUT_GLOBAL, 80, 90+(32*(newcam_option_selection-newcam_option_scroll)),  newcam_strings[3]);
-    print_hud_lut_string(HUD_LUT_GLOBAL, 224, 90+(32*(newcam_option_selection-newcam_option_scroll)), newcam_strings[3]);
-    gSPDisplayList(gDisplayListHead++, dl_rgba16_text_end);
-}
-
-//This has been separated for interesting reasons. Don't question it.
-void newcam_render_option_text(void)
-{
-    gSPDisplayList(gDisplayListHead++, dl_ia_text_begin);
-    newcam_text(278,212,newcam_strings[newcam_option_open],1);
-    gSPDisplayList(gDisplayListHead++, dl_ia_text_end);
-}
-
-void newcam_check_pause_buttons()
-{
-    if (gPlayer1Controller->buttonPressed & R_TRIG)
-    {
-        if (newcam_option_open == 0)
-        {
-            #ifndef nosound
-            play_sound(SOUND_MENU_CHANGE_SELECT, gDefaultSoundArgs);
-            #endif
-            newcam_option_open = 1;
-        }
-        else
-        {
-            #ifndef nosound
-            play_sound(SOUND_MENU_MARIO_CASTLE_WARP2, gDefaultSoundArgs);
-            #endif
-            newcam_option_open = 0;
-            newcam_save_settings();
-        }
-    }
-
-    if (newcam_option_open)
-    {
-        if (ABS(gPlayer1Controller->stickY) > 60)
-        {
-            newcam_option_timer -= 1;
-            if (newcam_option_timer <= 0)
-            {
-                switch (newcam_option_index)
-                {
-                    case 0: newcam_option_index++; newcam_option_timer += 10; break;
-                    default: newcam_option_timer += 3; break;
-                }
-                #ifndef nosound
-                play_sound(SOUND_MENU_CHANGE_SELECT, gDefaultSoundArgs);
-                #endif
-                if (gPlayer1Controller->stickY >= 60)
-                {
-                    newcam_option_selection--;
-                    if (newcam_option_selection < 0)
-                        newcam_option_selection = newcam_total-1;
-                }
-                else
-                {
-                    newcam_option_selection++;
-                    if (newcam_option_selection >= newcam_total)
-                        newcam_option_selection = 0;
-                }
-            }
-        }
-        else
-        if (ABS(gPlayer1Controller->stickX) > 60)
-        {
-            newcam_option_timer -= 1;
-            if (newcam_option_timer <= 0)
-            {
-                switch (newcam_option_index)
-                {
-                    case 0: newcam_option_index++; newcam_option_timer += 10; break;
-                    default: newcam_option_timer += 3; break;
-                }
-                #ifndef nosound
-                play_sound(SOUND_MENU_CHANGE_SELECT, gDefaultSoundArgs);
-                #endif
-                if (gPlayer1Controller->stickX >= 60)
-                    newcam_change_setting(1);
-                else
-                    newcam_change_setting(-1);
-            }
-        }
-        else
-        {
-            newcam_option_timer = 0;
-            newcam_option_index = 0;
-        }
-
-        while (newcam_option_scroll - newcam_option_selection < -3 && newcam_option_selection > newcam_option_scroll)
-            newcam_option_scroll +=1;
-        while (newcam_option_scroll + newcam_option_selection > 0 && newcam_option_selection < newcam_option_scroll)
-            newcam_option_scroll -=1;
-    }
 }

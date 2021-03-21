@@ -29,7 +29,9 @@ extern f32 gCosineTable[];
 
 #define sqr(x) ((x) * (x))
 
-#define abs(x) ((x) < 0 ? -(x) : (x))
+#define absx(x) ((x) < 0 ? -(x) : (x))
+
+#include "../../include/libc/stdlib.h"
 
 void *vec3f_copy(Vec3f dest, Vec3f src);
 void *vec3f_set(Vec3f dest, f32 x, f32 y, f32 z);
@@ -56,6 +58,7 @@ void mtxf_lookat(f32 mtx[4][4], Vec3f b, Vec3f c, s16 d);
 void mtxf_rotate_zxy_and_translate(f32 mtx[4][4], Vec3f b, Vec3s c);
 void mtxf_rotate_xyz_and_translate(f32 mtx[4][4], Vec3f b, Vec3s c);
 void mtxf_billboard(f32 mtx1[4][4], f32 mtx2[4][4], Vec3f c, s16 d);
+void mtxf_cylboard(f32 mtx1[4][4], f32 mtx2[4][4], Vec3f c, s16 d);
 void mtxf_align_terrain_normal(f32 mtx[4][4], Vec3f b, Vec3f c, s16 d);
 void mtxf_align_terrain_triangle(f32 mtx[4][4], Vec3f b, s16 c, f32 d);
 void mtxf_mul(f32 dest[4][4], f32 a[4][4], f32 b[4][4]);

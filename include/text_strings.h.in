@@ -3,20 +3,9 @@
 
 #include "text_menu_strings.h"
 
-#define NC_CAMX 				_("Camera X Sensitivity")
-#define NC_CAMY 				_("Camera Y Sensitivity")
-#define NC_INVERTX				_("Invert X Axis")
-#define NC_INVERTY				_("Invert Y Axis")
-#define NC_CAMC 				_("Camera Centre Aggression")
-#define NC_CAMP 				_("Camera Pan Level")
-#define NC_ENABLED 				_("Enabled")
-#define NC_DISABLED 				_("Disabled")
-#define NC_BUTTON 				_("[R]: Options")
-#define NC_BUTTON2 				_("[R]: Return")
-#define NC_OPTION 				_("OPTIONS")
-#define NC_HIGHLIGHT 				_("O")
-#define NC_ANALOGUE				_("Analogue Camera")
-#define NC_MOUSE				_("Mouse Look")
+#ifdef EXT_OPTIONS_MENU
+#include "text_options_strings.h"
+#endif
 
 /**
  * Global Symbols
@@ -105,7 +94,7 @@
 #define TEXT_COURSE _("コース")
 #define TEXT_MYSCORE _("マイスコア")
 #define TEXT_CONTINUE _("つづけて　マリオする？")
-#define TEXT_EXIT_GAME _("ゲームをしゅうりょうする？")
+#define TEXT_EXIT_GAME _("ゲームをしゅうりょうする")
 #define TEXT_EXIT_COURSE _("コースからでる？")
 #define TEXT_CAMERA_ANGLE_R _("Ｒボタンのカメラきりかえ")
 
