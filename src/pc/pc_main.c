@@ -1,6 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef USE_PYTHON
+#include <Python.h>
+#include <unistd.h>
+#endif /* USE_PYTHON */
+
 #ifdef TARGET_WEB
 #include <emscripten.h>
 #include <emscripten/html5.h>
@@ -36,6 +41,10 @@
 #include "pc/discord/discordrpc.h"
 #endif
 
+#ifdef USE_PYTHON
+PyObject *gMarioModule;
+#endif /* USE_PYTHON */
+
 OSMesg D_80339BEC;
 OSMesgQueue gSIEventMesgQueue;
 
@@ -57,6 +66,10 @@ extern void gfx_run(Gfx *commands);
 extern void thread5_game_loop(void *arg);
 extern void create_next_audio_buffer(s16 *samples, u32 num_samples);
 void game_loop_one_iteration(void);
+
+#ifdef USE_PYTHON
+extern PyObject *gMarioModule;
+#endif /* USE_PYTHON */
 
 void dispatch_audio_sptask(struct SPTask *spTask) {
 }
@@ -167,9 +180,20 @@ void main_func(void) {
     main_pool_init(pool, pool + sizeof(pool) / sizeof(pool[0]));
     gEffectsMemoryPool = mem_pool_init(0x4000, MEMORY_POOL_LEFT);
 
+    #ifdef USE_PYTHON
+    PyObject *pName, *pSysPath, *pCwd;
+    char cwd[255];
+    # endif /* USE_PYTHON */
+
     const char *gamedir = gCLIOpts.GameDir[0] ? gCLIOpts.GameDir : FS_BASEDIR;
     const char *userpath = gCLIOpts.SavePath[0] ? gCLIOpts.SavePath : sys_user_path();
     fs_init(sys_ropaths, gamedir, userpath);
+
+    #ifdef USE_PYTHON
+    Py_SetProgramName( Py_DecodeLocale( "sm64pc", NULL ) );
+    Py_Initialize();
+    fprintf(stdout, "python initialized\n");
+    #endif /* USE_PYTHON */
 
     configfile_load(configfile_name());
 
@@ -222,6 +246,35 @@ void main_func(void) {
 
     audio_init();
     sound_init();
+
+    #ifdef USE_PYTHON
+    /* Load the mario module. */
+    /* TODO: Load from user dir? */
+    pSysPath = PySys_GetObject((char*)"path");
+    getcwd(cwd, 255);
+    pCwd = PyUnicode_FromString(cwd);
+    PyList_Append(pSysPath, pCwd);
+    Py_DECREF(pCwd);
+    pName = PyUnicode_DecodeFSDefault( "mario" );
+    /* TODO: Error checking of pName left out */
+    gMarioModule = PyImport_Import( pName );
+
+    assert( NULL != gMarioModule );
+
+    fprintf(stdout, "mario module loaded\n");
+
+    /* Initialize useful constants. */
+
+ACT_GROUP_MASK
+ACT_GROUP_STATIONARY
+ACT_GROUP_MOVING
+ACT_GROUP_AIRBORNE
+ACT_GROUP_SUBMERGED
+ACT_GROUP_CUTSCENE
+ACT_GROUP_AUTOMATIC
+ACT_GROUP_OBJECT
+
+    #endif /* USE_PYTHON */
 
     thread5_game_loop(NULL);
 

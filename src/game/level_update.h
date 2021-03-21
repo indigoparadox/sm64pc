@@ -3,7 +3,6 @@
 
 #include "types.h"
 
-
 #define TIMER_CONTROL_SHOW  0
 #define TIMER_CONTROL_START 1
 #define TIMER_CONTROL_STOP  2

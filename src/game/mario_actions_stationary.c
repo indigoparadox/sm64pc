@@ -1,5 +1,9 @@
 #include <ultra64.h>
 
+#ifdef USE_PYTHON
+#include <Python.h>
+#endif /* USE_PYTHON */
+
 #include "sm64.h"
 #include "engine/math_util.h"
 #include "mario.h"

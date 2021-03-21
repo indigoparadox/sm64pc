@@ -1,6 +1,10 @@
 #include <ultra64.h>
 #include <stdbool.h>
 
+#ifdef USE_PYTHON
+#include <Python.h>
+#endif /* USE_PYTHON */
+
 #include "sm64.h"
 #include "seq_ids.h"
 #include "dialog_ids.h"

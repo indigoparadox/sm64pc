@@ -18,6 +18,9 @@
     #define BAD_RETURN(cmd) cmd
 #endif
 
+#ifdef USE_PYTHON
+#include <Python.h>
+#endif /* USE_PYTHON */
 
 struct Controller
 {
@@ -342,6 +345,9 @@ struct MarioState
     /*0xBC*/ f32 peakHeight;
     /*0xC0*/ f32 quicksandDepth;
     /*0xC4*/ f32 unkC4;
+    #ifdef USE_PYTHON
+    PyObject* pythonModule;
+    #endif /* USE_PYTHON */
 };
 
 #endif

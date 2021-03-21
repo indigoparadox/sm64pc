@@ -1,5 +1,9 @@
 #include <ultra64.h>
 
+#ifdef USE_PYTHON
+#include <Python.h>
+#endif /* USE_PYTHON */
+
 #include "sm64.h"
 #include "mario.h"
 #include "area.h"
@@ -36,6 +40,10 @@
 #ifdef BETTERCAMERA
 #include "bettercamera.h"
 #endif
+
+#ifdef USE_PYTHON
+extern PyObject *gMarioModule;
+#endif /* USE_PYTHON */
 
 u32 unused80339F10;
 s8 filler80339F1C[20];
@@ -980,6 +988,44 @@ static u32 set_mario_action_cutscene(struct MarioState *m, u32 action, UNUSED u3
     return action;
 }
 
+#ifdef USE_PYTHON
+u32 set_mario_action(struct MarioState *m, u32 action, u32 arg) {
+    PyObject *pFunc, *pArgs, *pValue;
+    u32 retval = 0;
+
+    if( NULL == m->pythonModule ) {
+        fprintf(stderr, "no module loaded\n");
+        return 0;
+    }
+
+    pFunc = PyObject_GetAttrString(m->pythonModule, "set_mario_action");
+    if (pFunc && PyCallable_Check(pFunc)) {
+
+        pArgs = PyTuple_New(3);
+        pValue = PyLong_FromUnsignedLong( 0 );
+        PyTuple_SetItem(pArgs, 0, pValue);
+        pValue = PyLong_FromUnsignedLong( action );
+        PyTuple_SetItem(pArgs, 1, pValue);
+        pValue = PyLong_FromUnsignedLong( arg );
+        PyTuple_SetItem(pArgs, 2, pValue);
+        pValue = PyObject_CallObject(pFunc, pArgs);
+        Py_DECREF(pArgs);
+        if(NULL != pValue) {
+            retval = PyLong_AsLong( pValue );
+            Py_DECREF(pValue);
+        }
+    } else {
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
+        fprintf(stderr, "could not do mario action\n");
+    }
+
+    Py_XDECREF(pFunc);
+
+    return retval;
+}
+#else
 /**
  * Puts Mario into a given action, putting Mario through the appropriate
  * specific function if needed.
@@ -1019,6 +1065,7 @@ u32 set_mario_action(struct MarioState *m, u32 action, u32 actionArg) {
 
     return TRUE;
 }
+#endif /* USE_PYTHON */
 
 /**
  * Puts Mario into a specific jumping action from a landing action.
@@ -1920,6 +1967,11 @@ void init_mario(void) {
 
         capObject->oMoveAngleYaw = 0;
     }
+
+    #ifdef USE_PYTHON
+    assert( NULL != gMarioModule );
+    gMarioState->pythonModule = gMarioModule;
+    #endif /* USE_PYTHON */
 }
 
 void init_mario_from_save_file(void) {

@@ -24,6 +24,8 @@ NON_MATCHING ?= 1
 # Build and optimize for Raspberry Pi(s)
 TARGET_RPI ?= 0
 
+USE_PYTHON ?= 1
+
 # Build for Emscripten/WebGL
 TARGET_WEB ?= 0
 
@@ -209,6 +211,10 @@ endif
 
 VERSION_ASFLAGS := --defsym AVOID_UB=1
 COMPARE := 0
+
+ifeq ($(USE_PYTHON),1)
+  VERSION_CFLAGS := $(VERSION_CFLAGS) -DUSE_PYTHON -I/usr/include/python3.6m
+endif
 
 ifeq ($(TARGET_WEB),1)
   VERSION_CFLAGS := $(VERSION_CFLAGS) -DTARGET_WEB -DUSE_GLES
@@ -696,6 +702,10 @@ else
   endif
 
 endif # End of LDFLAGS
+
+ifeq ($(USE_PYTHON),1)
+   LDFLAGS += -lpython3.6m
+endif
 
 # Prevent a crash with -sopt
 export LANG := C
