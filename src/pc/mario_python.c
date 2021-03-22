@@ -8,185 +8,100 @@
 #include "game/mario.h"
 
 PyObject *gMarioModule;
+extern struct MarioState *gMarioState;
 
-#ifdef USE_PYTHON
+#define MARIO_SET( var, type ) \
+    static PyObject * \
+    PyMario_set_ ## var(PyObject *self, PyObject *args) { \
+        type var; \
+        if( PyArg_ParseTuple( args, ":" #var ) ) { \
+            gMarioState->var = var; \
+        } \
+        if (PyErr_Occurred()) { \
+            PyErr_Print(); \
+        } \
+        return NULL; \
+    }
 
-typedef struct {
-    PyObject_HEAD
-    u16 unk00;
-    u16 input;
-    u32 flags;
-    u32 particleFlags;
-    u32 action;
-    u32 prevAction;
-    u32 terrainSoundAddend;
-    u16 actionState;
-    u16 actionTimer;
-    u32 actionArg;
-    f32 intendedMag;
-    s16 intendedYaw;
-    s16 invincTimer;
-    u8 framesSinceA;
-    u8 framesSinceB;
-    u8 wallKickTimer;
-    u8 doubleJumpTimer;
-    //Vec3s faceAngle;
-    //Vec3s angleVel;
-    s16 slideYaw;
-    s16 twirlYaw;
-    //Vec3f pos;
-    //Vec3f vel;
-    f32 forwardVel;
-    f32 slideVelX;
-    f32 slideVelZ;
-    struct Surface *wall;
-    struct Surface *ceil;
-    struct Surface *floor;
-    f32 ceilHeight;
-    f32 floorHeight;
-    s16 floorAngle;
-    s16 waterLevel;
-    struct Object *interactObj;
-    struct Object *heldObj;
-    struct Object *usedObj;
-    struct Object *riddenObj;
-    struct Object *marioObj;
-    struct SpawnInfo *spawnInfo;
-    struct Area *area;
-    struct PlayerCameraState *statusForCamera;
-    struct MarioBodyState *marioBodyState;
-    struct Controller *controller;
-    struct MarioAnimation *animation;
-    u32 collidedObjInteractTypes;
-    s16 numCoins;
-    s16 numStars;
-    s8 numKeys;
-    s8 numLives;
-    s16 health;
-    s16 unkB0;
-    u8 hurtCounter;
-    u8 healCounter;
-    u8 squishTimer;
-    u8 fadeWarpOpacity;
-    u16 capTimer;
-    f32 peakHeight;
-    s16 unkB8;
-    f32 quicksandDepth;
-    f32 unkC4;
-} MarioPythonObject;
+#define MARIO_GET( var, type ) \
+    static PyObject * \
+    PyMario_get_ ## var(PyObject *self, PyObject *args) { \
+        fprintf( stdout, "get " #var ": %ld\n" ); \
+        return PyLong_FromLong( gMarioState->var ); \
+    }
 
-static PyMemberDef MarioPythonMembers[] = {
-    {"unk00",                       T_USHORT,   offsetof(MarioPythonObject, unk00), 0, NULL},
-    {"input",                       T_USHORT,   offsetof(MarioPythonObject, input), 0, NULL},
-    {"flags",                       T_ULONG,    offsetof(MarioPythonObject, flags), 0, "flags"},
-    {"particleFlags",               T_ULONG,    offsetof(MarioPythonObject, particleFlags), 0, "particleFlags"},
-    {"action",                      T_ULONG,    offsetof(MarioPythonObject, action), 0, "action"},
-    {"prevAction",                  T_ULONG,    offsetof(MarioPythonObject, prevAction), 0, "prevAction"},
-    {"terrainSoundAddend",          T_ULONG,    offsetof(MarioPythonObject, terrainSoundAddend), 0, "terrainSoundAddend"},
-    {"actionState",                 T_USHORT,   offsetof(MarioPythonObject, actionState), 0, "actionState"},
-    {"actionTimer",                 T_USHORT,   offsetof(MarioPythonObject, actionTimer), 0, "actionTimer"},
-    {"actionArg",                   T_ULONG,    offsetof(MarioPythonObject, actionArg), 0, "actionArg"},
-    {"intendedMag",                 T_FLOAT,    offsetof(MarioPythonObject, intendedMag), 0, "intendedMag"},
-    {"intendedYaw",                 T_SHORT,    offsetof(MarioPythonObject, intendedYaw), 0, "intendedYaw"},
-    {"invincTimer",                 T_SHORT,    offsetof(MarioPythonObject, invincTimer), 0, "invincTimer"},
-    {"framesSinceA",                T_UBYTE,    offsetof(MarioPythonObject, framesSinceA), 0, "framesSinceA"},
-    {"framesSinceB",                T_UBYTE,    offsetof(MarioPythonObject, framesSinceB), 0, "framesSinceB"},
-    {"wallKickTimer",               T_UBYTE,    offsetof(MarioPythonObject, wallKickTimer), 0, "wallKickTimer"},
-    {"doubleJumpTimer",             T_UBYTE,    offsetof(MarioPythonObject, doubleJumpTimer), 0, "doubleJumpTimer"},
-    //
-    {"slideYaw",                    T_SHORT,    offsetof(MarioPythonObject, slideYaw), 0, "slideYaw"},
-    {"twirlYaw",                    T_SHORT,    offsetof(MarioPythonObject, twirlYaw), 0, "twirlYaw"},
-    //
-    {"forwardVel",                  T_FLOAT,    offsetof(MarioPythonObject, forwardVel), 0, "forwardVel"},
-    {"slideVelX",                   T_FLOAT,    offsetof(MarioPythonObject, slideVelX), 0, "slideVelX"},
-    {"slideVelZ",                   T_FLOAT,    offsetof(MarioPythonObject, slideVelZ), 0, "slideVelZ"},
-    {"wall",                        T_OBJECT,   offsetof(MarioPythonObject, wall), 0, NULL},
-    {"ceil",                        T_OBJECT,   offsetof(MarioPythonObject, ceil), 0, NULL},
-    {"floor",                       T_OBJECT,   offsetof(MarioPythonObject, floor), 0, NULL},
-    {"ceilHeight",                  T_FLOAT,    offsetof(MarioPythonObject, ceilHeight), 0, "ceilHeight"},
-    {"floorHeight",                 T_FLOAT,    offsetof(MarioPythonObject, floorHeight), 0, "floorHeight"},
-    {"floorAngle",                  T_SHORT,    offsetof(MarioPythonObject, floorAngle), 0, "floorAngle"},
-    {"waterLevel",                  T_SHORT,    offsetof(MarioPythonObject, waterLevel), 0, "waterLevel"},
-    {"interactObj",                 T_OBJECT,   offsetof(MarioPythonObject, interactObj), 0, NULL},
-    {"heldObj",                     T_OBJECT,   offsetof(MarioPythonObject, heldObj), 0, NULL},
-    {"usedObj",                     T_OBJECT,   offsetof(MarioPythonObject, usedObj), 0, NULL},
-    {"riddenObj",                   T_OBJECT,   offsetof(MarioPythonObject, riddenObj), 0, NULL},
-    {"marioObj",                    T_OBJECT,   offsetof(MarioPythonObject, marioObj), 0, NULL},
-    {"spawnInfo",                   T_OBJECT,   offsetof(MarioPythonObject, spawnInfo), 0, NULL},
-    {"area",                        T_OBJECT,   offsetof(MarioPythonObject, area), 0, NULL},
-    {"statusForCamera",             T_OBJECT,   offsetof(MarioPythonObject, statusForCamera), 0, NULL},
-    {"marioBodyState",              T_OBJECT,   offsetof(MarioPythonObject, marioBodyState), 0, NULL},
-    {"controller",                  T_OBJECT,   offsetof(MarioPythonObject, controller), 0, NULL},
-    {"animation",                   T_OBJECT,   offsetof(MarioPythonObject, animation), 0, NULL},
-    {"collidedObjInteractTypes",    T_ULONG,    offsetof(MarioPythonObject, collidedObjInteractTypes), 0, "collidedObjInteractTypes"},
-    {"numCoins",                    T_SHORT,    offsetof(MarioPythonObject, numCoins), 0, "numCoins"},
-    {"numStars",                    T_SHORT,    offsetof(MarioPythonObject, numStars), 0, "numStars"},
-    {"numKeys",                     T_UBYTE,    offsetof(MarioPythonObject, numKeys), 0, NULL},
-    {"numLives",                    T_UBYTE,    offsetof(MarioPythonObject, numLives), 0, "numLives"},
-    {"health",                      T_SHORT,    offsetof(MarioPythonObject, health), 0, "health"},
-    //
-    {"hurtCounter",                 T_UBYTE,    offsetof(MarioPythonObject, hurtCounter), 0, "hurtCounter"},
-    {"healCounter",                 T_UBYTE,    offsetof(MarioPythonObject, healCounter), 0, "healCounter"},
-    {"squishTimer",                 T_UBYTE,    offsetof(MarioPythonObject, squishTimer), 0, "squishTimer"},
-    {"fadeWarpOpacity",             T_UBYTE,    offsetof(MarioPythonObject, fadeWarpOpacity), 0, "fadeWarpOpacity"},
-    {"capTimer",                    T_USHORT,   offsetof(MarioPythonObject, capTimer), 0, "capTimer"},
-    //
-    {"peakHeight",                  T_FLOAT,    offsetof(MarioPythonObject, peakHeight), 0, "peakHeight"},    
-    {"quicksandDepth",              T_FLOAT,    offsetof(MarioPythonObject, quicksandDepth), 0, "quicksandDepth"},
-    //
-    {NULL},
-};
+static PyObject *
+PyMario_unset_flag(PyObject *self, PyObject *args) {
+    unsigned long flag;
 
-static PyMethodDef MarioPythonMethods[] = {
-    //{ "set",    (PyCFunction) CountDict_set, METH_VARARGS,
-    //           "Set a key and increment the count." },
-    {NULL, NULL, 0, NULL}
-};
+    fprintf( stdout, "test2\n" );
+    if( PyArg_ParseTuple( args, ":flag" ) ) {
+        fprintf( stdout, "unset flag: %ld\n", flag );
+        gMarioState->flags &= ~flag;
+    }
 
-static PyTypeObject MarioPythonType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "mario.Mario",
-    .tp_doc = "Mario state objects",
-    .tp_basicsize = sizeof(MarioPythonObject),
-    .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = PyType_GenericNew,
-    .tp_members = MarioPythonMembers,
-};
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+
+    return NULL;
+}
+
+static PyObject *
+PyMario_set_flag(PyObject *self, PyObject *args) {
+    unsigned long flag;
+
+    fprintf( stdout, "test1\n" );
+    if( PyArg_ParseTuple( args, ":flag" ) ) {
+        fprintf( stdout, "set flag: %ld\n", flag );
+        gMarioState->flags |= flag;
+    }
+
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+
+    return NULL;
+}
 
 /*
-static PyObject *MarioPythonObject_set(MarioPythonObject *self, PyObject *args) {
-   const char *key;
-   PyObject *value;
+static PyObject *
+PyMario_set_action(PyObject *self, PyObject *args) {
+    unsigned long action;
 
-   if (!PyArg_ParseTuple(args, "sO:set", &key, &value)) {
-      return NULL;
-   }
+    if( PyArg_ParseTuple( args, ":action" ) ) {
+        gMarioState->action = action;
+    }
 
-   if (PyDict_SetItemString(self->dict, key, value) < 0) {
-      return NULL;
-   }
-
-   self->count++;
-
-   return Py_BuildValue("i", self->count);
+    return NULL;
 }
 */
 
+MARIO_SET( action, unsigned long );
+MARIO_GET( action, unsigned long );
+MARIO_SET( prevAction, unsigned long );
+MARIO_SET( actionArg, unsigned long );
+MARIO_SET( actionState, unsigned short );
+MARIO_SET( actionTimer, unsigned short );
+
 static PyMethodDef MarioMethods[] = {
+    {"set_action", PyMario_set_action, METH_VARARGS, NULL},
+    {"get_action", PyMario_get_action, METH_VARARGS, NULL},
+    {"set_action_state", PyMario_set_actionState, METH_VARARGS, NULL},
+    {"set_prev_action", PyMario_set_prevAction, METH_VARARGS, NULL},
+    {"set_action_timer", PyMario_set_actionTimer, METH_VARARGS, NULL},
+    {"set_action_arg", PyMario_set_actionArg, METH_VARARGS, NULL},
+    {"unset_flag", PyMario_unset_flag, METH_VARARGS, NULL},
+    {"set_flag", PyMario_set_flag, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
 static PyModuleDef MarioModule = {
-    PyModuleDef_HEAD_INIT, "emb", NULL, -1, MarioMethods,
+    PyModuleDef_HEAD_INIT, "mario", NULL, -1, MarioMethods,
     NULL, NULL, NULL, NULL
 };
 
 static PyObject* PyInit_mario(void) {
-
-    if (PyType_Ready(&MarioPythonType) < 0) {
-        return NULL;
-    }
 
     PyObject *pMario = PyModule_Create(&MarioModule);
     PyModule_AddIntConstant(pMario, "ACT_GROUP_MASK", ACT_GROUP_MASK);
@@ -201,21 +116,6 @@ static PyObject* PyInit_mario(void) {
     PyModule_AddIntConstant(pMario, "MARIO_MARIO_SOUND_PLAYED", MARIO_MARIO_SOUND_PLAYED);
     PyModule_AddIntConstant(pMario, "ACT_FLAG_AIR", ACT_FLAG_AIR);
     PyModule_AddIntConstant(pMario, "MARIO_UNKNOWN_18", MARIO_UNKNOWN_18);
-
-    Py_INCREF(&MarioPythonType);
-    if (PyModule_AddObject(pMario, "Mario", (PyObject *) &MarioPythonType) < 0) {
-        Py_DECREF(&MarioPythonType);
-        Py_DECREF(pMario);
-        return NULL;
-    }
-
-    /* Call the class object. */
-    //PyObject *obj = PyObject_CallObject((PyObject *) &MarioPythonType, NULL);
-
-    //PyModule_AddObject( pMario, "marioState", )
-
-    /* Release the argument list. */
-    //Py_DECREF(argList);
 
     return pMario;
 }
@@ -245,5 +145,3 @@ void python_init() {
 
     fprintf(stdout, "mario module loaded\n");
 }
-
-#endif /* USE_PYTHON */
