@@ -79,43 +79,58 @@ static PyMemberDef PyMarioState_members[] = {
     {NULL}
 };
 
-/*
-static PyObject *
-PyMarioState_dealloc(PyMarioStateClass *self) {
-    Py_XDECREF(self->ptr);
-    Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-static PyOject *
-PyMarioState_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    PyMarioStateClass *self;
-
-    self = (PyMarioStateClass *)type->tp_alloc(type, 0);
-    if (NULL == self) {
-        return NULL;
-    }
-
-    self->ptr = PyLong_FromUnsignedLong( 0 );
-    if (NULL == self->ptr) {
-        Py_DECREF(self);
-        return NULL;
-    }
-
-    return (PyObject *)self;
-}
-
-static int
-PyMarioState_init(PyMarioStateClass *self, PyObject *args, PyObject *kwds) {
-    if (PyArg_ParseTuple(args, ""))
-}
-*/
-
 MARIO_SET( action, unsigned long, PyLong_AsUnsignedLong );
 MARIO_GET( action, unsigned long, PyLong_FromUnsignedLong );
 MARIO_SET( prevAction, unsigned long, PyLong_AsUnsignedLong );
 MARIO_SET( actionArg, unsigned long, PyLong_AsUnsignedLong );
 MARIO_SET( actionState, unsigned short, PyLong_AsUnsignedLong );
 MARIO_SET( actionTimer, unsigned short, PyLong_AsUnsignedLong );
+MARIO_GET( forwardVel, unsigned long, PyLong_FromUnsignedLong );
+MARIO_SET( forwardVel, unsigned short, PyLong_AsUnsignedLong );
+MARIO_GET( intendedMag, unsigned short, PyLong_FromDouble );
+
+static PyObject *
+PyMario_facing_downhill(PyObject *self, PyObject *arg) {
+    PyMarioStateClass *pm = (PyMarioStateClass *)self;
+    s32 turnYaw;
+    s32 res;
+    PyObject *pRes;
+    
+    turnYaw = PyLong_AsLong( arg );
+    if (PyErr_Occurred()) {
+        fprintf( stderr, "during facing_downhill:\n" );
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    res = mario_facing_downhill(pm->ptr, turnYaw);
+    pRes = PyLong_FromLong( res );
+    if (PyErr_Occurred()) {
+        fprintf( stderr, "during facing_downhill:\n" );
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    return pRes;
+}
+
+static PyObject *
+PyMario_get_floor_class(PyObject *self) {
+    PyMarioStateClass *pm = (PyMarioStateClass *)self;
+    s32 floorClass;
+    PyObject *pRes;
+    
+    floorClass = mario_get_floor_class(pm->ptr);
+    
+    pRes = PyLong_FromLong( floorClass );
+    if (PyErr_Occurred()) {
+        fprintf( stderr, "during floor_class:\n" );
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+    
+    return pRes;
+}
 
 static PyMethodDef PyMarioState_methods[] = {
     {"set_action", PyMario_set_action, METH_O, NULL},
@@ -126,6 +141,11 @@ static PyMethodDef PyMarioState_methods[] = {
     {"set_action_arg", PyMario_set_actionArg, METH_O, NULL},
     {"unset_flag", PyMario_unset_flag, METH_O, NULL},
     {"set_flag", PyMario_set_flag, METH_O, NULL},
+    {"facing_downhill", PyMario_facing_downhill, METH_O, NULL},
+    {"set_forward_vel", PyMario_set_forwardVel, METH_O, NULL},
+    {"get_forward_vel", PyMario_get_forwardVel, METH_NOARGS, NULL},
+    {"get_floor_class", PyMario_get_floor_class, METH_NOARGS, NULL},
+    {"get_intended_mag", PyMario_get_intendedMag, METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
@@ -178,6 +198,9 @@ static PyObject* PyInit_mario(void) {
     pMarioState->ptr = gMarioState;
     PyModule_AddObject(pMario, "state", pMarioState);
 
+    gMarioState->pyState = pMarioState;
+
+    /*
     PyModule_AddIntConstant(pMario, "ACT_GROUP_MASK", ACT_GROUP_MASK);
     PyModule_AddIntConstant(pMario, "ACT_GROUP_STATIONARY", ACT_GROUP_STATIONARY);
     PyModule_AddIntConstant(pMario, "ACT_GROUP_MOVING", ACT_GROUP_MOVING);
@@ -190,6 +213,10 @@ static PyObject* PyInit_mario(void) {
     PyModule_AddIntConstant(pMario, "MARIO_MARIO_SOUND_PLAYED", MARIO_MARIO_SOUND_PLAYED);
     PyModule_AddIntConstant(pMario, "ACT_FLAG_AIR", ACT_FLAG_AIR);
     PyModule_AddIntConstant(pMario, "MARIO_UNKNOWN_18", MARIO_UNKNOWN_18);
+    */
+
+    #include "mario_python_actions.h"
+    #include "mario_python_terrains.h"
 
     return pMario;
 }
@@ -222,4 +249,34 @@ void python_init() {
     assert( NULL != gMarioModule );
 
     fprintf(stdout, "mario module loaded\n");
+}
+
+u32 wrap_mario_action(struct MarioState *m, u32 action, u32 arg, const char *method) {
+    PyObject *pFunc, *pArgs, *pValue;
+    u32 retval = 0;
+
+    pFunc = PyObject_GetAttrString(gMarioModule, method);
+    if (pFunc && PyCallable_Check(pFunc)) {
+
+        pArgs = PyTuple_New(3);
+        PyTuple_SetItem(pArgs, 0, m->pyState);
+        pValue = PyLong_FromUnsignedLong( action );
+        PyTuple_SetItem(pArgs, 1, pValue);
+        pValue = PyLong_FromUnsignedLong( arg );
+        PyTuple_SetItem(pArgs, 2, pValue);
+        pValue = PyObject_CallObject(pFunc, pArgs);
+        Py_DECREF(pArgs);
+        if(NULL != pValue) {
+            retval = PyLong_AsLong( pValue );
+            Py_DECREF(pValue);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+   
+    Py_XDECREF(pFunc);
+
+    return retval;
 }

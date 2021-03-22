@@ -346,7 +346,7 @@ struct MarioState
     /*0xC0*/ f32 quicksandDepth;
     /*0xC4*/ f32 unkC4;
     #ifdef USE_PYTHON
-    PyObject* pythonModule;
+    PyObject* pyState;
     #endif /* USE_PYTHON */
 };
 

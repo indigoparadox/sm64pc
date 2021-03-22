@@ -906,6 +906,7 @@ static u32 set_mario_action_airborne(struct MarioState *m, u32 action, u32 actio
     return action;
 }
 
+#ifndef USE_PYTHON
 /**
  * Transitions for a variety of moving actions.
  */
@@ -950,6 +951,7 @@ static u32 set_mario_action_moving(struct MarioState *m, u32 action, UNUSED u32 
 
     return action;
 }
+#endif /* USE_PYTHON */
 
 /**
  * Transition for certain submerged actions, which is actually just the metal jump actions.
@@ -990,40 +992,7 @@ static u32 set_mario_action_cutscene(struct MarioState *m, u32 action, UNUSED u3
 
 #ifdef USE_PYTHON
 u32 set_mario_action(struct MarioState *m, u32 action, u32 arg) {
-    PyObject *pFunc, *pArgs, *pValue;
-    u32 retval = 0;
-
-    if( NULL == m->pythonModule ) {
-        fprintf(stderr, "no module loaded\n");
-        return 0;
-    }
-
-    pFunc = PyObject_GetAttrString(m->pythonModule, "set_mario_action");
-    if (pFunc && PyCallable_Check(pFunc)) {
-
-        pArgs = PyTuple_New(3);
-        pValue = PyLong_FromUnsignedLong( 0 );
-        PyTuple_SetItem(pArgs, 0, pValue);
-        pValue = PyLong_FromUnsignedLong( action );
-        PyTuple_SetItem(pArgs, 1, pValue);
-        pValue = PyLong_FromUnsignedLong( arg );
-        PyTuple_SetItem(pArgs, 2, pValue);
-        pValue = PyObject_CallObject(pFunc, pArgs);
-        Py_DECREF(pArgs);
-        if(NULL != pValue) {
-            retval = PyLong_AsLong( pValue );
-            Py_DECREF(pValue);
-        }
-    } else {
-        if (PyErr_Occurred()) {
-            PyErr_Print();
-        }
-        fprintf(stderr, "could not do mario action\n");
-    }
-
-    Py_XDECREF(pFunc);
-
-    return retval;
+    return wrap_mario_action(m, action, arg, "set_mario_action");
 }
 #else
 /**
@@ -1967,11 +1936,6 @@ void init_mario(void) {
 
         capObject->oMoveAngleYaw = 0;
     }
-
-    #ifdef USE_PYTHON
-    assert( NULL != gMarioModule );
-    gMarioState->pythonModule = gMarioModule;
-    #endif /* USE_PYTHON */
 }
 
 void init_mario_from_save_file(void) {
