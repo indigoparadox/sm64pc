@@ -1,5 +1,13 @@
 
+import logging
+
 import mario
+
+logger = logging.getLogger( '' )
+
+def mario_init():
+    logging.basicConfig( level=logging.DEBUG )
+    logger.debug( 'logger active' )
 
 def set_mario_action_moving( m, action, action_arg ):
     floorClass = m.get_floor_class()
@@ -7,7 +15,7 @@ def set_mario_action_moving( m, action, action_arg ):
     #mag = min(m.get_intended_mag(), 8.0)
     mag = 8.0
 
-    print( "moving" )
+    logger.debug( "moving" )
 
     if mario.ACT_WALKING == action:
         if floorClass != mario.SURFACE_CLASS_VERY_SLIPPERY:
@@ -21,6 +29,10 @@ def set_mario_action_moving( m, action, action_arg ):
             mario.state.set_forward_vel( mag / 2.0 )
 
     elif mario.ACT_BEGIN_SLIDING == action:
+        # Fun fact: if this doesn't get a chance to run and change the
+        # "BEGIN_SLIDING" action into a butt slide or a stomach slide,
+        # then the system will hang in a loop later in
+        # mario_execute_action().
         if (m.facing_downhill(0)):
             action = mario.ACT_BUTT_SLIDE
         else:
@@ -36,20 +48,20 @@ def set_mario_action_moving( m, action, action_arg ):
 
 def set_mario_action( mario_state, action, arg ):
     
-    print( "{} vs {}".format( (mario.ACT_GROUP_MASK & mario.ACT_GROUP_MOVING), action ) )
+    logger.debug( "{} vs {}".format( (mario.ACT_GROUP_MASK & mario.ACT_GROUP_MOVING), action ) )
 
     # Filter based on action group.
     if (mario.ACT_GROUP_MASK & mario.ACT_GROUP_MOVING):
-        print( "moving" )
+        logger.debug( "moving" )
         action = set_mario_action_moving( mario_state, action, arg )
     elif (mario.ACT_GROUP_MASK & mario.ACT_GROUP_AIRBORNE):
-        print( "airborne" )
+        logger.debug( "airborne" )
         action = mario.set_mario_action_airborne( mario_state, action, arg )
     elif (mario.ACT_GROUP_MASK & mario.ACT_GROUP_SUBMERGED):
-        print( "submerged" )
+        logger.debug( "submerged" )
         action = mario.set_mario_action_submerged( mario_state, action, arg )
     elif (mario.ACT_GROUP_MASK & mario.ACT_GROUP_CUTSCENE):
-        print( "cutscene" )
+        logger.debug( "cutscene" )
         action = mario.set_mario_action_cutscene( mario_state, action, arg )
 
     # Set action flags.

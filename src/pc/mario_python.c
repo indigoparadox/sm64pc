@@ -6,6 +6,7 @@
 
 #include "sm64.h"
 #include "game/mario.h"
+#include "object_python.h"
 
 PyObject *gMarioModule;
 extern struct MarioState *gMarioState;
@@ -29,7 +30,7 @@ extern struct MarioState *gMarioState;
 #define MARIO_GET( var, type, c_getter ) \
     static PyObject * \
     PyMario_get_ ## var(PyObject *self) { \
-        type var; \
+        PyObject *var; \
         var = c_getter( gMarioState->var ); \
         if (PyErr_Occurred()) { \
             fprintf( stderr, "during get " #var ":\n" ); \
@@ -80,14 +81,15 @@ static PyMemberDef PyMarioState_members[] = {
 };
 
 MARIO_SET( action, unsigned long, PyLong_AsUnsignedLong );
-MARIO_GET( action, unsigned long, PyLong_FromUnsignedLong );
 MARIO_SET( prevAction, unsigned long, PyLong_AsUnsignedLong );
 MARIO_SET( actionArg, unsigned long, PyLong_AsUnsignedLong );
 MARIO_SET( actionState, unsigned short, PyLong_AsUnsignedLong );
 MARIO_SET( actionTimer, unsigned short, PyLong_AsUnsignedLong );
-MARIO_GET( forwardVel, unsigned long, PyLong_FromUnsignedLong );
-MARIO_SET( forwardVel, unsigned short, PyLong_AsUnsignedLong );
-MARIO_GET( intendedMag, unsigned short, PyLong_FromDouble );
+MARIO_SET( forwardVel, double, PyFloat_AsDouble );
+
+MARIO_GET( action, unsigned long, PyLong_FromUnsignedLong );
+MARIO_GET( forwardVel, double, PyFloat_FromDouble );
+MARIO_GET( intendedMag, double, PyFloat_FromDouble );
 
 static PyObject *
 PyMario_facing_downhill(PyObject *self, PyObject *arg) {
@@ -150,7 +152,6 @@ static PyMethodDef PyMarioState_methods[] = {
 };
 
 static PyTypeObject PyMarioStateType = {
-    //PyVarObject_HEAD_INIT(&PyType_Type, 0)
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "mario.MarioState",
     .tp_basicsize = sizeof(PyMarioStateClass),
@@ -200,21 +201,6 @@ static PyObject* PyInit_mario(void) {
 
     gMarioState->pyState = pMarioState;
 
-    /*
-    PyModule_AddIntConstant(pMario, "ACT_GROUP_MASK", ACT_GROUP_MASK);
-    PyModule_AddIntConstant(pMario, "ACT_GROUP_STATIONARY", ACT_GROUP_STATIONARY);
-    PyModule_AddIntConstant(pMario, "ACT_GROUP_MOVING", ACT_GROUP_MOVING);
-    PyModule_AddIntConstant(pMario, "ACT_GROUP_AIRBORNE", ACT_GROUP_AIRBORNE);
-    PyModule_AddIntConstant(pMario, "ACT_GROUP_SUBMERGED", ACT_GROUP_SUBMERGED);
-    PyModule_AddIntConstant(pMario, "ACT_GROUP_CUTSCENE", ACT_GROUP_CUTSCENE);
-    PyModule_AddIntConstant(pMario, "ACT_GROUP_AUTOMATIC", ACT_GROUP_AUTOMATIC);
-    PyModule_AddIntConstant(pMario, "ACT_GROUP_OBJECT", ACT_GROUP_OBJECT);
-    PyModule_AddIntConstant(pMario, "MARIO_ACTION_SOUND_PLAYED", MARIO_ACTION_SOUND_PLAYED);
-    PyModule_AddIntConstant(pMario, "MARIO_MARIO_SOUND_PLAYED", MARIO_MARIO_SOUND_PLAYED);
-    PyModule_AddIntConstant(pMario, "ACT_FLAG_AIR", ACT_FLAG_AIR);
-    PyModule_AddIntConstant(pMario, "MARIO_UNKNOWN_18", MARIO_UNKNOWN_18);
-    */
-
     #include "mario_python_actions.h"
     #include "mario_python_terrains.h"
 
@@ -222,11 +208,12 @@ static PyObject* PyInit_mario(void) {
 }
 
 void python_init() {
-    PyObject *pName, *pSysPath, *pCwd;
+    PyObject *pName, *pSysPath, *pCwd, *pFunc;
     char cwd[255];
 
     Py_SetProgramName( Py_DecodeLocale( "sm64pc", NULL ) );
-    PyImport_AppendInittab("mario", &PyInit_mario);
+    PyImport_AppendInittab("mario", &PyInit_mario);   
+    object_python_init();
     Py_Initialize();
     fprintf(stdout, "python initialized\n");
 
@@ -244,6 +231,15 @@ void python_init() {
     if (PyErr_Occurred()) {
         fprintf( stderr, "during setup:\n" );
         PyErr_Print();
+    }
+
+    pFunc = PyObject_GetAttrString(gMarioModule, "mario_init");
+    if (pFunc && PyCallable_Check(pFunc)) {
+        PyObject_CallObject(pFunc, NULL);
+        if (PyErr_Occurred()) {
+            fprintf( stderr, "during init:\n" );
+            PyErr_Print();
+        }
     }
 
     assert( NULL != gMarioModule );
