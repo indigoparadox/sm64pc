@@ -10,89 +10,79 @@
 PyObject *gMarioModule;
 extern struct MarioState *gMarioState;
 
-#define MARIO_SET( var, type ) \
+#define MARIO_SET( var, type, py_getter ) \
     static PyObject * \
     PyMario_set_ ## var(PyObject *self, PyObject *args) { \
         type var; \
-        if( PyArg_ParseTuple( args, ":" #var ) ) { \
-            gMarioState->var = var; \
-        } \
+        var = py_getter( args ); \
         if (PyErr_Occurred()) { \
+            fprintf( stderr, "during set " #var ":\n" ); \
             PyErr_Print(); \
+            Py_RETURN_NONE; \
         } \
-        return NULL; \
+        gMarioState->var = var; \
+        Py_RETURN_NONE; \
     }
 
-#define MARIO_GET( var, type ) \
+#define MARIO_GET( var, type, c_getter ) \
     static PyObject * \
     PyMario_get_ ## var(PyObject *self, PyObject *args) { \
-        fprintf( stdout, "get " #var ": %ld\n" ); \
-        return PyLong_FromLong( gMarioState->var ); \
+        type var; \
+        var = c_getter( gMarioState->var ); \
+        if (PyErr_Occurred()) { \
+            fprintf( stderr, "during get " #var ":\n" ); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        return var; \
     }
 
 static PyObject *
-PyMario_unset_flag(PyObject *self, PyObject *args) {
+PyMario_unset_flag(PyObject *self, PyObject *arg) {
     unsigned long flag;
 
-    fprintf( stdout, "test2\n" );
-    if( PyArg_ParseTuple( args, ":flag" ) ) {
-        fprintf( stdout, "unset flag: %ld\n", flag );
-        gMarioState->flags &= ~flag;
-    }
-
+    flag = PyLong_AsUnsignedLong( arg );
     if (PyErr_Occurred()) {
+        fprintf( stderr, "during unset flag:\n" );
         PyErr_Print();
+        Py_RETURN_NONE;
     }
+    gMarioState->flags &= ~flag;
 
-    return NULL;
+    Py_RETURN_NONE;
 }
 
 static PyObject *
-PyMario_set_flag(PyObject *self, PyObject *args) {
+PyMario_set_flag(PyObject *self, PyObject *arg) {
     unsigned long flag;
 
-    fprintf( stdout, "test1\n" );
-    if( PyArg_ParseTuple( args, ":flag" ) ) {
-        fprintf( stdout, "set flag: %ld\n", flag );
-        gMarioState->flags |= flag;
-    }
-
+    flag = PyLong_AsUnsignedLong( arg );
     if (PyErr_Occurred()) {
+        fprintf( stderr, "during set flag:\n" );
         PyErr_Print();
+        Py_RETURN_NONE;
     }
+    gMarioState->flags |= flag;
 
-    return NULL;
+    Py_RETURN_NONE;
 }
 
-/*
-static PyObject *
-PyMario_set_action(PyObject *self, PyObject *args) {
-    unsigned long action;
-
-    if( PyArg_ParseTuple( args, ":action" ) ) {
-        gMarioState->action = action;
-    }
-
-    return NULL;
-}
-*/
-
-MARIO_SET( action, unsigned long );
-MARIO_GET( action, unsigned long );
-MARIO_SET( prevAction, unsigned long );
-MARIO_SET( actionArg, unsigned long );
-MARIO_SET( actionState, unsigned short );
-MARIO_SET( actionTimer, unsigned short );
+MARIO_SET( action, unsigned long, PyLong_AsUnsignedLong );
+MARIO_GET( action, unsigned long, PyLong_FromUnsignedLong );
+MARIO_SET( prevAction, unsigned long, PyLong_AsUnsignedLong );
+MARIO_SET( actionArg, unsigned long, PyLong_AsUnsignedLong );
+MARIO_SET( actionState, unsigned short, PyLong_AsUnsignedLong );
+MARIO_SET( actionTimer, unsigned short, PyLong_AsUnsignedLong );
 
 static PyMethodDef MarioMethods[] = {
-    {"set_action", PyMario_set_action, METH_VARARGS, NULL},
-    {"get_action", PyMario_get_action, METH_VARARGS, NULL},
-    {"set_action_state", PyMario_set_actionState, METH_VARARGS, NULL},
-    {"set_prev_action", PyMario_set_prevAction, METH_VARARGS, NULL},
-    {"set_action_timer", PyMario_set_actionTimer, METH_VARARGS, NULL},
-    {"set_action_arg", PyMario_set_actionArg, METH_VARARGS, NULL},
-    {"unset_flag", PyMario_unset_flag, METH_VARARGS, NULL},
-    {"set_flag", PyMario_set_flag, METH_VARARGS, NULL},
+    {"set_action", PyMario_set_action, METH_O, NULL},
+    {"get_action", PyMario_get_action, METH_NOARGS, NULL},
+    {"set_action_state", PyMario_set_actionState, METH_O, NULL},
+    {"set_prev_action", PyMario_set_prevAction, METH_O, NULL},
+    {"set_action_timer", PyMario_set_actionTimer, METH_O, NULL},
+    {"set_action_arg", PyMario_set_actionArg, METH_O, NULL},
+    {"unset_flag", PyMario_unset_flag, METH_O, NULL},
+    {"set_flag", PyMario_set_flag, METH_O, NULL},
     {NULL, NULL, 0, NULL}
 };
 
