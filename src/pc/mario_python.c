@@ -78,6 +78,7 @@ PyMario_get_marioObj(PyObject *self) {
 }
 
 static PyMemberDef PyMarioState_members[] = {
+    {"obj", T_OBJECT_EX, offsetof(PyMarioStateClass, obj), 0, NULL},
     {"ptr", T_OBJECT_EX, offsetof(PyMarioStateClass, ptr), 0, NULL},
     {NULL}
 };
@@ -137,20 +138,20 @@ PyMario_get_floor_class(PyObject *self) {
 }
 
 static PyMethodDef PyMarioState_methods[] = {
-    {"set_action", PyMario_set_action, METH_O, NULL},
-    {"get_action", PyMario_get_action, METH_NOARGS, NULL},
-    {"set_action_state", PyMario_set_actionState, METH_O, NULL},
-    {"set_prev_action", PyMario_set_prevAction, METH_O, NULL},
-    {"set_action_timer", PyMario_set_actionTimer, METH_O, NULL},
-    {"set_action_arg", PyMario_set_actionArg, METH_O, NULL},
-    {"unset_flag", PyMario_unset_flag, METH_O, NULL},
-    {"set_flag", PyMario_set_flag, METH_O, NULL},
-    {"facing_downhill", PyMario_facing_downhill, METH_O, NULL},
-    {"set_forward_vel", PyMario_set_forwardVel, METH_O, NULL},
-    {"get_forward_vel", PyMario_get_forwardVel, METH_NOARGS, NULL},
-    {"get_floor_class", PyMario_get_floor_class, METH_NOARGS, NULL},
-    {"get_intended_mag", PyMario_get_intendedMag, METH_NOARGS, NULL},
-    {"get_mario_obj", PyMario_get_marioObj, METH_NOARGS, NULL},
+    {"set_action",          (PyCFunction)PyMario_set_action,         METH_O, NULL},
+    {"set_action_state",    (PyCFunction)PyMario_set_actionState,    METH_O, NULL},
+    {"set_prev_action",     (PyCFunction)PyMario_set_prevAction,     METH_O, NULL},
+    {"set_action_timer",    (PyCFunction)PyMario_set_actionTimer,    METH_O, NULL},
+    {"set_action_arg",      (PyCFunction)PyMario_set_actionArg,      METH_O, NULL},
+    {"unset_flag",          (PyCFunction)PyMario_unset_flag,         METH_O, NULL},
+    {"set_flag",            (PyCFunction)PyMario_set_flag,           METH_O, NULL},
+    {"facing_downhill",     (PyCFunction)PyMario_facing_downhill,    METH_O, NULL},
+    {"set_forward_vel",     (PyCFunction)PyMario_set_forwardVel,     METH_O, NULL},
+    {"get_action",          (PyCFunction)PyMario_get_action,         METH_NOARGS, NULL},
+    {"get_forward_vel",     (PyCFunction)PyMario_get_forwardVel,     METH_NOARGS, NULL},
+    {"get_floor_class",     (PyCFunction)PyMario_get_floor_class,    METH_NOARGS, NULL},
+    {"get_intended_mag",    (PyCFunction)PyMario_get_intendedMag,    METH_NOARGS, NULL},
+    {"get_mario_obj",       (PyCFunction)PyMario_get_marioObj,       METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
