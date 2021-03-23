@@ -1,0 +1,1243 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="sm64pc" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="build/us_pc/sm64.us.f3dex2e" prefix_auto="0" extension_auto="0" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<MakeCommands>
+					<Build command="$make -f $makefile" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean$target" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/sm64pc" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="src/audio/data.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/data.h" />
+		<Unit filename="src/audio/effects.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/effects.h" />
+		<Unit filename="src/audio/external.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/external.h" />
+		<Unit filename="src/audio/globals_end.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/globals_start.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/heap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/heap.h" />
+		<Unit filename="src/audio/internal.h" />
+		<Unit filename="src/audio/load.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/load.h" />
+		<Unit filename="src/audio/playback.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/playback.h" />
+		<Unit filename="src/audio/port_eu.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/seqplayer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/seqplayer.h" />
+		<Unit filename="src/audio/synthesis.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/audio/synthesis.h" />
+		<Unit filename="src/buffers/buffers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/buffers/buffers.h" />
+		<Unit filename="src/buffers/framebuffers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/buffers/framebuffers.h" />
+		<Unit filename="src/buffers/gfx_output_buffer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/buffers/gfx_output_buffer.h" />
+		<Unit filename="src/buffers/zbuffer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/buffers/zbuffer.h" />
+		<Unit filename="src/engine/behavior_script.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/engine/behavior_script.h" />
+		<Unit filename="src/engine/geo_layout.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/engine/geo_layout.h" />
+		<Unit filename="src/engine/graph_node.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/engine/graph_node.h" />
+		<Unit filename="src/engine/graph_node_manager.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/engine/level_script.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/engine/level_script.h" />
+		<Unit filename="src/engine/math_util.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/engine/math_util.h" />
+		<Unit filename="src/engine/surface_collision.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/engine/surface_collision.h" />
+		<Unit filename="src/engine/surface_load.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/engine/surface_load.h" />
+		<Unit filename="src/game/area.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/area.h" />
+		<Unit filename="src/game/behavior_actions.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behavior_actions.h" />
+		<Unit filename="src/game/behaviors/activated_bf_plat.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/amp.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/animated_floor_switch.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/arrow_lift.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bbh_haunted_bookshelf.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bbh_merry_go_round.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bbh_tilting_trap.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/beta_boo_key.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/beta_bowser_anchor.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/beta_chest.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/beta_fish_splash_spawner.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/beta_holdable_object.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/beta_trampoline.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bird.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/blue_coin.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/blue_fish.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bobomb.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bomp.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/boo.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/boo_cage.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/boulder.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bouncing_fireball.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bowling_ball.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bowser.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bowser_bomb.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bowser_key.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bowser_key_cutscene.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bowser_puzzle_piece.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/break_particles.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/breakable_box.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/breakable_box_small.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/breakable_wall.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bub.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bubba.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bubble.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bullet_bill.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/bully.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/butterfly.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/camera_lakitu.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/cannon.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/cannon_door.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/cap.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/capswitch.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/castle_cannon_grate.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/castle_flag.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/castle_floor_trap.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/celebration_star.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/chain_chomp.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/checkerboard_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/chuckya.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/clam.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/clock_arm.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/cloud.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/coffin.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/coin.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/collide_particles.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/controllable_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/corkbox.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/cruiser.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ddd_pole.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ddd_sub.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ddd_warp.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/decorative_pendulum.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/donut_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/door.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/dorrie.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/drawbridge.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/elevator.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/end_birds_1.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/end_birds_2.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/enemy_lakitu.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/exclamation_box.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/explosion.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/express_elevator.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/eyerok.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/falling_pillar.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/falling_rising_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ferris_wheel.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/fire_piranha_plant.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/fire_spitter.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/fish.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/fishing_boo.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/flame.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/flame_mario.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/flamethrower.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/floating_box.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/floating_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/fly_guy.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/flying_bookend_switch.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/goomba.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/grand_star.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/grill_door.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ground_particles.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/haunted_chair.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/heave_ho.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/hidden_star.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/hoot.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/horizontal_grindel.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/intro_lakitu.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/intro_peach.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/intro_scene.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/jrb_ship.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/jumping_box.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/kickable_board.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/king_bobomb.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/klepto.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/koopa.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/koopa_shell.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/koopa_shell_underwater.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/lll_floating_wood_piece.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/lll_hexagonal_ring.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/lll_octagonal_rotating_mesh.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/lll_rotating_hex_flame.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/lll_sinking_rectangle.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/lll_sinking_rock_block.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/lll_volcano_flames.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/mad_piano.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/manta_ray.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/metal_box.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/mips.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/moat_drainer.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/moat_grill.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/moneybag.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/monty_mole.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/moving_coin.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/mr_blizzard.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/mr_i.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/mushroom_1up.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/music_touch.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/orange_number.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/piranha_bubbles.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/piranha_plant.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/platform_on_track.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/pokey.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/pole.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/pole_base.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/purple_switch.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/pyramid_elevator.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/pyramid_top.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/pyramid_wall.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/racing_penguin.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/recovery_heart.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/red_coin.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/reds_star_marker.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/rolling_log.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/rotating_octagonal_plat.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/rotating_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/scuttlebug.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/seaweed.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/seesaw_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/shock_wave.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/skeeter.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sl_snowman_wind.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sl_walking_penguin.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sliding_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sliding_platform_2.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/snow_mound.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/snowman.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/snufit.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sound_ambient.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sound_birds.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sound_sand.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sound_spawner.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sound_volcano.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sound_waterfall.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sparkle_spawn.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sparkle_spawn_star.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/spawn_star.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/spawn_star_exit.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/spindel.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/spindrift.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/spiny.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/square_platform_cycle.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/star_door.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/static_checkered_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/strong_wind_particle.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/sushi.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/swing_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/switch_hidden_objects.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/swoop.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/thi_top.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/thwomp.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/tilting_inverted_pyramid.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/tower_door.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/tower_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/tox_box.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/treasure_chest.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/tree_particles.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/triplet_butterfly.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_2d_rotator.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_cog.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_elevator.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_moving_bar.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_pendulum.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_pit_block.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_rotating_solid.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_spinner.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ttc_treadmill.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/tumbling_bridge.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/tuxie.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/tweester.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ukiki.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/ukiki_cage.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/unagi.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/unused_particle_spawn.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/unused_poundable_platform.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/warp.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_bomb.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_bomb_cannon.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_mist.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_mist_particle.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_objs.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_pillar.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_ring.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_splashes_and_waves.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/water_wave.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/wdw_water_level.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/whirlpool.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/white_puff.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/white_puff_explode.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/whomp.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/wiggler.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/wind.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/behaviors/yoshi.inc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/bettercamera.h" />
+		<Unit filename="src/game/bettercamera.inc.h" />
+		<Unit filename="src/game/camera.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/camera.h" />
+		<Unit filename="src/game/debug.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/debug.h" />
+		<Unit filename="src/game/debug_course.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/debug_course.h" />
+		<Unit filename="src/game/decompress.h" />
+		<Unit filename="src/game/display.h" />
+		<Unit filename="src/game/envfx_bubbles.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/envfx_bubbles.h" />
+		<Unit filename="src/game/envfx_snow.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/envfx_snow.h" />
+		<Unit filename="src/game/game_init.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/game_init.h" />
+		<Unit filename="src/game/geo_misc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/geo_misc.h" />
+		<Unit filename="src/game/hud.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/hud.h" />
+		<Unit filename="src/game/ingame_menu.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/ingame_menu.h" />
+		<Unit filename="src/game/interaction.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/interaction.h" />
+		<Unit filename="src/game/level_geo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/level_geo.h" />
+		<Unit filename="src/game/level_update.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/level_update.h" />
+		<Unit filename="src/game/macro_special_objects.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/macro_special_objects.h" />
+		<Unit filename="src/game/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/main.h" />
+		<Unit filename="src/game/main_entry.h" />
+		<Unit filename="src/game/mario.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario.h" />
+		<Unit filename="src/game/mario_actions_airborne.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_actions_airborne.h" />
+		<Unit filename="src/game/mario_actions_automatic.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_actions_automatic.h" />
+		<Unit filename="src/game/mario_actions_cutscene.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_actions_cutscene.h" />
+		<Unit filename="src/game/mario_actions_moving.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_actions_moving.h" />
+		<Unit filename="src/game/mario_actions_object.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_actions_object.h" />
+		<Unit filename="src/game/mario_actions_stationary.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_actions_stationary.h" />
+		<Unit filename="src/game/mario_actions_submerged.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_actions_submerged.h" />
+		<Unit filename="src/game/mario_misc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_misc.h" />
+		<Unit filename="src/game/mario_step.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/mario_step.h" />
+		<Unit filename="src/game/memory.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/memory.h" />
+		<Unit filename="src/game/moving_texture.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/moving_texture.h" />
+		<Unit filename="src/game/obj_behaviors.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/obj_behaviors.h" />
+		<Unit filename="src/game/obj_behaviors_2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/obj_behaviors_2.h" />
+		<Unit filename="src/game/object_collision.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/object_collision.h" />
+		<Unit filename="src/game/object_helpers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/object_helpers.h" />
+		<Unit filename="src/game/object_list_processor.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/object_list_processor.h" />
+		<Unit filename="src/game/options_menu.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/options_menu.h" />
+		<Unit filename="src/game/paintings.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/paintings.h" />
+		<Unit filename="src/game/platform_displacement.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/platform_displacement.h" />
+		<Unit filename="src/game/print.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/print.h" />
+		<Unit filename="src/game/profiler.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/profiler.h" />
+		<Unit filename="src/game/rendering_graph_node.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/rendering_graph_node.h" />
+		<Unit filename="src/game/save_file.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/save_file.h" />
+		<Unit filename="src/game/screen_transition.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/screen_transition.h" />
+		<Unit filename="src/game/segment2.h" />
+		<Unit filename="src/game/segment7.h" />
+		<Unit filename="src/game/shadow.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/shadow.h" />
+		<Unit filename="src/game/skybox.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/skybox.h" />
+		<Unit filename="src/game/sound_init.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/sound_init.h" />
+		<Unit filename="src/game/spawn_object.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/spawn_object.h" />
+		<Unit filename="src/game/spawn_sound.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/spawn_sound.h" />
+		<Unit filename="src/game/text_save.inc.h" />
+		<Unit filename="src/game/thread6.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/game/thread6.h" />
+		<Unit filename="src/goddard/bad_declarations.h" />
+		<Unit filename="src/goddard/debug_utils.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/debug_utils.h" />
+		<Unit filename="src/goddard/draw_objects.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/draw_objects.h" />
+		<Unit filename="src/goddard/dynlist_proc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlist_proc.h" />
+		<Unit filename="src/goddard/dynlists/anim_group_1.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/anim_group_2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/anim_mario_eyebrows_1.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/anim_mario_lips_1.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/anim_mario_lips_2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/anim_mario_mustache_left.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/anim_mario_mustache_right.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/animdata.h" />
+		<Unit filename="src/goddard/dynlists/dynlist_macros.h" />
+		<Unit filename="src/goddard/dynlists/dynlist_mario_face.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/dynlist_mario_master.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/dynlist_test_cube.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/dynlist_unused.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/dynlists.h" />
+		<Unit filename="src/goddard/dynlists/dynlists_mario_eyebrows_mustache.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/dynlists/dynlists_mario_eyes.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/gd_macros.h" />
+		<Unit filename="src/goddard/gd_main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/gd_main.h" />
+		<Unit filename="src/goddard/gd_math.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/gd_math.h" />
+		<Unit filename="src/goddard/gd_memory.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/gd_memory.h" />
+		<Unit filename="src/goddard/gd_tex_dl.h" />
+		<Unit filename="src/goddard/gd_types.h" />
+		<Unit filename="src/goddard/joints.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/joints.h" />
+		<Unit filename="src/goddard/objects.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/objects.h" />
+		<Unit filename="src/goddard/old_menu.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/old_menu.h" />
+		<Unit filename="src/goddard/particles.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/particles.h" />
+		<Unit filename="src/goddard/renderer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/renderer.h" />
+		<Unit filename="src/goddard/sfx.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/sfx.h" />
+		<Unit filename="src/goddard/shape_helper.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/shape_helper.h" />
+		<Unit filename="src/goddard/skin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/skin.h" />
+		<Unit filename="src/goddard/skin_movement.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/goddard/skin_movement.h" />
+		<Unit filename="src/menu/debug_level_select.h" />
+		<Unit filename="src/menu/file_select.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/menu/file_select.h" />
+		<Unit filename="src/menu/intro_geo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/menu/intro_geo.h" />
+		<Unit filename="src/menu/level_select_menu.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/menu/level_select_menu.h" />
+		<Unit filename="src/menu/star_select.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/menu/star_select.h" />
+		<Unit filename="src/pc/audio/audio_api.h" />
+		<Unit filename="src/pc/audio/audio_null.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/audio/audio_null.h" />
+		<Unit filename="src/pc/audio/audio_sdl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/audio/audio_sdl.h" />
+		<Unit filename="src/pc/cheats.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/cheats.h" />
+		<Unit filename="src/pc/cliopts.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/cliopts.h" />
+		<Unit filename="src/pc/configfile.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/configfile.h" />
+		<Unit filename="src/pc/controller/controller_api.h" />
+		<Unit filename="src/pc/controller/controller_emscripten_keyboard.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/controller/controller_emscripten_keyboard.h" />
+		<Unit filename="src/pc/controller/controller_entry_point.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/controller/controller_keyboard.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/controller/controller_keyboard.h" />
+		<Unit filename="src/pc/controller/controller_recorded_tas.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/controller/controller_recorded_tas.h" />
+		<Unit filename="src/pc/controller/controller_sdl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/controller/controller_sdl.h" />
+		<Unit filename="src/pc/discord/discordrpc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/discord/discordrpc.h" />
+		<Unit filename="src/pc/fs/dirtree.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/fs/dirtree.h" />
+		<Unit filename="src/pc/fs/fs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/fs/fs.h" />
+		<Unit filename="src/pc/fs/fs_packtype_dir.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/fs/fs_packtype_zip.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/gfx/gfx_cc.h" />
+		<Unit filename="src/pc/gfx/gfx_direct3d11.cpp" />
+		<Unit filename="src/pc/gfx/gfx_direct3d11.h" />
+		<Unit filename="src/pc/gfx/gfx_direct3d12.cpp" />
+		<Unit filename="src/pc/gfx/gfx_direct3d12.h" />
+		<Unit filename="src/pc/gfx/gfx_direct3d_common.cpp" />
+		<Unit filename="src/pc/gfx/gfx_direct3d_common.h" />
+		<Unit filename="src/pc/gfx/gfx_opengl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/gfx/gfx_opengl.h" />
+		<Unit filename="src/pc/gfx/gfx_opengl_legacy.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/gfx/gfx_pc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/gfx/gfx_pc.h" />
+		<Unit filename="src/pc/gfx/gfx_rendering_api.h" />
+		<Unit filename="src/pc/gfx/gfx_screen_config.h" />
+		<Unit filename="src/pc/gfx/gfx_sdl.h" />
+		<Unit filename="src/pc/gfx/gfx_sdl2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/gfx/gfx_window_manager_api.h" />
+		<Unit filename="src/pc/ini.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/ini.h" />
+		<Unit filename="src/pc/mario_python.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/mario_python.h" />
+		<Unit filename="src/pc/mario_python_actions.h" />
+		<Unit filename="src/pc/mario_python_terrains.h" />
+		<Unit filename="src/pc/mixer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/mixer.h" />
+		<Unit filename="src/pc/object_python.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/object_python.h" />
+		<Unit filename="src/pc/object_python_behaviors.h" />
+		<Unit filename="src/pc/object_python_models.h" />
+		<Unit filename="src/pc/pc_main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/pc_main.h" />
+		<Unit filename="src/pc/platform.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/pc/platform.h" />
+		<Unit filename="src/pc/ultra_reimplementation.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
