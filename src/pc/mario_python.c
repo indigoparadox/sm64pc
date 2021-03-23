@@ -1,6 +1,6 @@
 
+#include "mario_python.h"
 
-#include <Python.h>
 #include <unistd.h>
 #include <structmember.h>
 
@@ -15,7 +15,7 @@ extern struct MarioState *gMarioState;
 
 #define MARIO_SET( var, type, py_getter ) \
     static PyObject * \
-    PyMario_set_ ## var(PyObject *self, PyObject *args) { \
+    PyMario_set_ ## var(PyMarioStateClass *self, PyObject *args) { \
         type var; \
         var = py_getter( args ); \
         if (PyErr_Occurred()) { \
@@ -29,7 +29,7 @@ extern struct MarioState *gMarioState;
 
 #define MARIO_GET( var, type, c_getter ) \
     static PyObject * \
-    PyMario_get_ ## var(PyObject *self) { \
+    PyMario_get_ ## var(PyMarioStateClass *self) { \
         PyObject *var; \
         var = c_getter( gMarioState->var ); \
         if (PyErr_Occurred()) { \
@@ -70,10 +70,12 @@ PyMario_set_flag(PyObject *self, PyObject *arg) {
     Py_RETURN_NONE;
 }
 
-typedef struct {
-    PyObject_HEAD
-    int *ptr;
-} PyMarioStateClass;
+static PyObject *
+PyMario_get_marioObj(PyObject *self) {
+    PyMarioStateClass *pMario = (PyMarioStateClass *)self;
+    assert(NULL != pMario->obj);
+    return (PyObject *)(pMario->obj);
+}
 
 static PyMemberDef PyMarioState_members[] = {
     {"ptr", T_OBJECT_EX, offsetof(PyMarioStateClass, ptr), 0, NULL},
@@ -148,6 +150,7 @@ static PyMethodDef PyMarioState_methods[] = {
     {"get_forward_vel", PyMario_get_forwardVel, METH_NOARGS, NULL},
     {"get_floor_class", PyMario_get_floor_class, METH_NOARGS, NULL},
     {"get_intended_mag", PyMario_get_intendedMag, METH_NOARGS, NULL},
+    {"get_mario_obj", PyMario_get_marioObj, METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
@@ -172,7 +175,7 @@ static PyModuleDef MarioModule = {
     NULL, NULL, NULL, NULL
 };
 
-static PyObject* PyInit_mario(void) {
+PyObject* PyInit_mario(void) {
     PyObject *pMario;
     PyMarioStateClass *pMarioState;
 
@@ -195,56 +198,29 @@ static PyObject* PyInit_mario(void) {
     }*/
 
     Py_INCREF(&PyMarioStateType);
-    pMarioState = PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
+    pMarioState = (PyMarioStateClass *)PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
     pMarioState->ptr = gMarioState;
-    PyModule_AddObject(pMario, "state", pMarioState);
+    pMarioState->obj = NULL;
+    PyModule_AddObject(pMario, "state", (PyObject *)pMarioState);
 
     gMarioState->pyState = pMarioState;
 
     #include "mario_python_actions.h"
     #include "mario_python_terrains.h"
 
+    fprintf(stdout, "mario module initialized\n");
+
     return pMario;
 }
 
-void python_init() {
-    PyObject *pName, *pSysPath, *pCwd, *pFunc;
-    char cwd[255];
+void python_init_mario() {
+    PyObject *pObject;
 
-    Py_SetProgramName( Py_DecodeLocale( "sm64pc", NULL ) );
-    PyImport_AppendInittab("mario", &PyInit_mario);   
-    object_python_init();
-    Py_Initialize();
-    fprintf(stdout, "python initialized\n");
+    Py_XDECREF(gMarioState->pyState->obj);
 
-    /* Load the mario module. */
-    /* TODO: Load from user dir? */
-    pSysPath = PySys_GetObject((char*)"path");
-    getcwd(cwd, 255);
-    pCwd = PyUnicode_FromString(cwd);
-    PyList_Append(pSysPath, pCwd);
-    Py_DECREF(pCwd);
-    pName = PyUnicode_DecodeFSDefault( "sm64" );
-    /* TODO: Error checking of pName left out */
+    pObject = object_python_wrap(gMarioState->marioObj);
 
-    gMarioModule = PyImport_Import( pName );
-    if (PyErr_Occurred()) {
-        fprintf( stderr, "during setup:\n" );
-        PyErr_Print();
-    }
-
-    pFunc = PyObject_GetAttrString(gMarioModule, "mario_init");
-    if (pFunc && PyCallable_Check(pFunc)) {
-        PyObject_CallObject(pFunc, NULL);
-        if (PyErr_Occurred()) {
-            fprintf( stderr, "during init:\n" );
-            PyErr_Print();
-        }
-    }
-
-    assert( NULL != gMarioModule );
-
-    fprintf(stdout, "mario module loaded\n");
+    gMarioState->pyState->obj = (PyObjectClass *)pObject;
 }
 
 u32 wrap_mario_action(struct MarioState *m, u32 action, u32 arg, const char *method) {
@@ -255,7 +231,8 @@ u32 wrap_mario_action(struct MarioState *m, u32 action, u32 arg, const char *met
     if (pFunc && PyCallable_Check(pFunc)) {
 
         pArgs = PyTuple_New(3);
-        PyTuple_SetItem(pArgs, 0, m->pyState);
+        Py_INCREF(m->pyState);
+        PyTuple_SetItem(pArgs, 0, (PyObject *)m->pyState);
         pValue = PyLong_FromUnsignedLong( action );
         PyTuple_SetItem(pArgs, 1, pValue);
         pValue = PyLong_FromUnsignedLong( arg );

@@ -1936,6 +1936,10 @@ void init_mario(void) {
 
         capObject->oMoveAngleYaw = 0;
     }
+
+    #ifdef USE_PYTHON
+    python_init_mario();
+    #endif /* USE_PYTHON */
 }
 
 void init_mario_from_save_file(void) {

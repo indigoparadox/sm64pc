@@ -283,6 +283,10 @@ struct MarioAnimation
     u8 padding[4];
 };
 
+#ifdef USE_PYTHON
+struct _PyMarioStateClass;
+#endif /* USE_PYTHON */
+
 struct MarioState
 {
     /*0x00*/ u16 unk00;
@@ -346,7 +350,7 @@ struct MarioState
     /*0xC0*/ f32 quicksandDepth;
     /*0xC4*/ f32 unkC4;
     #ifdef USE_PYTHON
-    PyObject* pyState;
+    struct _PyMarioStateClass *pyState;
     #endif /* USE_PYTHON */
 };
 
