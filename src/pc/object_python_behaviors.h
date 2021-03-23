@@ -2,7 +2,7 @@
 #include "behavior_data.h"
 
 #define OBJECTS_ENCAPSULATE( bhv ) \
-    pBhv = PyCapsule_New((void *)bhv, "objects.behavior", NULL); \
+    pBhv = PyCapsule_New((void *)bhv, "objects.Behavior", NULL); \
     if (0 > PyModule_AddObject(pObjects, #bhv, pBhv)) { \
         Py_XDECREF(pBhv); \
         Py_DECREF(pObjects); \

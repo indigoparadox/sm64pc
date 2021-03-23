@@ -34,13 +34,13 @@ def set_mario_action_moving( mario_state, action, action_arg ):
     if mario.ACT_WALKING == action:
         if floorClass != mario.SURFACE_CLASS_VERY_SLIPPERY:
             if 0.0 <= forwardVel and forwardVel < mag:
-                mario.state.set_forward_vel( mag )
+                mario_state.set_forward_vel( mag )
 
         #mario.->marioObj->oMarioWalkingPitch = 0
 
     elif mario.ACT_HOLD_WALKING == action:
         if 0.0 <= forwardVel and forwardVel < mag / 2.0:
-            mario.state.set_forward_vel( mag / 2.0 )
+            mario_state.set_forward_vel( mag / 2.0 )
 
     elif mario.ACT_BEGIN_SLIDING == action:
         # Fun fact: if this doesn't get a chance to run and change the
@@ -48,7 +48,7 @@ def set_mario_action_moving( mario_state, action, action_arg ):
         # then the system will hang in a loop later in
         # mario_execute_action().
         # DEBUG
-        spawn_yellow_coin( mario_state.get_mario_obj() )
+        #spawn_yellow_coin( mario_state.get_mario_obj() )
         # END DEBUG
         if (mario_state.facing_downhill(0)):
             action = mario.ACT_BUTT_SLIDE
@@ -74,6 +74,8 @@ def set_mario_action( mario_state, action, arg ):
     # DEBUG
     mario_obj = mario_state.get_mario_obj()
     print( mario_obj )
+    mario_obj = mario_state.get_mario_obj()
+    print( mario_obj )
     spawn_yellow_coin( mario_obj )
     # END DEBUG
 
@@ -95,13 +97,13 @@ def set_mario_action( mario_state, action, arg ):
 
     # Set action flags.
     mario_state.unset_flag( mario.MARIO_ACTION_SOUND_PLAYED | mario.MARIO_MARIO_SOUND_PLAYED )
-    if not (mario.state.get_action() & mario.ACT_FLAG_AIR):
-        mario.state.unset_flag( mario.MARIO_UNKNOWN_18 )
+    if not (mario_state.get_action() & mario.ACT_FLAG_AIR):
+        mario_state.unset_flag( mario.MARIO_UNKNOWN_18 )
 
-    logger.debug( "intializing action infoaaaa..." )
+    logger.debug( "intializing action info..." )
 
     # Initialize the action information.
-    mario_state.set_prev_action( mario.state.get_action() )
+    mario_state.set_prev_action( mario_state.get_action() )
     mario_state.set_action( action )
     mario_state.set_action_arg( arg )
     mario_state.set_action_state( 0 )

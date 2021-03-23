@@ -12,7 +12,7 @@
 extern PyObject *gMarioModule;
 
 static PyMemberDef PyObject_members[] = {
-    {"ptr", T_OBJECT_EX, offsetof(PyObjectClass, ptr), 0, NULL},
+    {"_native_object", T_OBJECT_EX, offsetof(PyObjectClass, native_object), 0, NULL},
     {NULL}
 };
 
@@ -27,20 +27,40 @@ PyObject_spawn_at(PyObjectClass *self, PyObject *args) {
 */
 
 PyObject* PyObject_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) {
-    struct Object *obj_src = arg->ptr,
-        *obj_dest = self->ptr;
+    struct Object *obj_src = NULL,
+        *obj_dest = NULL;
+
+    assert(NULL != arg->native_object);
+    assert(NULL != self->native_object);
+
+    obj_src = PyCapsule_GetPointer(arg->native_object, "objects.Object._native_object");
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during copy_pos_and_angle src:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    obj_dest = PyCapsule_GetPointer(self->native_object, "objects.Object._native_object");
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during copy_pos_and_angle dest:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
 
     assert(NULL != obj_src);
     assert(NULL != obj_dest);
 
     obj_copy_pos_and_angle(obj_dest, obj_src);
 
+    assert(NULL != arg->native_object);
+    assert(NULL != self->native_object);
+
     Py_RETURN_NONE;
 }
 
 static PyMethodDef PyObject_methods[] = {
     //{"spawn_at", PyObject_spawn_at, METH_VARARGS, NULL},
-    {"copy_pos_and_angle", PyObject_copy_pos_and_angle, METH_O, NULL},
+    {"copy_pos_and_angle", (PyCFunction)PyObject_copy_pos_and_angle, METH_O, NULL},
     {NULL, NULL, 0, NULL}
 };
 
@@ -54,6 +74,8 @@ PyObject_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
     s32 model = 0;
     BehaviorScript *bhv = NULL;
     int res = 0;
+    struct Object *parent_obj = NULL;
+    struct Object *self_obj = NULL;
 
     res = PyArg_ParseTuple(args, "|OlO", &pParent, &model, &pBhv);
     /*if (NULL != pParent) {
@@ -62,36 +84,40 @@ PyObject_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
     if (!res || PyErr_Occurred()) {
         fprintf(stderr, "during spawn:\n");
         PyErr_Print();
-        Py_DECREF(args);
-        return NULL;
+        //Py_DECREF(args);
+        return 0;
     }
-    Py_DECREF(args);
+    //Py_DECREF(args);
 
-    if (NULL != bhv) {
-        bhv = PyCapsule_GetPointer(pBhv, "objects.behavior");
+    if (NULL != pBhv) {
+        bhv = PyCapsule_GetPointer(pBhv, "objects.Behavior");
         if (PyErr_Occurred()) {
             fprintf(stderr, "during spawn:\n");
             PyErr_Print();
             //Py_DECREF(pBhv);
-            return NULL;
+            return 0;
         }
     }
 
-    //assert(NULL != pParent->ptr);
-    //assert(NULL != bhv);
-
-    /*Py_INCREF(&PyObjectType);
-    Py_INCREF(self);
-    pObjectOut = (PyObjectClass *)PyObject_CallObject((PyObject *)&PyObjectType, NULL);
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "during spawn:\n");
-        PyErr_Print();
-        Py_DECREF(pBhv);
-        Py_RETURN_NONE;
-    }*/
-
     if (NULL != pParent && NULL != bhv && 0 < model) {
-        self->ptr = spawn_object_at_origin(pParent->ptr, 0, model, bhv);
+        assert(NULL != pParent->native_object);
+        parent_obj = PyCapsule_GetPointer(pParent->native_object, "objects.Object._native_object");
+        if (PyErr_Occurred()) {
+            fprintf(stderr, "during spawn:\n");
+            PyErr_Print();
+            return 0;
+        }
+        assert(NULL != parent_obj);
+        self_obj = spawn_object_at_origin(parent_obj, 0, model, bhv);
+        assert(NULL != self_obj);
+        self->native_object = PyCapsule_New(self_obj, "objects.Object._native_object", NULL);
+        if (PyErr_Occurred()) {
+            fprintf(stderr, "during spawn:\n");
+            PyErr_Print();
+            return 0;
+        }
+        assert(NULL != self->native_object);
+        Py_INCREF(self->native_object);
     }
 
     return 0;
@@ -139,35 +165,16 @@ PyObject* PyInit_objects(void) {
 
     Py_INCREF(&PyObjectType);
     if( 0 > PyModule_AddObject(pObjects, "Object", (PyObject *)&PyObjectType)) {
+        fprintf(stderr, "unable to add Object to objects module\n");
         Py_DECREF(&PyObjectType);
         Py_DECREF(pObjects);
         return NULL;
     }
 
-    /* Py_INCREF(&PyMarioStateType);
-    pMarioState = PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
-    pMarioState->ptr = gMarioState;
-    PyModule_AddObject(pMario, "state", pMarioState); 
-
-    gMarioState->pyState = pMarioState;
-
-    #include "mario_python_actions.h"
-    #include "mario_python_terrains.h" */
-
     fprintf(stdout, "objects module initialized\n");
 
     return pObjects;
 }
-
-/*
-void object_python_init() {
-    if (0 > PyImport_AppendInittab("mario", &PyInit_objects)) {
-        fprintf(stderr, "could not add objects to inittab\n");
-        return;
-    }
-    fprintf(stdout, "object module loaded\n");
-}
-*/
 
 PyObject* object_python_wrap(struct Object *obj) {
     PyObjectClass *pObjectOut;
@@ -175,13 +182,16 @@ PyObject* object_python_wrap(struct Object *obj) {
     assert(NULL != obj);
 
     pObjectOut = (PyObjectClass *)PyObject_CallObject((PyObject *)&PyObjectType, NULL);
-    pObjectOut->ptr = obj;
-    if (NULL == pObjectOut->ptr) {
-        Py_XDECREF( pObjectOut );
-        fprintf(stderr, "unable to spawn object\n" );
+    assert(NULL == pObjectOut->native_object);
+    pObjectOut->native_object = PyCapsule_New(obj, "objects.Object._native_object", NULL);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during spawn:\n");
+        PyErr_Print();
         Py_RETURN_NONE;
     }
+    assert(NULL != pObjectOut->native_object);
     Py_INCREF(pObjectOut);
+    Py_INCREF(pObjectOut->native_object);
     
     return (PyObject *)pObjectOut;
 }

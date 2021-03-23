@@ -8,7 +8,7 @@
 
 typedef struct _PyObjectClass {
     PyObject_HEAD
-    struct Object *ptr;
+    PyObject *native_object;
 } PyObjectClass;
 
 PyObject* PyInit_objects(void);

@@ -16,22 +16,36 @@ extern struct MarioState *gMarioState;
 #define MARIO_SET( var, type, py_getter ) \
     static PyObject * \
     PyMario_set_ ## var(PyMarioStateClass *self, PyObject *args) { \
+        struct MarioState *mario_state = NULL; \
         type var; \
-        var = py_getter( args ); \
+        var = py_getter(args); \
         if (PyErr_Occurred()) { \
             fprintf(stderr, "during set " #var ":\n"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
-        gMarioState->var = var; \
+        mario_state = PyCapsule_GetPointer(self->native_mario_state, "mario.MarioState._native_mario_state"); \
+        if (PyErr_Occurred()) { \
+            fprintf(stderr, "during set " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        mario_state->var = var; \
         Py_RETURN_NONE; \
     }
 
 #define MARIO_GET( var, type, c_getter ) \
     static PyObject * \
-    PyMario_get_ ## var(PyMarioStateClass *self) { \
+    PyMario_get_ ## var(const PyMarioStateClass *self) { \
+        struct MarioState *mario_state = NULL; \
         PyObject *var; \
-        var = c_getter( gMarioState->var ); \
+        mario_state = PyCapsule_GetPointer(self->native_mario_state, "mario.MarioState._native_mario_state"); \
+        if (PyErr_Occurred()) { \
+            fprintf(stderr, "during get " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        var = c_getter(mario_state->var); \
         if (PyErr_Occurred()) { \
             fprintf( stderr, "during get " #var ":\n" ); \
             PyErr_Print(); \
@@ -71,15 +85,14 @@ PyMario_set_flag(PyObject *self, PyObject *arg) {
 }
 
 static PyObject *
-PyMario_get_marioObj(PyObject *self) {
-    PyMarioStateClass *pMario = (PyMarioStateClass *)self;
-    assert(NULL != pMario->obj);
-    return (PyObject *)(pMario->obj);
+PyMario_get_marioObj(PyMarioStateClass *self) {
+    assert(NULL != self->mario_object);
+    return (PyObject *)(self->mario_object);
 }
 
 static PyMemberDef PyMarioState_members[] = {
-    {"obj", T_OBJECT_EX, offsetof(PyMarioStateClass, obj), 0, NULL},
-    {"ptr", T_OBJECT_EX, offsetof(PyMarioStateClass, ptr), 0, NULL},
+    {"_mario_object", T_OBJECT_EX, offsetof(PyMarioStateClass, mario_object), 0, NULL},
+    {"_native_object", T_OBJECT_EX, offsetof(PyMarioStateClass, native_mario_state), 0, NULL},
     {NULL}
 };
 
@@ -95,11 +108,11 @@ MARIO_GET( forwardVel, double, PyFloat_FromDouble );
 MARIO_GET( intendedMag, double, PyFloat_FromDouble );
 
 static PyObject *
-PyMario_facing_downhill(PyObject *self, PyObject *arg) {
-    PyMarioStateClass *pm = (PyMarioStateClass *)self;
+PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
     s32 turnYaw;
     s32 res;
     PyObject *pRes;
+    struct MarioState *mario_state = NULL;
     
     turnYaw = PyLong_AsLong( arg );
     if (PyErr_Occurred()) {
@@ -108,10 +121,17 @@ PyMario_facing_downhill(PyObject *self, PyObject *arg) {
         Py_RETURN_NONE;
     }
 
-    res = mario_facing_downhill(pm->ptr, turnYaw);
+    mario_state = PyCapsule_GetPointer(self->native_mario_state, "mario.MarioState._native_mario_state");
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during facing_downhill:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    res = mario_facing_downhill(mario_state, turnYaw);
     pRes = PyLong_FromLong( res );
     if (PyErr_Occurred()) {
-        fprintf( stderr, "during facing_downhill:\n" );
+        fprintf(stderr, "during facing_downhill:\n");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -120,16 +140,23 @@ PyMario_facing_downhill(PyObject *self, PyObject *arg) {
 }
 
 static PyObject *
-PyMario_get_floor_class(PyObject *self) {
-    PyMarioStateClass *pm = (PyMarioStateClass *)self;
+PyMario_get_floor_class(PyMarioStateClass *self) {
     s32 floorClass;
     PyObject *pRes;
+    struct MarioState *mario_state = NULL;
+
+    mario_state = PyCapsule_GetPointer(self->native_mario_state, "mario.MarioState._native_mario_state");
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during floor_class:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
     
-    floorClass = mario_get_floor_class(pm->ptr);
+    floorClass = mario_get_floor_class(mario_state);
     
     pRes = PyLong_FromLong( floorClass );
     if (PyErr_Occurred()) {
-        fprintf( stderr, "during floor_class:\n" );
+        fprintf(stderr, "during floor_class:\n");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -178,7 +205,7 @@ static PyModuleDef MarioModule = {
 
 PyObject* PyInit_mario(void) {
     PyObject *pMario;
-    PyMarioStateClass *pMarioState;
+    //PyMarioStateClass *pMarioState;
 
     if(0 > PyType_Ready( &PyMarioStateType)) {
         fprintf( stderr, "type not ready?\n" );
@@ -199,12 +226,12 @@ PyObject* PyInit_mario(void) {
     }*/
 
     Py_INCREF(&PyMarioStateType);
-    pMarioState = (PyMarioStateClass *)PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
-    pMarioState->ptr = gMarioState;
-    pMarioState->obj = NULL;
-    PyModule_AddObject(pMario, "state", (PyObject *)pMarioState);
+    /*pMarioState = (PyMarioStateClass *)PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
+    pMarioState->native_object = PyCapsule_New(gMarioState, "objects.Object._native_object");
+    pMarioState->mario_object = NULL;
+    PyModule_AddObject(pMario, "state", (PyObject *)pMarioState);*/
 
-    gMarioState->pyState = pMarioState;
+    gMarioState->pyState = NULL;
 
     #include "mario_python_actions.h"
     #include "mario_python_terrains.h"
@@ -215,33 +242,48 @@ PyObject* PyInit_mario(void) {
 }
 
 void python_init_mario() {
-    PyObject *pObject;
+    PyObject *pObject = NULL;
+    PyMarioStateClass *pMarioState = NULL;
 
-    Py_XDECREF(gMarioState->pyState->obj);
+    if (NULL == gMarioState->pyState) {
+        fprintf(stdout, "setting up mario python state...\n");
+        Py_INCREF(&PyMarioStateType);
+        pMarioState = (PyMarioStateClass *)PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
+        pMarioState->native_mario_state = PyCapsule_New(gMarioState, "mario.MarioState._native_mario_state", NULL);
+        pMarioState->mario_object = NULL;
+        gMarioState->pyState = pMarioState;
+    }
+
+    Py_XDECREF(gMarioState->pyState->mario_object);
 
     pObject = object_python_wrap(gMarioState->marioObj);
 
-    gMarioState->pyState->obj = (PyObjectClass *)pObject;
+    gMarioState->pyState->mario_object = (PyObjectClass *)pObject;
+
+    assert(NULL != gMarioState->pyState->mario_object);
 }
 
 u32 wrap_mario_action(struct MarioState *m, u32 action, u32 arg, const char *method) {
     PyObject *pFunc, *pArgs, *pValue;
     u32 retval = 0;
 
+    assert(NULL != gMarioState->pyState->mario_object);
+    assert(NULL != m->pyState->mario_object);
+
     pFunc = PyObject_GetAttrString(gMarioModule, method);
     if (pFunc && PyCallable_Check(pFunc)) {
 
         pArgs = PyTuple_New(3);
-        Py_INCREF(m->pyState);
+        //Py_INCREF(m->pyState);
         PyTuple_SetItem(pArgs, 0, (PyObject *)m->pyState);
-        pValue = PyLong_FromUnsignedLong( action );
+        pValue = PyLong_FromUnsignedLong(action);
         PyTuple_SetItem(pArgs, 1, pValue);
-        pValue = PyLong_FromUnsignedLong( arg );
+        pValue = PyLong_FromUnsignedLong(arg);
         PyTuple_SetItem(pArgs, 2, pValue);
         pValue = PyObject_CallObject(pFunc, pArgs);
-        Py_DECREF(pArgs);
+        //Py_DECREF(pArgs);
         if(NULL != pValue) {
-            retval = PyLong_AsLong( pValue );
+            retval = PyLong_AsLong(pValue);
             Py_DECREF(pValue);
         }
     }

@@ -12,8 +12,8 @@ struct _PyObjectClass;
 
 typedef struct _PyMarioStateClass {
     PyObject_HEAD
-    struct MarioState *ptr;
-    struct _PyObjectClass *obj;
+    PyObject *native_mario_state;
+    struct _PyObjectClass *mario_object;
 } PyMarioStateClass;
 
 PyObject* PyInit_mario(void);
