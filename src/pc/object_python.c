@@ -76,11 +76,15 @@ PyObject_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
     int res = 0;
     struct Object *parent_obj = NULL;
     struct Object *self_obj = NULL;
+    u32 test1 = 0;
 
-    res = PyArg_ParseTuple(args, "|OlO", &pParent, &model, &pBhv);
+    res = PyArg_ParseTuple(args, "|lOlO", &test1, &pParent, &model, &pBhv);
     /*if (NULL != pParent) {
         Py_INCREF(pParent);
     }*/
+    if(NULL != pParent) {
+        fprintf(stdout, "object init parent: 0x%016llx containing 0x%016llx\n", pParent, pParent->native_object);
+    }
     if (!res || PyErr_Occurred()) {
         fprintf(stderr, "during spawn:\n");
         PyErr_Print();

@@ -4,6 +4,13 @@ import logging
 import mario
 import objects
 
+import ctypes
+
+def convert_capsule_to_int(capsule):
+    ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
+    ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
+    return ctypes.pythonapi.PyCapsule_GetPointer(capsule, b"objects.Object._native_object")
+
 logger = logging.getLogger( '' )
 
 def mario_init():
@@ -11,8 +18,11 @@ def mario_init():
     logger.debug( 'logger active' )
 
 def spawn_yellow_coin( parent_obj ):
-    logger.debug( "spawning coin near %s", parent_obj )
-    coin = objects.Object( parent_obj, objects.MODEL_YELLOW_COIN, objects.bhvMovingYellowCoin )
+
+    print( "passed to spawn: {} containing {} ({})".format( parent_obj, parent_obj._native_object, convert_capsule_to_int( parent_obj._native_object ) ) )
+
+    native_parent = parent_obj._native_object
+    coin = objects.Object( 0, parent_obj, objects.MODEL_YELLOW_COIN, objects.bhvMovingYellowCoin )
     coin.copy_pos_and_angle( parent_obj )
     #coin->oForwardVel = random_float() * 20;
     #coin->oVelY = random_float() * 40 + 20;
@@ -30,6 +40,9 @@ def set_mario_action_moving( mario_state, action, action_arg ):
     mag = 8.0
 
     logger.debug( "moving" )
+
+    mario_obj = mario_state.get_mario_obj()
+    print( "passed to move: {} containing {} ({})".format( mario_obj, mario_obj._native_object, convert_capsule_to_int( mario_obj._native_object ) ) )
 
     if mario.ACT_WALKING == action:
         if floorClass != mario.SURFACE_CLASS_VERY_SLIPPERY:
@@ -73,9 +86,11 @@ def set_mario_action( mario_state, action, arg ):
 
     # DEBUG
     mario_obj = mario_state.get_mario_obj()
-    print( mario_obj )
+    print( "try one: {} containing {} ({})".format(
+        mario_obj, mario_obj._native_object, convert_capsule_to_int( mario_obj._native_object ) ) )
     mario_obj = mario_state.get_mario_obj()
-    print( mario_obj )
+    print( "try two: {} containing {} ({})".format(
+        mario_obj, mario_obj._native_object, convert_capsule_to_int( mario_obj._native_object ) ) )
     spawn_yellow_coin( mario_obj )
     # END DEBUG
 

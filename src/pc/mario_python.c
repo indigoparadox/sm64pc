@@ -87,6 +87,8 @@ PyMario_set_flag(PyObject *self, PyObject *arg) {
 static PyObject *
 PyMario_get_marioObj(PyMarioStateClass *self) {
     assert(NULL != self->mario_object);
+    assert(NULL != self->mario_object->native_object);
+    assert(PyCapsule_IsValid(self->mario_object->native_object, "objects.Object._native_object"));
     return (PyObject *)(self->mario_object);
 }
 
@@ -113,6 +115,9 @@ PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
     s32 res;
     PyObject *pRes;
     struct MarioState *mario_state = NULL;
+
+    assert(PyCapsule_IsValid(self->mario_object->native_object, "objects.Object._native_object"));
+    assert(PyCapsule_IsValid(self->native_mario_state, "mario.MarioState._native_mario_state"));
     
     turnYaw = PyLong_AsLong( arg );
     if (PyErr_Occurred()) {
@@ -151,6 +156,9 @@ PyMario_get_floor_class(PyMarioStateClass *self) {
         PyErr_Print();
         Py_RETURN_NONE;
     }
+
+    assert(PyCapsule_IsValid(self->mario_object->native_object, "objects.Object._native_object"));
+    assert(PyCapsule_IsValid(self->native_mario_state, "mario.MarioState._native_mario_state"));
     
     floorClass = mario_get_floor_class(mario_state);
     
@@ -251,7 +259,10 @@ void python_init_mario() {
         pMarioState = (PyMarioStateClass *)PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
         pMarioState->native_mario_state = PyCapsule_New(gMarioState, "mario.MarioState._native_mario_state", NULL);
         pMarioState->mario_object = NULL;
+
         gMarioState->pyState = pMarioState;
+
+        assert(PyCapsule_IsValid(pMarioState->native_mario_state, "mario.MarioState._native_mario_state"));
     }
 
     Py_XDECREF(gMarioState->pyState->mario_object);
@@ -259,6 +270,9 @@ void python_init_mario() {
     pObject = object_python_wrap(gMarioState->marioObj);
 
     gMarioState->pyState->mario_object = (PyObjectClass *)pObject;
+    Py_INCREF(gMarioState->pyState->mario_object);
+    Py_INCREF(gMarioState->pyState->mario_object->native_object);
+    assert(PyCapsule_IsValid(gMarioState->pyState->mario_object->native_object, "objects.Object._native_object"));
 
     assert(NULL != gMarioState->pyState->mario_object);
 }
@@ -269,6 +283,9 @@ u32 wrap_mario_action(struct MarioState *m, u32 action, u32 arg, const char *met
 
     assert(NULL != gMarioState->pyState->mario_object);
     assert(NULL != m->pyState->mario_object);
+
+    assert(PyCapsule_IsValid(m->pyState->mario_object->native_object, "objects.Object._native_object"));
+    assert(PyCapsule_IsValid(m->pyState->native_mario_state, "mario.MarioState._native_mario_state"));
 
     pFunc = PyObject_GetAttrString(gMarioModule, method);
     if (pFunc && PyCallable_Check(pFunc)) {
