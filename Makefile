@@ -213,7 +213,7 @@ VERSION_ASFLAGS := --defsym AVOID_UB=1
 COMPARE := 0
 
 ifeq ($(USE_PYTHON),1)
-  VERSION_CFLAGS := $(VERSION_CFLAGS) -DUSE_PYTHON -I/usr/include/python3.6m
+  VERSION_CFLAGS := $(VERSION_CFLAGS) -DUSE_PYTHON
 endif
 
 ifeq ($(TARGET_WEB),1)
@@ -497,6 +497,10 @@ SEG_FILES := $(SEGMENT_ELF_FILES) $(ACTOR_ELF_FILES) $(LEVEL_ELF_FILES)
 ##################### Compiler Options #######################
 INCLUDE_CFLAGS := -I include -I $(BUILD_DIR) -I $(BUILD_DIR)/include -I src -I .
 ENDIAN_BITWIDTH := $(BUILD_DIR)/endian-and-bitwidth
+
+ifeq ($(USE_PYTHON),1)
+  INCLUDE_CFLAGS := $(INCLUDE_CFLAGS) -I/usr/include/python3.6m
+endif
 
 # Huge deleted N64 section was here
 
