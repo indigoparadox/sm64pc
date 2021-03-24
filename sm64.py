@@ -3,6 +3,7 @@ import logging
 
 import mario
 import objects
+import levels
 
 logger = logging.getLogger( '' )
 
@@ -102,7 +103,7 @@ def set_mario_action_airborne( mario_state, action, action_arg ):
     mario.ACT_HOLD_JUMP == action:
         # DEBUG
         #if action & mario.ACT_FLAG_ATTACKING:
-        spawn_yellow_coins( mario_state.mario_object, 6 )
+        #spawn_yellow_coins( mario_state.mario_object, 6 )
         # END DEBUG
         mario_state.set_anim_id( -1 )
         mario_state.set_y_vel_based_on_fspeed( 42.0, 0.25 )
@@ -193,6 +194,11 @@ def set_mario_action( mario_state, action, arg ):
     logger.debug( "%lu vs %lu",
         (mario.ACT_GROUP_MASK & mario.ACT_GROUP_AIRBORNE),
         (action & mario.ACT_GROUP_MASK) )
+
+    # DEBUG
+    #if action & mario.ACT_FLAG_ATTACKING:
+    #    levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
+    # END DEBUG
 
     # Filter based on action group.
     if (mario.ACT_GROUP_MASK & mario.ACT_GROUP_MOVING) == (action & mario.ACT_GROUP_MASK):

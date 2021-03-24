@@ -65,6 +65,7 @@ void game_loop_one_iteration(void);
 #ifdef USE_PYTHON
 #include "mario_python.h"
 #include "object_python.h"
+#include "level_python.h"
 
 extern PyObject *gMarioModule;
 
@@ -80,6 +81,10 @@ void python_init() {
     }
     if (0 > PyImport_AppendInittab("objects", &PyInit_objects)) {
         fprintf(stderr, "could not add objects to inittab\n");
+        return;
+    }
+    if (0 > PyImport_AppendInittab("levels", &PyInit_levels)) {
+        fprintf(stderr, "could not add levels to inittab\n");
         return;
     }
     Py_Initialize();
