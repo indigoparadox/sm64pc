@@ -548,6 +548,14 @@ struct Object *spawn_object_at_origin(struct Object *parent, UNUSED s32 unusedAr
     return obj;
 }
 
+#ifdef USE_PYTHON
+
+struct Object *spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavior) {
+    return wrap_spawn_object(parent, model, behavior);
+}
+
+#else
+
 struct Object *spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavior) {
     struct Object *obj;
 
@@ -556,6 +564,8 @@ struct Object *spawn_object(struct Object *parent, s32 model, const BehaviorScri
 
     return obj;
 }
+
+#endif /* USE_PYTHON */
 
 struct Object *try_to_spawn_object(s16 offsetY, f32 scale, struct Object *parent, s32 model,
                                    const BehaviorScript *behavior) {

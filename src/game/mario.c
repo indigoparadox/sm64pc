@@ -1,7 +1,7 @@
 #include <ultra64.h>
 
 #ifdef USE_PYTHON
-#include <Python.h>
+#include "pc/mario_python.h"
 #endif /* USE_PYTHON */
 
 #include "sm64.h"
@@ -772,6 +772,12 @@ void set_steep_jump_action(struct MarioState *m) {
     drop_and_set_mario_action(m, ACT_STEEP_JUMP, 0);
 }
 
+#ifdef USE_PYTHON
+u32 set_mario_action(struct MarioState *m, u32 action, u32 arg) {
+    return wrap_mario_action(m, action, arg, "set_mario_action");
+}
+#else
+
 /**
  * Set's Marios vertical speed from his forward speed.
  */
@@ -906,7 +912,6 @@ static u32 set_mario_action_airborne(struct MarioState *m, u32 action, u32 actio
     return action;
 }
 
-#ifndef USE_PYTHON
 /**
  * Transitions for a variety of moving actions.
  */
@@ -951,7 +956,6 @@ static u32 set_mario_action_moving(struct MarioState *m, u32 action, UNUSED u32 
 
     return action;
 }
-#endif /* USE_PYTHON */
 
 /**
  * Transition for certain submerged actions, which is actually just the metal jump actions.
@@ -990,11 +994,6 @@ static u32 set_mario_action_cutscene(struct MarioState *m, u32 action, UNUSED u3
     return action;
 }
 
-#ifdef USE_PYTHON
-u32 set_mario_action(struct MarioState *m, u32 action, u32 arg) {
-    return wrap_mario_action(m, action, arg, "set_mario_action");
-}
-#else
 /**
  * Puts Mario into a given action, putting Mario through the appropriate
  * specific function if needed.

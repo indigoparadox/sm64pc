@@ -74,17 +74,19 @@ PyObject* PyObject_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) {
     Py_RETURN_NONE;
 }
 
-OBJECT_SET( oForwardVel,        0x0C, f32, PyFloat_AsDouble );
-OBJECT_SET( oVelY,              0x0A, f32, PyFloat_AsDouble );
-OBJECT_SET( oMoveAngleYaw,      0x10, u32, PyLong_AsLong );
-OBJECT_SET( oMarioWalkingPitch, 0x10, u32, PyLong_AsLong );
+OBJECT_SET( oForwardVel,            0x0C, f32, PyFloat_AsDouble );
+OBJECT_SET( oVelY,                  0x0A, f32, PyFloat_AsDouble );
+OBJECT_SET( oMoveAngleYaw,          0x10, u32, PyLong_AsLong );
+OBJECT_SET( oMarioWalkingPitch,     0x10, u32, PyLong_AsLong );
+OBJECT_SET( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong );
 
 static PyMethodDef PyObject_methods[] = {
-    {"set_forward_vel",         (PyCFunction)PyObject_set_oForwardVel,          METH_O, NULL},
-    {"set_move_angle_yaw",      (PyCFunction)PyObject_set_oMoveAngleYaw,        METH_O, NULL},
-    {"set_vel_y",               (PyCFunction)PyObject_set_oVelY,                METH_O, NULL},
-    {"set_mario_walking_pitch", (PyCFunction)PyObject_set_oMarioWalkingPitch,   METH_O, NULL},
-    {"copy_pos_and_angle",      (PyCFunction)PyObject_copy_pos_and_angle,       METH_O, NULL},
+    {"set_forward_vel",             (PyCFunction)PyObject_set_oForwardVel,          METH_O, NULL},
+    {"set_move_angle_yaw",          (PyCFunction)PyObject_set_oMoveAngleYaw,        METH_O, NULL},
+    {"set_vel_y",                   (PyCFunction)PyObject_set_oVelY,                METH_O, NULL},
+    {"set_mario_walking_pitch",     (PyCFunction)PyObject_set_oMarioWalkingPitch,   METH_O, NULL},
+    {"set_mario_long_jump_is_slow", (PyCFunction)PyObject_set_oMarioLongJumpIsSlow, METH_O, NULL},
+    {"copy_pos_and_angle",          (PyCFunction)PyObject_copy_pos_and_angle,       METH_O, NULL},
     {NULL, NULL, 0, NULL}
 };
 
@@ -220,4 +222,49 @@ PyObject* object_python_wrap(struct Object *obj) {
     Py_INCREF(pObjectOut->native_object);
     
     return (PyObject *)pObjectOut;
+}
+
+struct Object *
+wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavior) {
+    PyObjectClass *pObjectOut = NULL;
+    PyObject *pFunc = NULL,
+        *pArgs = NULL,
+        *pParent = NULL,
+        *pModel = NULL,
+        *pBhv = NULL;
+    struct Object *object_out = NULL;
+
+    pFunc = PyObject_GetAttrString(gMarioModule, "spawn_object");
+    if (pFunc && PyCallable_Check(pFunc)) {
+
+        pArgs = PyTuple_New(3);
+        
+        /* The tuple will DECREF this for us later. */
+        pParent = object_python_wrap( parent );
+        PyTuple_SetItem(pArgs, 0, pParent);
+        
+        /* The tuple will DECREF this for us later. */
+        pModel = PyLong_FromLong(model);
+        PyTuple_SetItem(pArgs, 1, pModel);
+
+        /* The tuple will DECREF this for us later. */
+        pBhv = PyCapsule_New((void *)behavior, "objects.Behavior", NULL);
+        PyTuple_SetItem(pArgs, 2, pBhv);
+
+        pObjectOut = (PyObjectClass *)PyObject_CallObject(pFunc, pArgs);
+        
+        Py_XDECREF(pArgs);
+        if(NULL != pObjectOut) {
+            object_out = PyCapsule_GetPointer( pObjectOut->native_object, "objects.Object._native_object");
+            Py_DECREF(pObjectOut);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+   
+    Py_XDECREF(pFunc);
+
+    return object_out;
 }
