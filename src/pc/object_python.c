@@ -13,12 +13,10 @@ extern PyObject *gMarioModule;
 
 typedef struct _PyObjectClass {
     PyObject_HEAD
-    long long test;
     PyObject *native_object;
 } PyObjectClass;
 
 static PyMemberDef PyObject_members[] = {
-    {"_test", T_OBJECT_EX, offsetof(PyObjectClass, test), 0, NULL},
     {"_native_object", T_OBJECT_EX, offsetof(PyObjectClass, native_object), READONLY, NULL},
     {NULL}
 };
@@ -99,9 +97,8 @@ PyObject_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
     int res = 0;
     struct Object *parent_obj = NULL;
     struct Object *self_obj = NULL;
-    u32 test1 = 0;
 
-    res = PyArg_ParseTuple(args, "|lOlO", &test1, &pParent, &model, &pBhv);
+    res = PyArg_ParseTuple(args, "|OlO", &pParent, &model, &pBhv);
     /*if (NULL != pParent) {
         Py_INCREF(pParent);
     }*/

@@ -6,6 +6,9 @@
 
 #include "sm64.h"
 #include "game/mario.h"
+#include "game/mario_step.h"
+#include "engine/behavior_script.h"
+#include "engine/math_util.h"
 #include "object_python.h"
 
 PyObject *gMarioModule;
@@ -20,6 +23,12 @@ typedef struct _PyMarioStateClass {
     PyObject *native_state;
     struct _PyObjectClass *mario_object;
 } PyMarioStateClass;
+
+static PyMemberDef PyMarioState_members[] = {
+    {"_native_state", T_OBJECT_EX, offsetof(PyMarioStateClass, native_state), 0, NULL},
+    {"mario_object", T_OBJECT_EX, offsetof(PyMarioStateClass, mario_object), READONLY, NULL},
+    {NULL}
+};
 
 #define MARIO_SET( var, type, py_getter ) \
     static PyObject * \
@@ -62,6 +71,56 @@ typedef struct _PyMarioStateClass {
         return var; \
     }
 
+#define MARIO_SET_VEC( var, type, py_fmt ) \
+    static PyObject * \
+    PyMario_set_ ## var(PyMarioStateClass *self, PyObject *args) { \
+        struct MarioState *mario_state = NULL; \
+        u32 idx = 0; \
+        type val = 0; \
+        int res = 0; \
+        res = PyArg_ParseTuple(args, "l" #py_fmt, &idx, &val); \
+        if (!res || PyErr_Occurred()) { \
+            fprintf(stderr, "during set " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state"); \
+        if (PyErr_Occurred()) { \
+            fprintf(stderr, "during set " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        mario_state->var[idx] = val; \
+        Py_RETURN_NONE; \
+    }
+
+#define MARIO_GET_VEC( var, type, c_getter ) \
+    static PyObject * \
+    PyMario_get_ ## var(PyMarioStateClass *self, PyObject *arg) { \
+        struct MarioState *mario_state = NULL; \
+        u32 idx = 0; \
+        PyObject *var = 0; \
+        idx = PyLong_AsLong(arg); \
+        if (PyErr_Occurred()) { \
+            fprintf(stderr, "mario: during get " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state"); \
+        if (PyErr_Occurred()) { \
+            fprintf(stderr, "mario: during get " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        var = c_getter(mario_state->var[idx]); \
+        if (PyErr_Occurred()) { \
+            fprintf( stderr, "mario: during get " #var ":\n" ); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        return var; \
+    }
+
 static PyObject *
 PyMario_unset_flag(PyObject *self, PyObject *arg) {
     unsigned long flag;
@@ -91,23 +150,6 @@ PyMario_set_flag(PyObject *self, PyObject *arg) {
 
     Py_RETURN_NONE;
 }
-
-static PyMemberDef PyMarioState_members[] = {
-    {"_native_state", T_OBJECT_EX, offsetof(PyMarioStateClass, native_state), 0, NULL},
-    {"mario_object", T_OBJECT_EX, offsetof(PyMarioStateClass, mario_object), READONLY, NULL},
-    {NULL}
-};
-
-MARIO_SET( action, unsigned long, PyLong_AsUnsignedLong );
-MARIO_SET( prevAction, unsigned long, PyLong_AsUnsignedLong );
-MARIO_SET( actionArg, unsigned long, PyLong_AsUnsignedLong );
-MARIO_SET( actionState, unsigned short, PyLong_AsUnsignedLong );
-MARIO_SET( actionTimer, unsigned short, PyLong_AsUnsignedLong );
-MARIO_SET( forwardVel, double, PyFloat_AsDouble );
-
-MARIO_GET( action, unsigned long, PyLong_FromUnsignedLong );
-MARIO_GET( forwardVel, double, PyFloat_FromDouble );
-MARIO_GET( intendedMag, double, PyFloat_FromDouble );
 
 static PyObject *
 PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
@@ -172,21 +214,137 @@ PyMario_get_floor_class(PyMarioStateClass *self) {
     return pRes;
 }
 
+/*
+static PyObject *
+PyMario_set_vel(PyMarioStateClass *self, PyObject *args) {
+    struct MarioState *mario_state = NULL;
+    u32 idx = 0;
+    f32 val = 0;
+    int res = 0;
+
+    res = PyArg_ParseTuple(args, "lf", &idx, &val);
+    if (!res || PyErr_Occurred()) {
+        fprintf(stderr, "during setVel:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state");
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during get setVel:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    mario_state->vel[idx] = val;
+
+    Py_RETURN_NONE;
+}
+*/
+
+static PyObject *
+PyMario_set_y_vel_based_on_fspeed(PyMarioStateClass *self, PyObject *args) {
+    struct MarioState *mario_state = NULL;
+    f32 initialVelY = 0;
+    f32 multiplier = 0;
+    int res = 0;
+
+    res = PyArg_ParseTuple(args, "ff", &initialVelY, &multiplier);
+    if (!res || PyErr_Occurred()) {
+        fprintf(stderr, "during setVel:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state");
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during get setVel:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    // get_additive_y_vel_for_jumps is always 0 and a stubbed function.
+    // It was likely trampoline related based on code location.
+    mario_state->vel[1] = initialVelY + get_additive_y_vel_for_jumps() + mario_state->forwardVel * multiplier;
+
+    if (mario_state->squishTimer != 0 || mario_state->quicksandDepth > 1.0f) {
+        mario_state->vel[1] *= 0.5f;
+    }
+    
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+PyMario_set_forwardVel_all(PyMarioStateClass *self, PyObject *arg) {
+    struct MarioState *mario_state = NULL;
+    f32 forwardVel = 0;
+    
+    forwardVel = PyFloat_AsDouble(arg);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "mario: during set forwardVel_all:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state");
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "mario: during set forwardVel_all:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    mario_state->forwardVel = forwardVel;
+
+    mario_state->slideVelX = sins(mario_state->faceAngle[1]) * mario_state->forwardVel;
+    mario_state->slideVelZ = coss(mario_state->faceAngle[1]) * mario_state->forwardVel;
+
+    mario_state->vel[0] = (f32) mario_state->slideVelX;
+    mario_state->vel[2] = (f32) mario_state->slideVelZ;
+
+    Py_RETURN_NONE;
+}
+
+MARIO_SET( action, unsigned long, PyLong_AsUnsignedLong );
+MARIO_SET( prevAction, unsigned long, PyLong_AsUnsignedLong );
+MARIO_SET( actionArg, unsigned long, PyLong_AsUnsignedLong );
+MARIO_SET( actionState, unsigned short, PyLong_AsUnsignedLong );
+MARIO_SET( actionTimer, unsigned short, PyLong_AsUnsignedLong );
+MARIO_SET( wallKickTimer, unsigned char, PyLong_AsUnsignedLong );
+MARIO_SET( forwardVel, double, PyFloat_AsDouble );
+MARIO_SET( peakHeight, double, PyFloat_AsDouble );
+MARIO_SET_VEC( vel, float, "f" );
+MARIO_SET_VEC( faceAngle, short, "h" );
+
+MARIO_GET( action, unsigned long, PyLong_FromUnsignedLong );
+MARIO_GET( forwardVel, double, PyFloat_FromDouble );
+MARIO_GET( intendedMag, double, PyFloat_FromDouble );
+MARIO_GET( squishTimer, unsigned char, PyLong_FromLong );
+MARIO_GET( quicksandDepth, double, PyFloat_FromDouble );
+MARIO_GET_VEC( pos, float, PyFloat_FromDouble );
+
 static PyMethodDef PyMarioState_methods[] = {
-    {"set_action",          (PyCFunction)PyMario_set_action,         METH_O, NULL},
-    {"set_action_state",    (PyCFunction)PyMario_set_actionState,    METH_O, NULL},
-    {"set_prev_action",     (PyCFunction)PyMario_set_prevAction,     METH_O, NULL},
-    {"set_action_timer",    (PyCFunction)PyMario_set_actionTimer,    METH_O, NULL},
-    {"set_action_arg",      (PyCFunction)PyMario_set_actionArg,      METH_O, NULL},
-    {"unset_flag",          (PyCFunction)PyMario_unset_flag,         METH_O, NULL},
-    {"set_flag",            (PyCFunction)PyMario_set_flag,           METH_O, NULL},
-    {"facing_downhill",     (PyCFunction)PyMario_facing_downhill,    METH_O, NULL},
-    {"set_forward_vel",     (PyCFunction)PyMario_set_forwardVel,     METH_O, NULL},
-    {"get_action",          (PyCFunction)PyMario_get_action,         METH_NOARGS, NULL},
-    {"get_forward_vel",     (PyCFunction)PyMario_get_forwardVel,     METH_NOARGS, NULL},
-    {"get_floor_class",     (PyCFunction)PyMario_get_floor_class,    METH_NOARGS, NULL},
-    {"get_intended_mag",    (PyCFunction)PyMario_get_intendedMag,    METH_NOARGS, NULL},
-    //{"get_mario_obj",       (PyCFunction)PyMario_get_marioObj,       METH_NOARGS, NULL},
+    {"set_action",                  (PyCFunction)PyMario_set_action,                METH_O, NULL},
+    {"set_action_state",            (PyCFunction)PyMario_set_actionState,           METH_O, NULL},
+    {"set_prev_action",             (PyCFunction)PyMario_set_prevAction,            METH_O, NULL},
+    {"set_action_timer",            (PyCFunction)PyMario_set_actionTimer,           METH_O, NULL},
+    {"set_action_arg",              (PyCFunction)PyMario_set_actionArg,             METH_O, NULL},
+    {"unset_flag",                  (PyCFunction)PyMario_unset_flag,                METH_O, NULL},
+    {"set_flag",                    (PyCFunction)PyMario_set_flag,                  METH_O, NULL},
+    {"facing_downhill",             (PyCFunction)PyMario_facing_downhill,           METH_O, NULL},
+    {"set_forward_vel",             (PyCFunction)PyMario_set_forwardVel,            METH_O, NULL},
+    {"set_forward_vel_all",         (PyCFunction)PyMario_set_forwardVel_all,        METH_O, NULL},
+    {"set_wall_kick_timer",         (PyCFunction)PyMario_set_wallKickTimer,         METH_O, NULL},
+    {"set_peak_height",             (PyCFunction)PyMario_set_peakHeight,            METH_O, NULL},
+    {"get_pos",                     (PyCFunction)PyMario_get_pos,                   METH_O, NULL},
+    {"get_action",                  (PyCFunction)PyMario_get_action,                METH_NOARGS, NULL},
+    {"get_forward_vel",             (PyCFunction)PyMario_get_forwardVel,            METH_NOARGS, NULL},
+    {"get_floor_class",             (PyCFunction)PyMario_get_floor_class,           METH_NOARGS, NULL},
+    {"get_intended_mag",            (PyCFunction)PyMario_get_intendedMag,           METH_NOARGS, NULL},
+    {"get_squish_timer",            (PyCFunction)PyMario_get_squishTimer,           METH_NOARGS, NULL},
+    {"get_quicksand_depth",         (PyCFunction)PyMario_get_quicksandDepth,        METH_NOARGS, NULL},
+    {"set_vel",                     (PyCFunction)PyMario_set_vel,                   METH_VARARGS, NULL},
+    {"set_y_vel_based_on_fspeed",   (PyCFunction)PyMario_set_y_vel_based_on_fspeed, METH_VARARGS, NULL},
+    {"set_face_angle",              (PyCFunction)PyMario_set_faceAngle,             METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
