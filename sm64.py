@@ -4,55 +4,40 @@ import logging
 import mario
 import objects
 
-import ctypes
-
-def convert_capsule_to_int(capsule):
-    ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
-    ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
-    return ctypes.pythonapi.PyCapsule_GetPointer(capsule, b"objects.Object._native_object")
-
 logger = logging.getLogger( '' )
 
 def mario_init():
-    logging.basicConfig( level=logging.DEBUG )
-    logger.debug( 'logger active' )
+    logging.basicConfig( level=logging.INFO )
+    logger.info( 'logger active' )
 
 def spawn_yellow_coin( parent_obj ):
 
-    print( "passed to spawn: {} containing {} ({})".format( parent_obj, parent_obj._native_object, convert_capsule_to_int( parent_obj._native_object ) ) )
-
-    native_parent = parent_obj._native_object
-    coin = objects.Object( 0, parent_obj, objects.MODEL_YELLOW_COIN, objects.bhvMovingYellowCoin )
+    coin = objects.Object(
+        0, parent_obj,
+        objects.MODEL_YELLOW_COIN,
+        objects.bhvMovingYellowCoin )
     coin.copy_pos_and_angle( parent_obj )
-    #coin->oForwardVel = random_float() * 20;
-    #coin->oVelY = random_float() * 40 + 20;
-    #coin->oMoveAngleYaw = random_u16();
+    coin.set_forward_vel( mario.random_float() * 20 )
+    coin.set_vel_y( mario.random_float() * 40 + 20 )
+    coin.set_move_angle_yaw( mario.random_ushort() )
 
 def set_mario_action_moving( mario_state, action, action_arg ):
 
-    #print( "xxx" )
-    #print( mario_state )
-    #print( "xxx" )
-
-    floorClass = mario_state.get_floor_class()
-    forwardVel = mario_state.get_forward_vel()
-    #mag = min(m.get_intended_mag(), 8.0)
+    floor_class = mario_state.get_floor_class()
+    forward_vel = mario_state.get_forward_vel()
     mag = 8.0
 
     logger.debug( "moving" )
 
-    mario_obj = mario_state.get_mario_obj()
-    print( "passed to move: {} containing {} ({})".format( mario_obj, mario_obj._native_object, convert_capsule_to_int( mario_obj._native_object ) ) )
-
     if mario.ACT_WALKING == action:
-        if floorClass != mario.SURFACE_CLASS_VERY_SLIPPERY:
-            if 0.0 <= forwardVel and forwardVel < mag:
+        if floor_class != mario.SURFACE_CLASS_VERY_SLIPPERY:
+            if 0.0 <= forward_vel and forward_vel < mag:
                 mario_state.set_forward_vel( mag )
 
-        #mario.->marioObj->oMarioWalkingPitch = 0
+        mario_state.mario_object.set_mario_walking_pitch( 0 )
 
     elif mario.ACT_HOLD_WALKING == action:
-        if 0.0 <= forwardVel and forwardVel < mag / 2.0:
+        if 0.0 <= forward_vel and forward_vel < mag / 2.0:
             mario_state.set_forward_vel( mag / 2.0 )
 
     elif mario.ACT_BEGIN_SLIDING == action:
@@ -60,9 +45,6 @@ def set_mario_action_moving( mario_state, action, action_arg ):
         # "BEGIN_SLIDING" action into a butt slide or a stomach slide,
         # then the system will hang in a loop later in
         # mario_execute_action().
-        # DEBUG
-        #spawn_yellow_coin( mario_state.get_mario_obj() )
-        # END DEBUG
         if (mario_state.facing_downhill(0)):
             action = mario.ACT_BUTT_SLIDE
         else:
@@ -77,21 +59,12 @@ def set_mario_action_moving( mario_state, action, action_arg ):
     return action
 
 def set_mario_action( mario_state, action, arg ):
-
-    #print( "qqq" )
-    #print( mario_state )
-    #print( "qqqwwwwww" )
-    
+   
     logger.debug( "%lu vs %lu", (mario.ACT_GROUP_MASK & mario.ACT_GROUP_MOVING), action )
 
     # DEBUG
-    mario_obj = mario_state.get_mario_obj()
-    print( "try one: {} containing {} ({})".format(
-        mario_obj, mario_obj._native_object, convert_capsule_to_int( mario_obj._native_object ) ) )
-    mario_obj = mario_state.get_mario_obj()
-    print( "try two: {} containing {} ({})".format(
-        mario_obj, mario_obj._native_object, convert_capsule_to_int( mario_obj._native_object ) ) )
-    spawn_yellow_coin( mario_obj )
+    if action & mario.ACT_FLAG_ATTACKING:
+        spawn_yellow_coin( mario_state.mario_object )
     # END DEBUG
 
     # Filter based on action group.

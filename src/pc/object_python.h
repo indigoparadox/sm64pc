@@ -6,11 +6,6 @@
 
 #include <Python.h>
 
-typedef struct _PyObjectClass {
-    PyObject_HEAD
-    PyObject *native_object;
-} PyObjectClass;
-
 PyObject* PyInit_objects(void);
 PyObject* object_python_wrap(struct Object*);
 

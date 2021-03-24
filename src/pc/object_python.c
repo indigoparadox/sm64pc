@@ -11,20 +11,38 @@
 
 extern PyObject *gMarioModule;
 
+typedef struct _PyObjectClass {
+    PyObject_HEAD
+    long long test;
+    PyObject *native_object;
+} PyObjectClass;
+
 static PyMemberDef PyObject_members[] = {
-    {"_native_object", T_OBJECT_EX, offsetof(PyObjectClass, native_object), 0, NULL},
+    {"_test", T_OBJECT_EX, offsetof(PyObjectClass, test), 0, NULL},
+    {"_native_object", T_OBJECT_EX, offsetof(PyObjectClass, native_object), READONLY, NULL},
     {NULL}
 };
 
-/*
-static PyObject *
-PyObject_spawn_at(PyObjectClass *self, PyObject *args) {
-    PyObjectClass *pObjectOut;
-
-
-    return (PyObject *)pObjectOut;
-}
-*/
+#define OBJECT_SET( var, addr, type, py_getter ) \
+    static PyObject * \
+    PyObject_set_ ## var(PyObjectClass *self, PyObject *args) { \
+        struct Object *obj = NULL; \
+        type var; \
+        var = py_getter(args); \
+        if (PyErr_Occurred()) { \
+            fprintf(stderr, "object: during set " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        obj = PyCapsule_GetPointer(self->native_object, "objects.Object._native_object"); \
+        if (PyErr_Occurred()) { \
+            fprintf(stderr, "object: during set " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        obj->rawData.asF32[addr] = var; \
+        Py_RETURN_NONE; \
+    }
 
 PyObject* PyObject_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) {
     struct Object *obj_src = NULL,
@@ -58,14 +76,19 @@ PyObject* PyObject_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) {
     Py_RETURN_NONE;
 }
 
+OBJECT_SET( oForwardVel,        0x0C, f32, PyFloat_AsDouble );
+OBJECT_SET( oVelY,              0x0A, f32, PyFloat_AsDouble );
+OBJECT_SET( oMoveAngleYaw,      0x10, u32, PyLong_AsLong );
+OBJECT_SET( oMarioWalkingPitch, 0x10, u32, PyLong_AsLong );
+
 static PyMethodDef PyObject_methods[] = {
-    //{"spawn_at", PyObject_spawn_at, METH_VARARGS, NULL},
-    {"copy_pos_and_angle", (PyCFunction)PyObject_copy_pos_and_angle, METH_O, NULL},
+    {"set_forward_vel",         (PyCFunction)PyObject_set_oForwardVel,          METH_O, NULL},
+    {"set_move_angle_yaw",      (PyCFunction)PyObject_set_oMoveAngleYaw,        METH_O, NULL},
+    {"set_vel_y",               (PyCFunction)PyObject_set_oVelY,                METH_O, NULL},
+    {"set_mario_walking_pitch", (PyCFunction)PyObject_set_oMarioWalkingPitch,   METH_O, NULL},
+    {"copy_pos_and_angle",      (PyCFunction)PyObject_copy_pos_and_angle,       METH_O, NULL},
     {NULL, NULL, 0, NULL}
 };
-
-    //obj = spawn_object_at_origin(parent, 0, model, behavior);
-    //obj_copy_pos_and_angle(obj, parent);
 
 static int
 PyObject_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
@@ -82,9 +105,11 @@ PyObject_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
     /*if (NULL != pParent) {
         Py_INCREF(pParent);
     }*/
+    #ifdef PYTHON_DEBUG_VERBOSE
     if(NULL != pParent) {
         fprintf(stdout, "object init parent: 0x%016llx containing 0x%016llx\n", pParent, pParent->native_object);
     }
+    #endif /* PYTHON_DEBUG_VERBOSE */
     if (!res || PyErr_Occurred()) {
         fprintf(stderr, "during spawn:\n");
         PyErr_Print();
