@@ -10,11 +10,11 @@ Please contribute **first** to the [nightly branch](https://github.com/sm64pc/sm
 
 ## Python Support
 
-This is experimental and highly frought/incomplete at the moment.
+This is experimental and highly fraught/incomplete at the moment.
 
 Just make sure to run the compiled binary from the directory where sm64.py is located. Some functionality has been moved to python, so things will not work without the python module present.
 
-Currently buggy as heck.
+Currently buggy as heck and, again, incomplete.
 
 ## New features
 
