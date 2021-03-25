@@ -2,12 +2,24 @@
 #include "behavior_data.h"
 
 #define OBJECTS_ENCAPSULATE( bhv ) \
-    pBhv = PyCapsule_New((void *)bhv, "objects.Behavior", NULL); \
+    pBhvNative = PyCapsule_New((void *)bhv, "objects.Behavior._native_behavior", NULL); \
+    if (PyErr_Occurred()) { \
+        fprintf(stderr, "during behavior constant:\n"); \
+        PyErr_Print(); \
+        return NULL; \
+    } \
+    Py_INCREF(pBhvNative); \
+    pBhvArgs = PyTuple_New(1); \
+    PyTuple_SetItem(pBhvArgs, 0, pBhvNative); \
+    pBhv = PyObject_CallObject((PyObject *)&PyObjectBehaviorType, pBhvArgs); \
     if (0 > PyModule_AddObject(pObjects, #bhv, pBhv)) { \
+        Py_XDECREF(pBhvNative); \
         Py_XDECREF(pBhv); \
+        Py_XDECREF(pBhvArgs); \
         Py_DECREF(pObjects); \
         return NULL; \
-    }
+    } \
+    Py_XDECREF(pBhvArgs);
 
 #define OBJECTS_ADD_BEHAVIORS() \
     OBJECTS_ENCAPSULATE( bhvStarDoor ); \

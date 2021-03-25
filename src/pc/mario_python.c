@@ -407,13 +407,13 @@ PyObject* PyInit_mario(void) {
     //PyMarioStateClass *pMarioState;
 
     if(0 > PyType_Ready( &PyMarioStateType)) {
-        fprintf( stderr, "type not ready?\n" );
+        fprintf(stderr, "type not ready?\n");
         return NULL;
     }
 
     pMario = PyModule_Create(&MarioModule);
     if(NULL == pMario) {
-        fprintf( stderr, "could not allocate mario module\n" );
+        fprintf(stderr, "could not allocate mario module\n");
         return NULL;
     }
 
@@ -456,16 +456,19 @@ void python_init_mario() {
         assert(PyCapsule_IsValid(pMarioState->native_state, "mario.MarioState._native_state"));
     }
 
+    // Get rid of old Mario wrapper.
     Py_XDECREF(gMarioState->pyState->mario_object);
 
     pObject = object_python_wrap(gMarioState->marioObj);
 
     gMarioState->pyState->mario_object = (struct _PyObjectClass *)pObject;
-    Py_INCREF(gMarioState->pyState->mario_object);
+    //Py_INCREF(gMarioState->pyState->mario_object);
     //Py_INCREF(gMarioState->pyState->mario_object->native_object);
     //assert(PyCapsule_IsValid(gMarioState->pyState->mario_object->native_object, "objects.Object._native_object"));
 
     assert(NULL != gMarioState->pyState->mario_object);
+
+    fprintf(stdout, "new mario dropped\n");
 }
 
 u32 wrap_mario_action(struct MarioState *m, u32 action, u32 arg, const char *method) {

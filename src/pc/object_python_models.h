@@ -2,6 +2,7 @@
 #include "model_ids.h"
 
 #define OBJECTS_ADD_MODELS(module) \
+PyModule_AddIntConstant(module, "MODEL_NONE", MODEL_NONE); \
 PyModule_AddIntConstant(module, "MODEL_LEVEL_GEOMETRY_03", MODEL_LEVEL_GEOMETRY_03); \
 PyModule_AddIntConstant(module, "MODEL_LEVEL_GEOMETRY_04", MODEL_LEVEL_GEOMETRY_04); \
 PyModule_AddIntConstant(module, "MODEL_LEVEL_GEOMETRY_05", MODEL_LEVEL_GEOMETRY_05); \

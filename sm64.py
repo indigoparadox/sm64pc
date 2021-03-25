@@ -7,12 +7,29 @@ import levels
 
 logger = logging.getLogger( '' )
 
+# DEBUG
+bhv_test = None
+# Keep a reference hanging around globally so it doesn't despawn.
+test_fish = None
+# END DEBUG
+
 def mario_init():
     logging.basicConfig( level=logging.DEBUG )
     logger.info( 'logger active' )
 
+    # DEBUG
+    global bhv_test
+    bhv_test = objects.Behavior()
+    bhv_test.bhv_BEGIN( objects.OBJ_LIST_DEFAULT )
+    bhv_test.bhv_BEGIN_LOOP()
+    bhv_test.bhv_END_LOOP()
+    print( bhv_test.script )
+    bhv_test.compile()
+    # END DEBUG
+
 def spawn_object( parent_obj, model, behavior ):
     obj = objects.Object( parent_obj, model, behavior )
+    assert( None != obj )
     obj.copy_pos_and_angle( parent_obj )
     return obj
 
@@ -196,7 +213,10 @@ def set_mario_action( mario_state, action, arg ):
         (action & mario.ACT_GROUP_MASK) )
 
     # DEBUG
+    global test_fish
+    global bhv_test
     #if action & mario.ACT_FLAG_ATTACKING:
+    #    test_fish = spawn_object( mario_state.mario_object, objects.MODEL_NONE, bhv_test )
     #    levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
     # END DEBUG
 
