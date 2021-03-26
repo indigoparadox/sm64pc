@@ -55,7 +55,7 @@ def dialog_render_frame():
     #if ready:
     dead_lines = []
     for idx in range( len( osd_lines ) ):
-        dialog.print_generic_string(
+        dialog.print_colorful_text(
             osd_lines[idx][0], osd_lines[idx][1], osd_lines[idx][2].encode( 'utf-8' ) )
         if 0 < osd_lines[idx][3]:
             osd_lines[idx] = \
@@ -145,7 +145,7 @@ def set_mario_action_airborne( mario_state, action, action_arg ):
         # DEBUG
         #if action & mario.ACT_FLAG_ATTACKING:
         show_osd_line( 20, 20, "+ AIR TIME +", 120 )
-        spawn_yellow_coins( mario_state.mario_object, 6 )
+        #spawn_yellow_coins( mario_state.mario_object, 6 )
         # END DEBUG
         mario_state.set_anim_id( -1 )
         mario_state.set_y_vel_based_on_fspeed( 42.0, 0.25 )
