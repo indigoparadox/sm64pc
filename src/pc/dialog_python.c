@@ -22,7 +22,7 @@ extern const Gfx dl_draw_text_bg_box[];
 /* Dialog Module */
 
 static PyObject *
-PyDialog_print_generic_string(PyObject *self, PyObject *args) {
+PyDialog_print_colorful_text(PyObject *self, PyObject *args) {
     s16 x = 0,
         y = 0;
     const u8 *str;
@@ -39,72 +39,13 @@ PyDialog_print_generic_string(PyObject *self, PyObject *args) {
         Py_RETURN_NONE;
     }
 
-#if 0
-    /*create_dl_translation_matrix(MENU_MTX_PUSH, x - 78, y - 32, 0);
-    create_dl_scale_matrix(MENU_MTX_NOPUSH, 1.2f, 0.8f, 1.0f);
-    gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, 105);
-    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
-    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);*/
-
-    /* create_dl_translation_matrix(MENU_MTX_PUSH, x + 6, y - 28, 0);
-    create_dl_rotation_matrix(MENU_MTX_NOPUSH, DEFAULT_DIALOG_BOX_ANGLE, 0, 0, 1.0f);
-    gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
-    gSPDisplayList(gDisplayListHead++, dl_draw_triangle);
-    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW); */
-
-    /* create_dl_translation_matrix(MENU_MTX_PUSH, x - 9, y - 101, 0);
-    create_dl_rotation_matrix(MENU_MTX_NOPUSH, 270.0f, 0, 0, 1.0f);
-    gSPDisplayList(gDisplayListHead++, dl_draw_triangle);
-    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW); */
-
-    //print_hud_lut_string(HUD_LUT_GLOBAL, x + 32, y, "12");
-    //print_generic_string(x, y, str);
-    //print_hud_lut_string(HUD_LUT_GLOBAL, x, y, gHudSymCoin);
-
-
-    //if (sTextLabelsCount == 0) {
-    //    return;
-    //}
-
-    mtx = alloc_display_list(sizeof(*mtx));
-
-    if (mtx == NULL) {
-        sTextLabelsCount = 0;
-        return;
-    }
-
-    guOrtho(mtx, 0.0f, SCREEN_WIDTH, 0.0f, SCREEN_HEIGHT, -10.0f, 10.0f, 1.0f);
-    gSPPerspNormalize((Gfx *) (gDisplayListHead++), 0xFFFF);
-    gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtx), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPDisplayList(gDisplayListHead++, dl_hud_img_begin);
-
-    //for (i = 0; i < sTextLabelsCount; i++) {
-    for (j = 0; j < sTextLabels[i]->length; j++) {
-        glyphIndex = char_to_glyph_index(sTextLabels[i]->buffer[j]);
-
-        if (glyphIndex != GLYPH_SPACE) {
-            add_glyph_texture(glyphIndex);
-            render_textrect(sTextLabels[i]->x, sTextLabels[i]->y, j);
-        }
-    }
-
-    mem_pool_free(gEffectsMemoryPool, sTextLabels[i]);
-    //}
-
-    gSPDisplayList(gDisplayListHead++, dl_hud_img_end);
-
-    sTextLabelsCount = 0;
-// xxx
-    print_credits_str_ascii(x, y, str);
-#endif
-
     print_text(x, y, str);
 
     Py_RETURN_NONE;
 }
 
 static PyMethodDef PyDialog_methods[] = {
-    {"print_generic_string",   (PyCFunction)PyDialog_print_generic_string,   METH_VARARGS, NULL},
+    {"print_colorful_text",   (PyCFunction)PyDialog_print_colorful_text,   METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
