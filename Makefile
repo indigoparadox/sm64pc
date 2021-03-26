@@ -26,6 +26,8 @@ TARGET_RPI ?= 0
 
 USE_PYTHON ?= 1
 
+CHECK_PYTHON ?= 0
+
 # Build for Emscripten/WebGL
 TARGET_WEB ?= 0
 
@@ -198,6 +200,10 @@ endif
 endif
 endif
 
+ifeq ($(CHECK_PYTHON),1)
+  TARGET := check_$(TARGET)
+endif
+
 # Default build is for PC now
 VERSION_CFLAGS := $(VERSION_CFLAGS) -DNON_MATCHING -DAVOID_UB
 
@@ -305,6 +311,10 @@ LEVEL_DIRS := $(patsubst levels/%,%,$(dir $(wildcard levels/*/header.h)))
 SRC_DIRS := src src/engine src/game src/audio src/menu src/buffers actors levels bin data assets src/pc src/pc/gfx src/pc/audio src/pc/controller src/pc/fs src/pc/fs/packtypes
 ASM_DIRS :=
 
+ifeq ($(CHECK_PYTHON),1)
+  SRC_DIRS += tests
+endif
+
 ifeq ($(DISCORDRPC),1)
   SRC_DIRS += src/pc/discord
 endif
@@ -370,6 +380,10 @@ include Makefile.split
 # Source code files
 LEVEL_C_FILES := $(wildcard levels/*/leveldata.c) $(wildcard levels/*/script.c) $(wildcard levels/*/geo.c)
 C_FILES := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c)) $(LEVEL_C_FILES)
+ifeq ($(CHECK_PYTHON),1)
+   C_FILES := $(filter-out src/pc/pc_main.c,$(C_FILES))
+   C_FILES := $(C_FILES) $(wildcard tests/*.c)
+endif
 CXX_FILES := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
 S_FILES := $(foreach dir,$(ASM_DIRS),$(wildcard $(dir)/*.s))
 ULTRA_C_FILES := $(foreach dir,$(ULTRA_SRC_DIRS),$(wildcard $(dir)/*.c))
@@ -471,6 +485,11 @@ O_FILES := $(foreach file,$(C_FILES),$(BUILD_DIR)/$(file:.c=.o)) \
            $(foreach file,$(S_FILES),$(BUILD_DIR)/$(file:.s=.o)) \
            $(foreach file,$(GENERATED_C_FILES),$(file:.c=.o))
 
+ifeq ($(CHECK_PYTHON),1)
+   O_FILES := $(filter-out build/us_pc/src/pc/pc_main.o,$(O_FILES))
+   O_FILES := $(O_FILES) $(foreach file,$(wildcard tests/*.c),$(BUILD_DIR)/$(file:.c=.o))
+endif
+
 ULTRA_O_FILES := $(foreach file,$(ULTRA_S_FILES),$(BUILD_DIR)/$(file:.s=.o)) \
                  $(foreach file,$(ULTRA_C_FILES),$(BUILD_DIR)/$(file:.c=.o))
 
@@ -500,6 +519,10 @@ ENDIAN_BITWIDTH := $(BUILD_DIR)/endian-and-bitwidth
 
 ifeq ($(USE_PYTHON),1)
   INCLUDE_CFLAGS := $(INCLUDE_CFLAGS) -I/usr/include/python3.6m
+endif
+
+ifeq ($(CHECK_PYTHON),1)
+  INCLUDE_CFLAGS += -Isrc -Isrc/pc
 endif
 
 # Huge deleted N64 section was here
@@ -1045,6 +1068,8 @@ $(BUILD_DIR)/%.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<
 
 $(BUILD_DIR)/%.o: %.c
+   # XXX
+	@echo $(DEP_FILES)
 	@$(CC_CHECK) -MMD -MP -MT $@ -MF $(BUILD_DIR)/$*.d $<
 	$(CC) -c $(CFLAGS) -o $@ $<
 
