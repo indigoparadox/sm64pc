@@ -12,7 +12,11 @@ logger = logging.getLogger( '' )
 bhv_test = None
 # Keep a reference hanging around globally so it doesn't despawn.
 test_fish = None
-ready = False
+#ready = False
+osd_lines = []
+
+def show_osd_line( x, y, text, ttl ):
+    osd_lines.append( (x, y, text, ttl) )
 # END DEBUG
 
 def mario_init():
@@ -46,9 +50,22 @@ def spawn_yellow_coins( parent_obj, count ):
         coin.set_move_angle_yaw( mario.random_ushort() )
 
 def dialog_render_frame():
-    global ready
-    if ready:
-        dialog.print_generic_string( 10, 10, b"Hello!" )
+    # DEBUG
+    #global ready
+    #if ready:
+    dead_lines = []
+    for idx in range( len( osd_lines ) ):
+        dialog.print_generic_string(
+            osd_lines[idx][0], osd_lines[idx][1], osd_lines[idx][2].encode( 'utf-8' ) )
+        if 0 < osd_lines[idx][3]:
+            osd_lines[idx] = \
+                (osd_lines[idx][0], osd_lines[idx][1], osd_lines[idx][2], osd_lines[idx][3] - 1)
+        else:
+            dead_lines.append( osd_lines[idx] )
+
+    for line in dead_lines:
+        osd_lines.remove( line )
+    # END DEBUG
 
 def set_mario_action_moving( mario_state, action, action_arg ):
 
@@ -127,7 +144,8 @@ def set_mario_action_airborne( mario_state, action, action_arg ):
     mario.ACT_HOLD_JUMP == action:
         # DEBUG
         #if action & mario.ACT_FLAG_ATTACKING:
-        #spawn_yellow_coins( mario_state.mario_object, 6 )
+        show_osd_line( 20, 20, "+ AIR TIME +", 120 )
+        spawn_yellow_coins( mario_state.mario_object, 6 )
         # END DEBUG
         mario_state.set_anim_id( -1 )
         mario_state.set_y_vel_based_on_fspeed( 42.0, 0.25 )
@@ -220,8 +238,8 @@ def set_mario_action( mario_state, action, arg ):
         (action & mario.ACT_GROUP_MASK) )
 
     # DEBUG
-    global ready
-    ready = True
+    #global ready
+    #ready = True
     global test_fish
     global bhv_test
     #if action & mario.ACT_FLAG_ATTACKING:

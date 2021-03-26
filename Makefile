@@ -1069,7 +1069,7 @@ $(BUILD_DIR)/%.o: %.cpp
 
 $(BUILD_DIR)/%.o: %.c
    # XXX
-	@echo $(DEP_FILES)
+	#@echo $(DEP_FILES)
 	@$(CC_CHECK) -MMD -MP -MT $@ -MF $(BUILD_DIR)/$*.d $<
 	$(CC) -c $(CFLAGS) -o $@ $<
 

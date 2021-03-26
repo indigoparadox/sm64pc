@@ -4,10 +4,13 @@
 #include "game/ingame_menu.h"
 
 #include "make_const_nonconst.h"
+#include "game/print.h"
 
 extern PyObject *gMarioModule;
 
 extern Gfx *gDisplayListHead;
+
+extern u8 gHudSymCoin[];
 
 static const Vtx vertex_text_bg_box[];
 extern const Gfx dl_draw_triangle[];
@@ -24,6 +27,10 @@ PyDialog_print_generic_string(PyObject *self, PyObject *args) {
         y = 0;
     const u8 *str;
     int res = 0;
+    s32 i;
+    s32 j;
+    s8 glyphIndex;
+    Mtx *mtx;
 
     res = PyArg_ParseTuple(args, "hhy", &x, &y, &str);
     if (!res || PyErr_Occurred()) {
@@ -32,6 +39,7 @@ PyDialog_print_generic_string(PyObject *self, PyObject *args) {
         Py_RETURN_NONE;
     }
 
+#if 0
     /*create_dl_translation_matrix(MENU_MTX_PUSH, x - 78, y - 32, 0);
     create_dl_scale_matrix(MENU_MTX_NOPUSH, 1.2f, 0.8f, 1.0f);
     gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, 105);
@@ -49,7 +57,48 @@ PyDialog_print_generic_string(PyObject *self, PyObject *args) {
     gSPDisplayList(gDisplayListHead++, dl_draw_triangle);
     gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW); */
 
-    print_generic_string(x, y, str);
+    //print_hud_lut_string(HUD_LUT_GLOBAL, x + 32, y, "12");
+    //print_generic_string(x, y, str);
+    //print_hud_lut_string(HUD_LUT_GLOBAL, x, y, gHudSymCoin);
+
+
+    //if (sTextLabelsCount == 0) {
+    //    return;
+    //}
+
+    mtx = alloc_display_list(sizeof(*mtx));
+
+    if (mtx == NULL) {
+        sTextLabelsCount = 0;
+        return;
+    }
+
+    guOrtho(mtx, 0.0f, SCREEN_WIDTH, 0.0f, SCREEN_HEIGHT, -10.0f, 10.0f, 1.0f);
+    gSPPerspNormalize((Gfx *) (gDisplayListHead++), 0xFFFF);
+    gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtx), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPDisplayList(gDisplayListHead++, dl_hud_img_begin);
+
+    //for (i = 0; i < sTextLabelsCount; i++) {
+    for (j = 0; j < sTextLabels[i]->length; j++) {
+        glyphIndex = char_to_glyph_index(sTextLabels[i]->buffer[j]);
+
+        if (glyphIndex != GLYPH_SPACE) {
+            add_glyph_texture(glyphIndex);
+            render_textrect(sTextLabels[i]->x, sTextLabels[i]->y, j);
+        }
+    }
+
+    mem_pool_free(gEffectsMemoryPool, sTextLabels[i]);
+    //}
+
+    gSPDisplayList(gDisplayListHead++, dl_hud_img_end);
+
+    sTextLabelsCount = 0;
+// xxx
+    print_credits_str_ascii(x, y, str);
+#endif
+
+    print_text(x, y, str);
 
     Py_RETURN_NONE;
 }
