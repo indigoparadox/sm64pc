@@ -4,9 +4,7 @@
 #include "level_python_levels.h"
 #include "game/level_update.h"
 
-// void initiate_warp(s16 destLevel, s16 destArea, s16 destWarpNode, s32 arg3) {
-
-/* Objects Module */
+/* Levels Module */
 
 static PyObject *
 PyLevel_initiate_warp(PyObject *self, PyObject *args) {
@@ -40,28 +38,12 @@ static PyModuleDef PyLevelsModule = {
 
 PyObject* PyInit_levels(void) {
     PyObject *pLevels;
-    //PyMarioStateClass *pMarioState;
-
-    /*if(0 > PyType_Ready( &PyObjectType)) {
-        fprintf( stderr, "type not ready?\n" );
-        return NULL;
-    }*/
 
     pLevels = PyModule_Create(&PyLevelsModule);
     if(NULL == pLevels) {
         fprintf( stderr, "could not allocate levels module\n" );
         return NULL;
     }
-
-/*
-    Py_INCREF(&PyObjectType);
-    if( 0 > PyModule_AddObject(pObjects, "Object", (PyObject *)&PyObjectType)) {
-        fprintf(stderr, "unable to add Object to objects module\n");
-        Py_DECREF(&PyObjectType);
-        Py_DECREF(pObjects);
-        return NULL;
-    }
-*/
 
     ADD_LEVEL_CONSTANTS(pLevels);
 

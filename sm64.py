@@ -4,6 +4,7 @@ import logging
 import mario
 import objects
 import levels
+import dialog
 
 logger = logging.getLogger( '' )
 
@@ -11,6 +12,7 @@ logger = logging.getLogger( '' )
 bhv_test = None
 # Keep a reference hanging around globally so it doesn't despawn.
 test_fish = None
+ready = False
 # END DEBUG
 
 def mario_init():
@@ -42,6 +44,11 @@ def spawn_yellow_coins( parent_obj, count ):
         coin.set_forward_vel( mario.random_float() * 20 )
         coin.set_vel_y( mario.random_float() * 40 + 20 )
         coin.set_move_angle_yaw( mario.random_ushort() )
+
+def dialog_render_frame():
+    global ready
+    if ready:
+        dialog.print_generic_string( 10, 10, b"Hello!" )
 
 def set_mario_action_moving( mario_state, action, action_arg ):
 
@@ -213,6 +220,8 @@ def set_mario_action( mario_state, action, arg ):
         (action & mario.ACT_GROUP_MASK) )
 
     # DEBUG
+    global ready
+    ready = True
     global test_fish
     global bhv_test
     #if action & mario.ACT_FLAG_ATTACKING:

@@ -66,6 +66,7 @@ void game_loop_one_iteration(void);
 #include "mario_python.h"
 #include "object_python.h"
 #include "level_python.h"
+#include "dialog_python.h"
 
 extern PyObject *gMarioModule;
 
@@ -85,6 +86,10 @@ void python_init() {
     }
     if (0 > PyImport_AppendInittab("levels", &PyInit_levels)) {
         fprintf(stderr, "could not add levels to inittab\n");
+        return;
+    }
+    if (0 > PyImport_AppendInittab("dialog", &PyInit_dialog)) {
+        fprintf(stderr, "could not add dialog to inittab\n");
         return;
     }
     Py_Initialize();
@@ -118,6 +123,7 @@ void python_init() {
 
     assert( NULL != gMarioModule );
 }
+
 #endif /* USE_PYTHON */
 
 void dispatch_audio_sptask(struct SPTask *spTask) {

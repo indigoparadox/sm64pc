@@ -27,6 +27,9 @@
 #ifdef EXT_OPTIONS_MENU
 #include "options_menu.h"
 #endif
+#ifdef USE_PYTHON
+#include "pc/dialog_python.h"
+#endif /* USE_PYTHON */
 
 extern Gfx *gDisplayListHead;
 extern s16 gCurrCourseNum;
@@ -3089,6 +3092,10 @@ s16 render_menus_and_dialogs() {
     s16 mode = 0;
 
     create_dl_ortho_matrix();
+
+    #ifdef USE_PYTHON
+    dialog_python_render_frame();
+    #endif /* USE_PYTHON */
 
     if (gMenuMode != -1) {
         switch (gMenuMode) {
