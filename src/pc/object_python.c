@@ -260,6 +260,24 @@ wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavi
     pFunc = PyObject_GetAttrString(gMarioModule, "spawn_object");
     if (pFunc && PyCallable_Check(pFunc)) {
 
+        /* pBhvNative Ref: 1 */
+        pBhvNative = PYTHON_ENCAPSULE_BEHAVIOR(behavior, return NULL);
+        
+        pBhvArgs = PyTuple_New(1);
+        PyTuple_SetItem(pBhvArgs, 0, pBhvNative);
+
+        /* pBhvNative Ref: 2, pBhv Ref: 1 */
+        pBhv = PyObject_CallObject((PyObject *)&PyObjectBehaviorType, pBhvArgs);
+        if (PyErr_Occurred()) {
+            fprintf(stderr, "during wrap:\n");
+            Py_XDECREF(pBhvNative);
+            PyErr_Print();
+            return NULL;
+        }
+        
+        /* pBhvNative Ref: 1 */
+        Py_DECREF(pBhvArgs);
+        
         pArgs = PyTuple_New(3);
         
         /* The tuple will DECREF this for us later. */
@@ -269,28 +287,12 @@ wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavi
         /* The tuple will DECREF this for us later. */
         pModel = PyLong_FromLong(model);
         PyTuple_SetItem(pArgs, 1, pModel);
-
-        pBhvNative = PyCapsule_New((void *)behavior, "objects.Behavior._native_behavior", NULL);
-        if (PyErr_Occurred()) {
-            fprintf(stderr, "during wrap:\n");
-            PyErr_Print();
-            return NULL;
-        }
-        pBhvArgs = PyTuple_New(1);
-        PyTuple_SetItem(pBhvArgs, 0, pBhvNative);
-        pBhv = PyObject_CallObject((PyObject *)&PyObjectBehaviorType, pBhvArgs);
-        if (PyErr_Occurred()) {
-            fprintf(stderr, "during wrap:\n");
-            Py_XDECREF(pBhvNative);
-            PyErr_Print();
-            return NULL;
-        }
-        Py_DECREF(pBhvArgs);
-        
+    
         PyTuple_SetItem(pArgs, 2, pBhv);
 
         pObjectOut = (PyObjectClass *)PyObject_CallObject(pFunc, pArgs);
         
+        /* pBhv Ref: 0 */
         Py_XDECREF(pArgs);
         if(NULL != pObjectOut) {
             object_out = PyCapsule_GetPointer( pObjectOut->native_object, "objects.Object._native_object");

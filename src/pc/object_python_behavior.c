@@ -362,7 +362,7 @@ PyObject_Behavior_compile(PyObjectBehaviorClass *self) {
     }
 
     // TODO: A destructor that frees the ptr.
-    self->native_behavior = PyCapsule_New(bhv_compiled, "objects.Behavior._native_behavior", NULL);
+    self->native_behavior = PYTHON_ENCAPSULE_BEHAVIOR(bhv_compiled, Py_RETURN_NONE);
     fprintf(stderr, "behavior compiled: %ld instructions\n", list_sz);
     assert(PyCapsule_IsValid(self->native_behavior, "objects.Behavior._native_behavior"));
 
