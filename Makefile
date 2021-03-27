@@ -222,6 +222,10 @@ ifeq ($(USE_PYTHON),1)
   VERSION_CFLAGS := $(VERSION_CFLAGS) -DUSE_PYTHON
 endif
 
+ifeq ($(CHECK_PYTHON),1)
+  VERSION_CFLAGS := $(VERSION_CFLAGS) -DCHECK_PYTHON
+endif
+
 ifeq ($(TARGET_WEB),1)
   VERSION_CFLAGS := $(VERSION_CFLAGS) -DTARGET_WEB -DUSE_GLES
 endif
@@ -380,10 +384,6 @@ include Makefile.split
 # Source code files
 LEVEL_C_FILES := $(wildcard levels/*/leveldata.c) $(wildcard levels/*/script.c) $(wildcard levels/*/geo.c)
 C_FILES := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c)) $(LEVEL_C_FILES)
-ifeq ($(CHECK_PYTHON),1)
-   C_FILES := $(filter-out src/pc/pc_main.c,$(C_FILES))
-   C_FILES := $(C_FILES) $(wildcard tests/*.c)
-endif
 CXX_FILES := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
 S_FILES := $(foreach dir,$(ASM_DIRS),$(wildcard $(dir)/*.s))
 ULTRA_C_FILES := $(foreach dir,$(ULTRA_SRC_DIRS),$(wildcard $(dir)/*.c))
@@ -454,6 +454,14 @@ GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c $(BUILD_DIR)/assets/d
   C_FILES := $(filter-out src/game/main.c,$(C_FILES))
   ULTRA_C_FILES := $(filter-out $(addprefix lib/src/,$(ULTRA_C_FILES_SKIP)),$(ULTRA_C_FILES))
 
+ifeq ($(CHECK_PYTHON),1)
+   C_FILES := $(wildcard tests/*.c) $(wildcard src/pc/*python.c) src/pc/object_python_behavior.c
+   GODDARD_C_FILES :=
+   ULTRA_C_FILES :=
+   CXX_FILES :=
+   LEVEL_C_FILES :=
+endif
+
 # "If we're not N64, use the above"
 
 ifeq ($(VERSION),sh)
@@ -486,8 +494,8 @@ O_FILES := $(foreach file,$(C_FILES),$(BUILD_DIR)/$(file:.c=.o)) \
            $(foreach file,$(GENERATED_C_FILES),$(file:.c=.o))
 
 ifeq ($(CHECK_PYTHON),1)
-   O_FILES := $(filter-out build/us_pc/src/pc/pc_main.o,$(O_FILES))
-   O_FILES := $(O_FILES) $(foreach file,$(wildcard tests/*.c),$(BUILD_DIR)/$(file:.c=.o))
+   #O_FILES := $(filter-out build/us_pc/src/pc/pc_main.o,$(O_FILES))
+   #O_FILES := $(O_FILES) $(foreach file,$(wildcard tests/*.c),$(BUILD_DIR)/$(file:.c=.o))
 endif
 
 ULTRA_O_FILES := $(foreach file,$(ULTRA_S_FILES),$(BUILD_DIR)/$(file:.s=.o)) \

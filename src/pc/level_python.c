@@ -6,6 +6,8 @@
 
 /* Levels Module */
 
+#ifndef CHECK_PYTHON
+
 static PyObject *
 PyLevel_initiate_warp(PyObject *self, PyObject *args) {
     s16 destLevel = 0,
@@ -26,8 +28,12 @@ PyLevel_initiate_warp(PyObject *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+#endif /* CHECK_PYTHON */
+
 static PyMethodDef PyLevels_methods[] = {
+    #ifndef CHECK_PYTHON
     {"initiate_warp",   (PyCFunction)PyLevel_initiate_warp,   METH_VARARGS, NULL},
+    #endif /* CHECK_PYTHON */
     {NULL, NULL, 0, NULL}
 };
 

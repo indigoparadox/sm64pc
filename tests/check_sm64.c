@@ -9,56 +9,39 @@
 #include "../src/pc/level_python.h"
 #include "../src/pc/dialog_python.h"
 
-#include "sm64.h"
+struct MarioState* gMarioState = NULL;
 
-#include "game/memory.h"
-#include "audio/external.h"
+void obj_mark_for_deletion( struct Object* native_object ) {
 
-#include "gfx/gfx_pc.h"
-#include "gfx/gfx_opengl.h"
-#include "gfx/gfx_direct3d11.h"
-#include "gfx/gfx_direct3d12.h"
-#include "gfx/gfx_sdl.h"
+}
 
-#include "audio/audio_api.h"
-#include "audio/audio_sdl.h"
-#include "audio/audio_null.h"
+void obj_copy_pos_and_angle(struct Object *dst, struct Object *src) {
 
-#include "pc_main.h"
-#include "cliopts.h"
-#include "configfile.h"
-#include "controller/controller_api.h"
-#include "controller/controller_keyboard.h"
-#include "fs/fs.h"
+}
 
-#include "game/game_init.h"
-#include "game/main.h"
-#include "game/thread6.h"
+struct Object* spawn_object_at_origin( struct Object *parent, UNUSED s32 unusedArg, u32 model, const BehaviorScript *behavior ) {
+    return NULL;
+}
+
+u16 random_u16() {
+
+}
+
+f32 random_float() {
+
+}
+
+void print_text( s16 x, s16 y, const char* str ) {
+
+}
+
+f32 get_additive_y_vel_for_jumps(void) {
+    return 0.0f;
+}
 
 
-OSMesg D_80339BEC;
-OSMesgQueue gSIEventMesgQueue;
-
-s8 gResetTimer;
-s8 D_8032C648;
-s8 gDebugLevelSelect;
-s8 gShowProfiler;
-s8 gShowDebugText;
-
-s32 gRumblePakPfs;
-struct RumbleData gRumbleDataQueue[3];
-struct StructSH8031D9B0 gCurrRumbleSettings;
-
-static struct AudioAPI *audio_api;
-static struct GfxWindowManagerAPI *wm_api;
-static struct GfxRenderingAPI *rendering_api;
-
-extern void gfx_run(Gfx *commands);
-extern void thread5_game_loop(void *arg);
-extern void create_next_audio_buffer(s16 *samples, u32 num_samples);
-void game_loop_one_iteration(void);
-
-extern PyObject *gMarioModule;
+s32 mario_facing_downhill(struct MarioState *m, s32 turnYaw) {
+}
 
 /* This is the hook called by main() to get ALL of python running. */
 void python_init() {
@@ -95,6 +78,7 @@ void python_init() {
     pName = PyUnicode_DecodeFSDefault( "sm64" );
     /* TODO: Error checking of pName left out */
 
+/*
     gMarioModule = PyImport_Import( pName );
     if (PyErr_Occurred()) {
         fprintf( stderr, "during setup:\n" );
@@ -112,32 +96,7 @@ void python_init() {
     }
 
     assert( NULL != gMarioModule );
-}
-
-void dispatch_audio_sptask(struct SPTask *spTask) {
-}
-
-void set_vblank_handler(s32 index, struct VblankHandler *handler, OSMesgQueue *queue, OSMesg *msg) {
-}
-
-static bool inited = false;
-
-void send_display_list(struct SPTask *spTask) {
-}
-
-void produce_one_frame(void) {
-}
-
-void audio_shutdown(void) {
-}
-
-void game_deinit(void) {
-}
-
-void game_exit(void) {
-}
-
-void main_func(void) {
+   */
 }
 
 int main(int argc, char *argv[]) {

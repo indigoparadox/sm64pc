@@ -151,6 +151,8 @@ PyMario_set_flag(PyObject *self, PyObject *arg) {
     Py_RETURN_NONE;
 }
 
+#ifndef CHECK_PYTHON
+
 static PyObject *
 PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
     s32 turnYaw;
@@ -300,6 +302,8 @@ PyMario_set_animID(PyMarioStateClass *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+#endif /* CHECK_PYTHON */
+
 MARIO_SET( action, unsigned long, PyLong_AsUnsignedLong );
 MARIO_SET( prevAction, unsigned long, PyLong_AsUnsignedLong );
 MARIO_SET( actionArg, unsigned long, PyLong_AsUnsignedLong );
@@ -327,23 +331,25 @@ static PyMethodDef PyMarioState_methods[] = {
     {"set_action_arg",              (PyCFunction)PyMario_set_actionArg,             METH_O, NULL},
     {"unset_flag",                  (PyCFunction)PyMario_unset_flag,                METH_O, NULL},
     {"set_flag",                    (PyCFunction)PyMario_set_flag,                  METH_O, NULL},
-    {"facing_downhill",             (PyCFunction)PyMario_facing_downhill,           METH_O, NULL},
     {"set_forward_vel",             (PyCFunction)PyMario_set_forwardVel,            METH_O, NULL},
-    {"set_forward_vel_all",         (PyCFunction)PyMario_set_forwardVel_all,        METH_O, NULL},
     {"set_wall_kick_timer",         (PyCFunction)PyMario_set_wallKickTimer,         METH_O, NULL},
     {"set_peak_height",             (PyCFunction)PyMario_set_peakHeight,            METH_O, NULL},
     {"get_pos",                     (PyCFunction)PyMario_get_pos,                   METH_O, NULL},
-    {"set_anim_id",                 (PyCFunction)PyMario_set_animID,                METH_O, NULL},
     {"get_action",                  (PyCFunction)PyMario_get_action,                METH_NOARGS, NULL},
-    {"get_forward_vel",             (PyCFunction)PyMario_get_forwardVel,            METH_NOARGS, NULL},
-    {"get_floor_class",             (PyCFunction)PyMario_get_floor_class,           METH_NOARGS, NULL},
+    {"get_forward_vel",             (PyCFunction)PyMario_get_forwardVel,           METH_NOARGS, NULL},
     {"get_intended_mag",            (PyCFunction)PyMario_get_intendedMag,           METH_NOARGS, NULL},
     {"get_intended_yaw",            (PyCFunction)PyMario_get_intendedYaw,           METH_NOARGS, NULL},
     {"get_squish_timer",            (PyCFunction)PyMario_get_squishTimer,           METH_NOARGS, NULL},
     {"get_quicksand_depth",         (PyCFunction)PyMario_get_quicksandDepth,        METH_NOARGS, NULL},
     {"set_vel",                     (PyCFunction)PyMario_set_vel,                   METH_VARARGS, NULL},
-    {"set_y_vel_based_on_fspeed",   (PyCFunction)PyMario_set_y_vel_based_on_fspeed, METH_VARARGS, NULL},
     {"set_face_angle",              (PyCFunction)PyMario_set_faceAngle,             METH_VARARGS, NULL},
+    #ifndef CHECK_PYTHON
+    {"set_y_vel_based_on_fspeed",   (PyCFunction)PyMario_set_y_vel_based_on_fspeed, METH_VARARGS, NULL},
+    {"set_forward_vel_all",         (PyCFunction)PyMario_set_forwardVel_all,        METH_O, NULL},
+    {"set_anim_id",                 (PyCFunction)PyMario_set_animID,                   METH_NOARGS, NULL},
+    {"get_floor_class",             (PyCFunction)PyMario_get_floor_class,         METH_O, NULL},
+    {"facing_downhill",             (PyCFunction)PyMario_facing_downhill,           METH_O, NULL},
+    #endif /* !CHECK_PYTHON */
     {NULL, NULL, 0, NULL}
 };
 

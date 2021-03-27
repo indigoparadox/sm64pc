@@ -208,9 +208,11 @@ PyObject* PyInit_objects(void) {
         return NULL;
     }
 
+    #ifndef CHECK_PYTHON
     OBJECTS_ADD_BEHAVIORS();
     OBJECTS_ADD_MODELS(pObjects);
     ADD_OBJLIST_CONSTANTS(pObjects);
+    #endif
 
     Py_INCREF(&PyObjectType);
     if( 0 > PyModule_AddObject(pObjects, "Object", (PyObject *)&PyObjectType)) {
