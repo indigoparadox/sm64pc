@@ -7,7 +7,6 @@
 #include "../game/object_helpers.h"
 
 #include "object_python_behavior.h"
-#include "object_python_behaviors.h"
 #include "object_python_models.h"
 
 extern PyObject *gMarioModule;
@@ -45,21 +44,9 @@ static PyMemberDef PyObject_members[] = {
 PyObject* PyObjects_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) {
     struct Object *obj_src = NULL,
         *obj_dest = NULL;
-
-    assert(NULL != arg->native_object);
-    assert(NULL != self->native_object);
-
     obj_src = PYTHON_DECAPSULE_OBJECT(arg->native_object, Py_RETURN_NONE);
     obj_dest = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
-    
-    assert(NULL != obj_src);
-    assert(NULL != obj_dest);
-
     obj_copy_pos_and_angle(obj_dest, obj_src);
-
-    assert(NULL != arg->native_object);
-    assert(NULL != self->native_object);
-
     Py_RETURN_NONE;
 }
 
@@ -175,7 +162,8 @@ static PyModuleDef ObjectsModule = {
 };
 
 PyObject* PyInit_objects(void) {
-    PyObject *pObjects, *pBhv, *pBhvNative, *pBhvArgs;
+    PyObject *pObjects, *pBhvNative, *pBhvArgs;
+    struct _PyObjectBehaviorClass *pBhv = NULL;
     //PyMarioStateClass *pMarioState;
 
     if(0 > PyType_Ready( &PyObjectType)) {
@@ -195,7 +183,7 @@ PyObject* PyInit_objects(void) {
     }
 
     #ifndef CHECK_PYTHON
-    OBJECTS_ADD_BEHAVIORS();
+    OBJECTS_ADD_BEHAVIORS(pObjects);
     OBJECTS_ADD_MODELS(pObjects);
     ADD_OBJLIST_CONSTANTS(pObjects);
     #endif

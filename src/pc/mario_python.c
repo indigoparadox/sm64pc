@@ -41,12 +41,7 @@ static PyMemberDef PyMarioState_members[] = {
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
-        mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state"); \
-        if (PyErr_Occurred()) { \
-            fprintf(stderr, "mario: during set " #var ":\n"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
+        mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         mario_state->var = var; \
         Py_RETURN_NONE; \
     }
@@ -56,12 +51,7 @@ static PyMemberDef PyMarioState_members[] = {
     PyMario_get_ ## var(const PyMarioStateClass *self) { \
         struct MarioState *mario_state = NULL; \
         PyObject *var; \
-        mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state"); \
-        if (PyErr_Occurred()) { \
-            fprintf(stderr, "during get " #var ":\n"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
+        mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         var = c_getter(mario_state->var); \
         if (PyErr_Occurred()) { \
             fprintf( stderr, "during get " #var ":\n" ); \
@@ -84,12 +74,7 @@ static PyMemberDef PyMarioState_members[] = {
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
-        mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state"); \
-        if (PyErr_Occurred()) { \
-            fprintf(stderr, "during set " #var ":\n"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
+        mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         mario_state->var[idx] = val; \
         Py_RETURN_NONE; \
     }
@@ -106,12 +91,7 @@ static PyMemberDef PyMarioState_members[] = {
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
-        mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state"); \
-        if (PyErr_Occurred()) { \
-            fprintf(stderr, "mario: during get " #var ":\n"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
+        mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         var = c_getter(mario_state->var[idx]); \
         if (PyErr_Occurred()) { \
             fprintf( stderr, "mario: during get " #var ":\n" ); \
@@ -170,12 +150,7 @@ PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
         Py_RETURN_NONE;
     }
 
-    mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state");
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "during facing_downhill:\n");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
+    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
 
     res = mario_facing_downhill(mario_state, turnYaw);
     pRes = PyLong_FromLong( res );
@@ -194,12 +169,7 @@ PyMario_get_floor_class(PyMarioStateClass *self) {
     PyObject *pRes;
     struct MarioState *mario_state = NULL;
 
-    mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state");
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "during floor_class:\n");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
+    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
 
     //assert(PyCapsule_IsValid(self->mario_object->native_object, "objects.Object._native_object"));
     assert(PyCapsule_IsValid(self->native_state, "mario.MarioState._native_state"));
@@ -230,12 +200,7 @@ PyMario_set_y_vel_based_on_fspeed(PyMarioStateClass *self, PyObject *args) {
         Py_RETURN_NONE;
     }
 
-    mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state");
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "during get setVel:\n");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
+    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
 
     // get_additive_y_vel_for_jumps is always 0 and a stubbed function.
     // It was likely trampoline related based on code location.
@@ -260,12 +225,7 @@ PyMario_set_forwardVel_all(PyMarioStateClass *self, PyObject *arg) {
         Py_RETURN_NONE;
     }
 
-    mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state");
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "mario: during set forwardVel_all:\n");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
+    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
 
     mario_state->forwardVel = forwardVel;
 
@@ -290,12 +250,7 @@ PyMario_set_animID(PyMarioStateClass *self, PyObject *args) {
         Py_RETURN_NONE;
     }
 
-    mario_state = PyCapsule_GetPointer(self->native_state, "mario.MarioState._native_state");
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "mario: during set animID:\n");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
+    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
 
     mario_state->marioObj->header.gfx.unk38.animID = var;
 
@@ -442,7 +397,7 @@ void python_init_mario() {
         fprintf(stdout, "setting up mario python state...\n");
         Py_INCREF(&PyMarioStateType);
         pMarioState = (PyMarioStateClass *)PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
-        pMarioState->native_state = PyCapsule_New(gMarioState, "mario.MarioState._native_state", NULL);
+        pMarioState->native_state = PYTHON_ENCAPSULE_MARIO(gMarioState, ;);
         pMarioState->mario_object = NULL;
 
         gMarioState->pyState = pMarioState;
