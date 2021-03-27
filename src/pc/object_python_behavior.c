@@ -414,15 +414,7 @@ PyObjectBehavior_destroy(PyObjectBehaviorClass *self) {
 BehaviorScript *
 PyObjectBehavior_get_native(PyObjectBehaviorClass *self) {
     BehaviorScript *bhv = NULL;
-
-    assert(PyCapsule_IsValid(self->native_behavior, "objects.Behavior._native_behavior"));
-    bhv = PyCapsule_GetPointer(self->native_behavior, "objects.Behavior._native_behavior");
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "during get native behavior:\n");
-        PyErr_Print();
-        return NULL;
-    }
-
+    bhv = PYTHON_DECAPSULE_BEHAVIOR(self->native_behavior, return NULL);
     return bhv;
 }
 

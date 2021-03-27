@@ -25,7 +25,7 @@
     if (PyErr_Occurred()) { \
         PyErr_Print(); \
         fprintf(stderr, \
-            "during decapsule native behavior (%s, expected " PYCAPSULE_TYPE_OBJECT ") (%s, line %d)\n", \
+            "during decapsule native behavior (%s, expected " PYCAPSULE_TYPE_BEHAVIOR ") (%s, line %d)\n", \
             PyCapsule_GetName((PyObject *)cap), __FILE__, __LINE__); \
         if (PyErr_Occurred()) { \
             fprintf(stderr, \

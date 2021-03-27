@@ -37,12 +37,7 @@ static PyMemberDef PyObject_members[] = {
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
-        obj = PyCapsule_GetPointer(self->native_object, "objects.Object._native_object"); \
-        if (PyErr_Occurred()) { \
-            fprintf(stderr, "object: during set " #var ":\n"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
+        obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE); \
         obj->rawData.asF32[addr] = var; \
         Py_RETURN_NONE; \
     }
@@ -54,20 +49,9 @@ PyObject* PyObjects_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) 
     assert(NULL != arg->native_object);
     assert(NULL != self->native_object);
 
-    obj_src = PyCapsule_GetPointer(arg->native_object, "objects.Object._native_object");
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "during copy_pos_and_angle src:\n");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-
-    obj_dest = PyCapsule_GetPointer(self->native_object, "objects.Object._native_object");
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "during copy_pos_and_angle dest:\n");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-
+    obj_src = PYTHON_DECAPSULE_OBJECT(arg->native_object, Py_RETURN_NONE);
+    obj_dest = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+    
     assert(NULL != obj_src);
     assert(NULL != obj_dest);
 
@@ -130,12 +114,7 @@ PyObjects_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
 
     if (NULL != pParent && NULL != bhv && 0 <= model) {
         assert(NULL != pParent->native_object);
-        parent_obj = PyCapsule_GetPointer(pParent->native_object, "objects.Object._native_object");
-        if (PyErr_Occurred()) {
-            fprintf(stderr, "during spawn:\n");
-            PyErr_Print();
-            return 0;
-        }
+        parent_obj = PYTHON_DECAPSULE_OBJECT(pParent->native_object, return 0);
         assert(NULL != parent_obj);
         self_obj = spawn_object_at_origin(parent_obj, 0, model, bhv);
         assert(NULL != self_obj);
@@ -152,7 +131,7 @@ PyObjects_destroy(PyObjectClass *self) {
     struct Object* native_object = NULL;
     Py_XDECREF(self->behavior);
     if (self->spawned_in_python) {
-        native_object = PyCapsule_GetPointer(self->native_object, "objects.Object._native_object");
+        native_object = PYTHON_DECAPSULE_OBJECT(self->native_object, ;);
         obj_mark_for_deletion(native_object);
     }
     Py_XDECREF(self->native_object);
@@ -295,7 +274,7 @@ wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavi
         /* pBhv Ref: 0 */
         Py_XDECREF(pArgs);
         if(NULL != pObjectOut) {
-            object_out = PyCapsule_GetPointer( pObjectOut->native_object, "objects.Object._native_object");
+            object_out = PYTHON_DECAPSULE_OBJECT(pObjectOut->native_object, ;);
             //Py_DECREF(pObjectOut);
         }
     }

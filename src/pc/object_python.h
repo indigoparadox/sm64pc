@@ -20,7 +20,7 @@
 
 #define PYTHON_DECAPSULE_OBJECT(cap, ret_on_fail) \
     (struct Object *)PyCapsule_GetPointer((PyObject *)cap, \
-        PYCAPSULE_TYPE_OBJECT, NULL); \
+        PYCAPSULE_TYPE_OBJECT); \
     if (PyErr_Occurred()) { \
         PyErr_Print(); \
         fprintf(stderr, \
