@@ -346,8 +346,8 @@ static PyMethodDef PyMarioState_methods[] = {
     #ifndef CHECK_PYTHON
     {"set_y_vel_based_on_fspeed",   (PyCFunction)PyMario_set_y_vel_based_on_fspeed, METH_VARARGS, NULL},
     {"set_forward_vel_all",         (PyCFunction)PyMario_set_forwardVel_all,        METH_O, NULL},
-    {"set_anim_id",                 (PyCFunction)PyMario_set_animID,                   METH_NOARGS, NULL},
-    {"get_floor_class",             (PyCFunction)PyMario_get_floor_class,         METH_O, NULL},
+    {"set_anim_id",                 (PyCFunction)PyMario_set_animID,                   METH_O, NULL},
+    {"get_floor_class",             (PyCFunction)PyMario_get_floor_class,         METH_NOARGS, NULL},
     {"facing_downhill",             (PyCFunction)PyMario_facing_downhill,           METH_O, NULL},
     #endif /* !CHECK_PYTHON */
     {NULL, NULL, 0, NULL}
@@ -423,19 +423,7 @@ PyObject* PyInit_mario(void) {
         return NULL;
     }
 
-    /*Py_INCREF(&PyMarioStateType);
-    if( 0 > PyModule_AddObject(pMario, "MarioState", (PyObject *)&PyMarioStateType)) {
-        Py_DECREF(&PyMarioStateType);
-        Py_DECREF(pMario);
-        return NULL;
-    }*/
-
     Py_INCREF(&PyMarioStateType);
-    /*pMarioState = (PyMarioStateClass *)PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
-    pMarioState->native_object = PyCapsule_New(gMarioState, "objects.Object._native_object");
-    pMarioState->mario_object = NULL;
-    PyModule_AddObject(pMario, "state", (PyObject *)pMarioState);*/
-
     gMarioState->pyState = NULL;
 
     #include "mario_python_actions.h"

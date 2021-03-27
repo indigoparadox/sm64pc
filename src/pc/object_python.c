@@ -139,13 +139,7 @@ PyObjects_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
         assert(NULL != parent_obj);
         self_obj = spawn_object_at_origin(parent_obj, 0, model, bhv);
         assert(NULL != self_obj);
-        self->native_object = PyCapsule_New(self_obj, "objects.Object._native_object", NULL);
-        if (PyErr_Occurred()) {
-            fprintf(stderr, "during spawn:\n");
-            PyErr_Print();
-            return 0;
-        }
-        assert(NULL != self->native_object);
+        self->native_object = PYTHON_ENCAPSULE_OBJECT(self_obj, return 0);
         //Py_INCREF(self->native_object);
         self->spawned_in_python = 1;
     }
@@ -242,18 +236,14 @@ PyObject* object_python_wrap(struct Object *obj) {
 
     pObjectOut = (PyObjectClass *)PyObject_CallObject((PyObject *)&PyObjectType, NULL);
     assert(NULL == pObjectOut->native_object);
-    pObjectOut->native_object = PyCapsule_New(obj, "objects.Object._native_object", NULL);
-    if (PyErr_Occurred()) {
-        fprintf(stderr, "during spawn:\n");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-    assert(NULL != pObjectOut->native_object);
+    pObjectOut->native_object = PYTHON_ENCAPSULE_OBJECT(obj, Py_RETURN_NONE);
     //Py_INCREF(pObjectOut);
     //Py_INCREF(pObjectOut->native_object);
     
     return (PyObject *)pObjectOut;
 }
+
+/* Native C Interface */
 
 struct Object *
 wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavior) {
