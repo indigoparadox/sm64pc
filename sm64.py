@@ -120,13 +120,28 @@ def set_mario_action_airborne( mario_state, action, action_arg ):
         mario_state.set_anim_id( -1 )
         mario_state.set_forward_vel( -16.0 )
         mario_state.set_y_vel_based_on_fspeed( 62.0, 0.0 )
+        # DEBUG
+        #if action & mario.ACT_FLAG_ATTACKING:
+        show_osd_line( 20, 20, "+ AIR TIME +", 120 )
+        spawn_yellow_coins( mario_state.mario_object, 6 )
+        # END DEBUG
 
     elif mario.ACT_TRIPLE_JUMP == action:
         mario_state.set_y_vel_based_on_fspeed( 69.0, 0.0 )
         mario_state.set_forward_vel( mario_state.get_forward_vel() * 0.8 )
+        # DEBUG
+        #if action & mario.ACT_FLAG_ATTACKING:
+        show_osd_line( 20, 20, "+ AIR TIME +", 120 )
+        spawn_yellow_coins( mario_state.mario_object, 6 )
+        # END DEBUG
 
     elif mario.ACT_FLYING_TRIPLE_JUMP == action:
         mario_state.set_y_vel_based_on_fspeed( 82.0, 0.0 )
+        # DEBUG
+        #if action & mario.ACT_FLAG_ATTACKING:
+        show_osd_line( 20, 20, "+ AIR TIME +", 120 )
+        spawn_yellow_coins( mario_state.mario_object, 6 )
+        # END DEBUG
 
     elif mario.ACT_WATER_JUMP == action or \
     mario.ACT_HOLD_WATER_JUMP == action:
@@ -142,11 +157,6 @@ def set_mario_action_airborne( mario_state, action, action_arg ):
 
     elif mario.ACT_JUMP == action or \
     mario.ACT_HOLD_JUMP == action:
-        # DEBUG
-        #if action & mario.ACT_FLAG_ATTACKING:
-        show_osd_line( 20, 20, "+ AIR TIME +", 120 )
-        #spawn_yellow_coins( mario_state.mario_object, 6 )
-        # END DEBUG
         mario_state.set_anim_id( -1 )
         mario_state.set_y_vel_based_on_fspeed( 42.0, 0.25 )
         mario_state.set_forward_vel( mario_state.get_forward_vel() * 0.8 )
@@ -242,8 +252,8 @@ def set_mario_action( mario_state, action, arg ):
     #ready = True
     global test_fish
     global bhv_test
-    if action & mario.ACT_FLAG_ATTACKING:
-        spawn_yellow_coins(mario_state.mario_object, 6)
+    #if action & mario.ACT_FLAG_ATTACKING:
+    #    spawn_yellow_coins(mario_state.mario_object, 6)
     #    test_fish = spawn_object( mario_state.mario_object, objects.MODEL_NONE, bhv_test )
     #    levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
     # END DEBUG
