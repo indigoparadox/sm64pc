@@ -96,6 +96,10 @@ struct Object *try_allocate_object(struct ObjectNode *destList, struct ObjectNod
     geo_remove_child(&nextObj->gfx.node);
     geo_add_child(&gObjParentGraphNode, &nextObj->gfx.node);
 
+    #ifdef USE_PYTHON
+    ((struct Object*)nextObj)->pyObjectState = NULL;
+    #endif /* USE_PYTHON */
+
     return (struct Object *) nextObj;
 }
 
@@ -125,6 +129,9 @@ static void deallocate_object(struct ObjectNode *freeList, struct ObjectNode *ob
     // Insert at beginning of free list
     obj->next = freeList->next;
     freeList->next = obj;
+    #ifdef USE_PYTHON
+    Py_XDECREF(((struct Object *)obj)->pyObjectState);
+    #endif /* USE_PYTHON */
 }
 
 /**

@@ -205,6 +205,9 @@ struct Object
     /*0x218*/ void *collisionData;
     /*0x21C*/ Mat4 transform;
     /*0x25C*/ void *respawnInfo;
+    #ifdef USE_PYTHON
+    struct _PyMarioStateClass *pyObjectState;
+    #endif /* USE_PYTHON */
 };
 
 struct ObjectHitbox
