@@ -63,6 +63,15 @@ PyObject* PyObjects_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) 
     Py_RETURN_NONE;
 }
 
+PyObject* PyObjects_is_valid(PyObjectClass *self) {
+    if (NULL != self &&
+    NULL != self->native_object &&
+    PyCapsule_IsValid(self->native_object, PYCAPSULE_TYPE_OBJECT)) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
 OBJECT_SET( oForwardVel,            0x0C, f32, PyFloat_AsDouble );
 OBJECT_SET( oVelY,                  0x0A, f32, PyFloat_AsDouble );
 OBJECT_SET( oMoveAngleYaw,          0x10, u32, PyLong_AsLong );
@@ -76,6 +85,7 @@ static PyMethodDef PyObject_methods[] = {
     {"set_mario_walking_pitch",     (PyCFunction)PyObjects_set_oMarioWalkingPitch,      METH_O, NULL},
     {"set_mario_long_jump_is_slow", (PyCFunction)PyObjects_set_oMarioLongJumpIsSlow,    METH_O, NULL},
     {"copy_pos_and_angle",          (PyCFunction)PyObjects_copy_pos_and_angle,          METH_O, NULL},
+    {"is_valid",          (PyCFunction)PyObjects_is_valid,          METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
@@ -119,6 +129,9 @@ PyObjects_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
         self_obj = spawn_object_at_origin(parent_obj, 0, model, bhv);
         assert(NULL != self_obj);
         self->native_object = PYTHON_ENCAPSULE_OBJECT(self_obj, return 0);
+        self_obj->pyObjectState = self;
+        /* Decreased again in deallocate_object. */
+        Py_INCREF(self);
         //Py_INCREF(self->native_object);
         self->spawned_in_python = 1;
     }
@@ -213,6 +226,10 @@ PyObject* object_python_wrap(struct Object *obj) {
 
     assert(NULL != obj);
 
+    if (Py_True == PyObjects_is_valid(obj->pyObjectState)) {
+        return (PyObject *)obj->pyObjectState;
+    }
+
     pObjectOut = (PyObjectClass *)PyObject_CallObject((PyObject *)&PyObjectType, NULL);
     assert(NULL == pObjectOut->native_object);
     pObjectOut->native_object = PYTHON_ENCAPSULE_OBJECT(obj, Py_RETURN_NONE);
@@ -275,6 +292,9 @@ wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavi
         Py_XDECREF(pArgs);
         if(NULL != pObjectOut) {
             object_out = PYTHON_DECAPSULE_OBJECT(pObjectOut->native_object, ;);
+            object_out->pyObjectState = pObjectOut;
+            /* Decreased again in deallocate_object. */
+            Py_INCREF(pObjectOut);
             //Py_DECREF(pObjectOut);
         }
     }

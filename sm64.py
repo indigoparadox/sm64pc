@@ -242,7 +242,8 @@ def set_mario_action( mario_state, action, arg ):
     #ready = True
     global test_fish
     global bhv_test
-    #if action & mario.ACT_FLAG_ATTACKING:
+    if action & mario.ACT_FLAG_ATTACKING:
+        spawn_yellow_coins(mario_state.mario_object, 6)
     #    test_fish = spawn_object( mario_state.mario_object, objects.MODEL_NONE, bhv_test )
     #    levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
     # END DEBUG

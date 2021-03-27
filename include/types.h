@@ -206,7 +206,7 @@ struct Object
     /*0x21C*/ Mat4 transform;
     /*0x25C*/ void *respawnInfo;
     #ifdef USE_PYTHON
-    struct _PyMarioStateClass *pyObjectState;
+    struct _PyObjectClass *pyObjectState;
     #endif /* USE_PYTHON */
 };
 
