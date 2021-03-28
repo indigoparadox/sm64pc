@@ -11,7 +11,6 @@
 #include "engine/math_util.h"
 #include "object_python.h"
 #include "game/interaction.h"
-#include "mario_python_actions.h"
 
 PyObject *gMarioModule;
 extern struct MarioState *gMarioState;
@@ -418,8 +417,13 @@ PyObject* PyInit_mario(void) {
     Py_INCREF(&PyMarioStateType);
     gMarioState->pyState = NULL;
 
-    PYTHON_MARIO_ADD_CONSTANTS(pMario);
-    #include "mario_python_terrains.h"
+    PYTHON_MARIO_ADD_LAYER_CONSTANTS(pMario);
+    PYTHON_MARIO_ADD_INPUT_CONSTANTS(pMario);
+    PYTHON_MARIO_ADD_STEP_CONSTANTS(pMario);
+    PYTHON_MARIO_ADD_PARTICLE_CONSTANTS(pMario);
+    PYTHON_MARIO_ADD_MARIO_CONSTANTS(pMario);
+    PYTHON_MARIO_ADD_ACTION_CONSTANTS(pMario);
+    PYTHON_MARIO_ADD_INTERACTION_CONSTANTS(pMario);
 
     fprintf(stdout, "mario module initialized\n");
 
