@@ -18,7 +18,6 @@
 #define PYTHON_DECAPSULE_MARIO(cap, ret_on_fail) \
     PYTHON_DECAPSULE(cap, PYCAPSULE_TYPE_MARIO, struct MarioState, ret_on_fail)
 
-
 #define INT_GROUND_POUND_OR_TWIRL (1 << 0) // 0x01
 #define INT_PUNCH                 (1 << 1) // 0x02
 #define INT_KICK                  (1 << 2) // 0x04

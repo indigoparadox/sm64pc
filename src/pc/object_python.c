@@ -118,6 +118,30 @@ PyObject* PyObjects_scale(PyObjectClass *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+PyObject* PyObjects_set_angle(PyObjectClass *self, PyObject *args) {
+    struct Object *self_obj = NULL;
+    s16 pitch = 0.0f,
+        yaw = 0.0f,
+        roll = 0.0f;
+
+    self_obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+
+    if (NULL == self_obj) {
+        Py_RETURN_NONE;
+    }
+
+    PyArg_ParseTuple(args, "hhh", &pitch, &yaw, &roll);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "object: during set angle:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    obj_set_angle(self_obj, pitch, yaw, roll);
+
+    Py_RETURN_NONE;
+}
+
 PyObject* PyObjects_is_valid(PyObjectClass *self) {
     if (NULL != self &&
     NULL != self->native_object &&
@@ -134,20 +158,31 @@ OBJECT_SET( oMarioWalkingPitch,     0x10, u32, PyLong_AsUnsignedLong, asU32 );
 OBJECT_SET( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong, asS32 );
 OBJECT_SET( oDamageOrCoinValue,     0x3e, s32, PyLong_AsLong, asS32 );
 OBJECT_SET( oInteractStatus,        0x2b, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oInteractionSubtype,    0x42, u32, PyLong_AsUnsignedLong, asU32 )
+OBJECT_SET( oBehParams,             0x40, s32, PyLong_AsLong, asS32 )
 
 OBJECT_GET( oPosY,                  0x07, f32, PyFloat_FromDouble, asF32 );
 OBJECT_GET( oDamageOrCoinValue,     0x3e, s32, PyLong_FromLong, asS32 );
+OBJECT_GET( oInteractionSubtype,    0x42, u32, PyLong_FromUnsignedLong, asU32 );
+OBJECT_GET( oBehParams,             0x40, s32, PyLong_FromLong, asS32 )
 
 static PyMethodDef PyObject_methods[] = {
     {"set_forward_vel",             (PyCFunction)PyObjects_set_oForwardVel,             METH_O, NULL},
     {"set_move_angle_yaw",          (PyCFunction)PyObjects_set_oMoveAngleYaw,           METH_O, NULL},
     {"set_vel_y",                   (PyCFunction)PyObjects_set_oVelY,                   METH_O, NULL},
-    {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
     {"set_mario_walking_pitch",     (PyCFunction)PyObjects_set_oMarioWalkingPitch,      METH_O, NULL},
     {"set_mario_long_jump_is_slow", (PyCFunction)PyObjects_set_oMarioLongJumpIsSlow,    METH_O, NULL},
     {"set_damage_or_coin_value",    (PyCFunction)PyObjects_set_oDamageOrCoinValue,      METH_O, NULL},
-    {"get_damage_or_coin_value",    (PyCFunction)PyObjects_set_oDamageOrCoinValue,      METH_NOARGS, NULL},
     {"set_interact_status",         (PyCFunction)PyObjects_set_oInteractStatus,         METH_O, NULL},
+    {"set_interaction_subtype",     (PyCFunction)PyObjects_set_oInteractionSubtype,     METH_O, NULL},
+    {"set_beh_params",              (PyCFunction)PyObjects_set_oBehParams,              METH_O, NULL},
+    {"set_angle",                   (PyCFunction)PyObjects_set_angle,                   METH_VARARGS, NULL},
+
+    {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
+    {"get_damage_or_coin_value",    (PyCFunction)PyObjects_get_oDamageOrCoinValue,      METH_NOARGS, NULL},
+    {"get_interaction_subtype",     (PyCFunction)PyObjects_get_oInteractionSubtype,     METH_NOARGS, NULL},
+    {"get_beh_params",              (PyCFunction)PyObjects_get_oBehParams,              METH_NOARGS, NULL},
+
     {"init_animation",              (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
     {"scale",                       (PyCFunction)PyObjects_scale,                       METH_VARARGS, NULL},
     {"copy_pos_and_angle",          (PyCFunction)PyObjects_copy_pos_and_angle,          METH_O, NULL},
@@ -241,7 +276,10 @@ static PyModuleDef ObjectsModule = {
 };
 
 PyObject* PyInit_objects(void) {
-    PyObject *pObjects, *pBhvNative, *pBhvArgs;
+    PyObject *pObjects = NULL,
+        *pBhvNative = NULL,
+        *pBhvArgs = NULL,
+        *pBhvName = NULL;
     struct _PyObjectBehaviorClass *pBhv = NULL;
     //PyMarioStateClass *pMarioState;
 

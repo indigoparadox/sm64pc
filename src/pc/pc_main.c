@@ -67,6 +67,7 @@ void game_loop_one_iteration(void);
 #include "object_python.h"
 #include "level_python.h"
 #include "dialog_python.h"
+#include "save_file_python.h"
 
 extern PyObject *gMarioModule;
 
@@ -90,6 +91,10 @@ void python_init() {
     }
     if (0 > PyImport_AppendInittab("dialog", &PyInit_dialog)) {
         fprintf(stderr, "could not add dialog to inittab\n");
+        return;
+    }
+    if (0 > PyImport_AppendInittab("save_file", &PyInit_save_file)) {
+        fprintf(stderr, "could not add save_file to inittab\n");
         return;
     }
     Py_Initialize();

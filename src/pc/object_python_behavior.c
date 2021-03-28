@@ -7,11 +7,13 @@ typedef struct _PyObjectBehaviorClass {
     PyObject_HEAD
     PyObject *native_behavior;
     PyListObject *script;
+    const char *behavior_name;
 } PyObjectBehaviorClass;
 
 static PyMemberDef PyObjectBehavior_members[] = {
     {"_native_behavior", T_OBJECT_EX, offsetof(PyObjectBehaviorClass, native_behavior), READONLY, NULL},
     {"script", T_OBJECT_EX, offsetof(PyObjectBehaviorClass, script), 0, NULL},
+    {"behavior_name", T_STRING, offsetof(PyObjectBehaviorClass, behavior_name), READONLY, NULL},
     {NULL}
 };
 
@@ -381,8 +383,9 @@ static int
 PyObjectBehavior_init(PyObjectBehaviorClass *self, PyObject *args, PyObject *kwds) {
     PyObject *pBhv = NULL;
     int res = 0;
+    char *bhv_name = NULL;
 
-    res = PyArg_ParseTuple(args, "|O", &pBhv);
+    res = PyArg_ParseTuple(args, "|Os", &pBhv, &bhv_name);
     if (!res || PyErr_Occurred()) {
         fprintf(stderr, "during behavior init:\n");
         PyErr_Print();
@@ -391,6 +394,7 @@ PyObjectBehavior_init(PyObjectBehaviorClass *self, PyObject *args, PyObject *kwd
     
     self->script = (PyListObject *)PyList_New(0);
     self->native_behavior = pBhv;
+    self->behavior_name = bhv_name;
     Py_INCREF(self->script);
     if (NULL != pBhv) {
         Py_INCREF(self->native_behavior);
