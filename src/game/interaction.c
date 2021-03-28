@@ -173,6 +173,46 @@ s16 mario_obj_angle_to_object(struct MarioState *m, struct Object *o) {
     return atan2s(dz, dx);
 }
 
+#ifdef USE_PYTHON
+
+#include "pc/object_python.h"
+
+extern PyObject *gMarioModule;
+
+u32 determine_interaction(struct MarioState *m, struct Object *o) {
+    PyObject *pArgs = NULL,
+        *pRetval = NULL,
+        *pFunc = NULL,
+        *pObject = NULL;
+    u32 retval = 0;
+
+    pFunc = PyObject_GetAttrString(gMarioModule, "determine_interaction");
+    if (!pFunc || !PyCallable_Check(pFunc)) {
+        fprintf(stderr, "no method determine_interaction found in mario module\n");
+        return 0;
+    }
+
+    pArgs = PyTuple_New(2);
+    
+    Py_XINCREF(m->pyState);
+    PyTuple_SetItem(pArgs, 0, (PyObject *)m->pyState);
+
+    pObject = object_python_wrap(o);
+    PyTuple_SetItem(pArgs, 1, pObject);
+    
+    pRetval = PyObject_CallObject(pFunc, pArgs);
+    Py_XDECREF(pArgs);
+
+    if (NULL != pRetval) {
+        retval = PyLong_AsUnsignedLong(pRetval);
+        Py_DECREF(pRetval);
+    }
+
+    return retval;
+}
+
+#else
+
 /**
  * Determines Mario's interaction with a given object depending on their proximity,
  * action, speed, and position.
@@ -241,6 +281,8 @@ u32 determine_interaction(struct MarioState *m, struct Object *o) {
 
     return interaction;
 }
+
+#endif /* USE_PYTHON */
 
 /**
  * Sets the interaction types for INT_STATUS_INTERACTED, INT_STATUS_WAS_ATTACKED

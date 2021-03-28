@@ -67,6 +67,73 @@ def dialog_render_frame():
         osd_lines.remove( line )
     # END DEBUG
 
+def determine_interaction( mario_state, obj ):
+    interaction = 0
+    action = mario_state.get_action()
+
+    if action & mario.ACT_FLAG_ATTACKING:
+        if action == mario.ACT_PUNCHING or \
+        action == mario.ACT_MOVE_PUNCHING or \
+        action == mario.ACT_JUMP_KICK:
+            yaw_to_object = mario_state.get_angle_to_object(
+                mario_state, obj ) - mario_state.get_face_angle( 1 )
+
+            if mario_state.get_flags() & mario.MARIO_PUNCHING:
+                # 120 degrees total, or 60 each way
+                if -0x2AAA <= yaw_to_object and yaw_to_object <= 0x2AAA:
+                    interaction = mario.INT_PUNCH
+
+            if mario_state.get_flags() & mario.MARIO_KICKING:
+                # 120 degrees total, or 60 each way
+                if -0x2AAA <= yaw_to_object and yaw_to_object <= 0x2AAA:
+                    interaction = mario.INT_KICK
+
+            if mario_state.get_flags() & mario.MARIO_TRIPPING:
+                # 180 degrees total, or 90 each way
+                if -0x4000 <= yaw_to_object and yaw_to_object <= 0x4000:
+                    interaction = mario.INT_TRIP
+
+        elif action == mario.ACT_GROUND_POUND or \
+        action == mario.ACT_TWIRLING:
+            if mario_state.get_vel( 1 ) < 0.0:
+                # DEBUG
+                show_osd_line( 20, 20, "- BOOM -", 120 )
+                # END DEBUG
+                interaction = mario.INT_GROUND_POUND_OR_TWIRL
+
+        elif action == mario.ACT_GROUND_POUND_LAND or \
+        action == mario.ACT_TWIRL_LAND:
+            # Neither ground pounding nor twirling change Mario's vertical speed on landing.,
+            # so the speed check is nearly always true (perhaps not if you land while going upwards?)
+            # Additionally, actionState it set on each first thing in their action, so this is
+            # only true prior to the very first frame (i.e. active 1 frame prior to it run).
+            if mario_state.get_vel( 1 ) < 0.0 and \
+            mario_state.get_action_state() == 0:
+                interaction = mario.INT_GROUND_POUND_OR_TWIRL
+
+        elif action == mario.ACT_SLIDE_KICK or \
+        action == mario.ACT_SLIDE_KICK_SLIDE:
+            interaction = mario.INT_SLIDE_KICK
+        elif action & mario.ACT_FLAG_RIDING_SHELL:
+            interaction = mario.INT_FAST_ATTACK_OR_SHELL
+        elif mario_state.get_forward_vel() <= -26.0 or \
+        26.0 <= mario_state.get_forward_vel():
+            interaction = mario.INT_FAST_ATTACK_OR_SHELL
+
+    # Prior to this, the interaction type could be overwritten. This requires, however,
+    # that the interaction not be set prior. This specifically overrides turning a ground
+    # pound into just a bounce.
+    if interaction == 0 and action & mario.ACT_FLAG_AIR:
+        if mario_state.get_vel( 1 ) < 0.0:
+            if mario_state.get_pos( 1 ) > obj.get_pos_y():
+                interaction = mario.INT_HIT_FROM_ABOVE
+
+        else:
+            if mario_state.get_pos( 1 ) < obj.get_pos_y():
+                interaction = mario.INT_HIT_FROM_BELOW
+
+    return interaction
+
 def set_mario_action_moving( mario_state, action, action_arg ):
 
     floor_class = mario_state.get_floor_class()

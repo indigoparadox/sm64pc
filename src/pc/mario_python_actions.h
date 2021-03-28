@@ -374,3 +374,32 @@ PyModule_AddIntConstant(pMario, "ACT_HEAVY_THROW", ACT_HEAVY_THROW);
 PyModule_AddIntConstant(pMario, "ACT_PICKING_UP_BOWSER", ACT_PICKING_UP_BOWSER);
 PyModule_AddIntConstant(pMario, "ACT_HOLDING_BOWSER", ACT_HOLDING_BOWSER);
 PyModule_AddIntConstant(pMario, "ACT_RELEASING_BOWSER", ACT_RELEASING_BOWSER);
+
+#define INT_GROUND_POUND_OR_TWIRL (1 << 0) // 0x01
+#define INT_PUNCH                 (1 << 1) // 0x02
+#define INT_KICK                  (1 << 2) // 0x04
+#define INT_TRIP                  (1 << 3) // 0x08
+#define INT_SLIDE_KICK            (1 << 4) // 0x10
+#define INT_FAST_ATTACK_OR_SHELL  (1 << 5) // 0x20
+#define INT_HIT_FROM_ABOVE        (1 << 6) // 0x40
+#define INT_HIT_FROM_BELOW        (1 << 7) // 0x80
+
+PyModule_AddIntConstant(pMario, "INT_GROUND_POUND_OR_TWIRL",    INT_GROUND_POUND_OR_TWIRL);
+PyModule_AddIntConstant(pMario, "INT_PUNCH",                    INT_PUNCH                );
+PyModule_AddIntConstant(pMario, "INT_KICK",                     INT_KICK                 );
+PyModule_AddIntConstant(pMario, "INT_TRIP",                     INT_TRIP                 );
+PyModule_AddIntConstant(pMario, "INT_SLIDE_KICK",               INT_SLIDE_KICK           );
+PyModule_AddIntConstant(pMario, "INT_FAST_ATTACK_OR_SHELL",     INT_FAST_ATTACK_OR_SHELL );
+PyModule_AddIntConstant(pMario, "INT_HIT_FROM_ABOVE",           INT_HIT_FROM_ABOVE       );
+PyModule_AddIntConstant(pMario, "INT_HIT_FROM_BELOW",           INT_HIT_FROM_BELOW       );
+
+PyModule_AddIntConstant(pMario, "INT_ATTACK_NOT_FROM_BELOW",
+    (INT_GROUND_POUND_OR_TWIRL | INT_PUNCH | INT_KICK | INT_TRIP | INT_SLIDE_KICK
+     | INT_FAST_ATTACK_OR_SHELL | INT_HIT_FROM_ABOVE));
+
+PyModule_AddIntConstant(pMario, "INT_ANY_ATTACK",
+    (INT_GROUND_POUND_OR_TWIRL | INT_PUNCH | INT_KICK | INT_TRIP | INT_SLIDE_KICK
+     | INT_FAST_ATTACK_OR_SHELL | INT_HIT_FROM_ABOVE | INT_HIT_FROM_BELOW));
+
+PyModule_AddIntConstant(pMario, "INT_ATTACK_NOT_WEAK_FROM_ABOVE",
+    (INT_GROUND_POUND_OR_TWIRL | INT_PUNCH | INT_KICK | INT_TRIP | INT_HIT_FROM_BELOW));

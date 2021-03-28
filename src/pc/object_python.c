@@ -41,6 +41,21 @@ static PyMemberDef PyObject_members[] = {
         Py_RETURN_NONE; \
     }
 
+#define OBJECT_GET( var, addr, type, c_getter ) \
+    static PyObject * \
+    PyObjects_get_ ## var(PyObjectClass *self) { \
+        struct Object *obj = NULL; \
+        PyObject *var; \
+        obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE); \
+        var = c_getter(obj->rawData.asF32[addr]); \
+        if (PyErr_Occurred()) { \
+            fprintf(stderr, "object: during set " #var ":\n"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        return var; \
+    }
+
 PyObject* PyObjects_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) {
     struct Object *obj_src = NULL,
         *obj_dest = NULL;
@@ -61,6 +76,7 @@ PyObject* PyObjects_is_valid(PyObjectClass *self) {
 
 OBJECT_SET( oForwardVel,            0x0C, f32, PyFloat_AsDouble );
 OBJECT_SET( oVelY,                  0x0A, f32, PyFloat_AsDouble );
+OBJECT_GET( oPosY,                  0x07, f32, PyFloat_FromDouble );
 OBJECT_SET( oMoveAngleYaw,          0x10, u32, PyLong_AsLong );
 OBJECT_SET( oMarioWalkingPitch,     0x10, u32, PyLong_AsLong );
 OBJECT_SET( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong );
@@ -69,6 +85,7 @@ static PyMethodDef PyObject_methods[] = {
     {"set_forward_vel",             (PyCFunction)PyObjects_set_oForwardVel,             METH_O, NULL},
     {"set_move_angle_yaw",          (PyCFunction)PyObjects_set_oMoveAngleYaw,           METH_O, NULL},
     {"set_vel_y",                   (PyCFunction)PyObjects_set_oVelY,                   METH_O, NULL},
+    {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
     {"set_mario_walking_pitch",     (PyCFunction)PyObjects_set_oMarioWalkingPitch,      METH_O, NULL},
     {"set_mario_long_jump_is_slow", (PyCFunction)PyObjects_set_oMarioLongJumpIsSlow,    METH_O, NULL},
     {"copy_pos_and_angle",          (PyCFunction)PyObjects_copy_pos_and_angle,          METH_O, NULL},
@@ -209,25 +226,30 @@ PyObject* PyInit_objects(void) {
     return pObjects;
 }
 
+/* Native C Interface */
+
 PyObject* object_python_wrap(struct Object *obj) {
     PyObjectClass *pObjectOut;
 
     assert(NULL != obj);
 
     if (Py_True == PyObjects_is_valid(obj->pyObjectState)) {
+        /* A new object below would have one ref for as long as whatever's
+         * calling this uses it, so give it an additional ref if it already
+         * exists.
+         */
+        Py_INCREF(obj->pyObjectState);
         return (PyObject *)obj->pyObjectState;
     }
 
     pObjectOut = (PyObjectClass *)PyObject_CallObject((PyObject *)&PyObjectType, NULL);
     assert(NULL == pObjectOut->native_object);
     pObjectOut->native_object = PYTHON_ENCAPSULE_OBJECT(obj, Py_RETURN_NONE);
-    //Py_INCREF(pObjectOut);
+    
     //Py_INCREF(pObjectOut->native_object);
     
     return (PyObject *)pObjectOut;
 }
-
-/* Native C Interface */
 
 struct Object *
 wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavior) {
@@ -294,4 +316,11 @@ wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavi
     Py_XDECREF(pFunc);
 
     return object_out;
+}
+
+struct Object *
+python_object_get_native(PyObjectClass *self) {
+    struct Object *obj = NULL;
+    obj = (struct Object *)PYTHON_DECAPSULE_OBJECT(self->native_object, return NULL);
+    return obj;
 }
