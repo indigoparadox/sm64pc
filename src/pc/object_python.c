@@ -26,7 +26,7 @@ static PyMemberDef PyObject_members[] = {
     {NULL}
 };
 
-#define OBJECT_SET( var, addr, type, py_getter ) \
+#define OBJECT_SET( var, addr, type, py_getter, as_union ) \
     static PyObject * \
     PyObjects_set_ ## var(PyObjectClass *self, PyObject *args) { \
         struct Object *obj = NULL; \
@@ -38,17 +38,17 @@ static PyMemberDef PyObject_members[] = {
             Py_RETURN_NONE; \
         } \
         obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE); \
-        obj->rawData.asF32[addr] = var; \
+        obj->rawData.as_union[addr] = var; \
         Py_RETURN_NONE; \
     }
 
-#define OBJECT_GET( var, addr, type, c_getter ) \
+#define OBJECT_GET( var, addr, type, c_getter, as_union ) \
     static PyObject * \
     PyObjects_get_ ## var(PyObjectClass *self) { \
         struct Object *obj = NULL; \
         PyObject *var; \
         obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE); \
-        var = c_getter(obj->rawData.asF32[addr]); \
+        var = c_getter(obj->rawData.as_union[addr]); \
         if (PyErr_Occurred()) { \
             fprintf(stderr, "object: during set " #var ":\n"); \
             PyErr_Print(); \
@@ -127,12 +127,16 @@ PyObject* PyObjects_is_valid(PyObjectClass *self) {
     Py_RETURN_FALSE;
 }
 
-OBJECT_SET( oForwardVel,            0x0C, f32, PyFloat_AsDouble );
-OBJECT_SET( oVelY,                  0x0A, f32, PyFloat_AsDouble );
-OBJECT_GET( oPosY,                  0x07, f32, PyFloat_FromDouble );
-OBJECT_SET( oMoveAngleYaw,          0x10, u32, PyLong_AsLong );
-OBJECT_SET( oMarioWalkingPitch,     0x10, u32, PyLong_AsLong );
-OBJECT_SET( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong );
+OBJECT_SET( oForwardVel,            0x0C, f32, PyFloat_AsDouble, asF32 );
+OBJECT_SET( oVelY,                  0x0A, f32, PyFloat_AsDouble, asF32 );
+OBJECT_SET( oMoveAngleYaw,          0x10, u32, PyLong_AsUnsignedLong, asU32 );
+OBJECT_SET( oMarioWalkingPitch,     0x10, u32, PyLong_AsUnsignedLong, asU32 );
+OBJECT_SET( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oDamageOrCoinValue,     0x3e, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oInteractStatus,        0x2b, s32, PyLong_AsLong, asS32 );
+
+OBJECT_GET( oPosY,                  0x07, f32, PyFloat_FromDouble, asF32 );
+OBJECT_GET( oDamageOrCoinValue,     0x3e, s32, PyLong_FromLong, asS32 );
 
 static PyMethodDef PyObject_methods[] = {
     {"set_forward_vel",             (PyCFunction)PyObjects_set_oForwardVel,             METH_O, NULL},
@@ -141,6 +145,9 @@ static PyMethodDef PyObject_methods[] = {
     {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
     {"set_mario_walking_pitch",     (PyCFunction)PyObjects_set_oMarioWalkingPitch,      METH_O, NULL},
     {"set_mario_long_jump_is_slow", (PyCFunction)PyObjects_set_oMarioLongJumpIsSlow,    METH_O, NULL},
+    {"set_damage_or_coin_value",    (PyCFunction)PyObjects_set_oDamageOrCoinValue,      METH_O, NULL},
+    {"get_damage_or_coin_value",    (PyCFunction)PyObjects_set_oDamageOrCoinValue,      METH_NOARGS, NULL},
+    {"set_interact_status",         (PyCFunction)PyObjects_set_oInteractStatus,         METH_O, NULL},
     {"init_animation",              (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
     {"scale",                       (PyCFunction)PyObjects_scale,                       METH_VARARGS, NULL},
     {"copy_pos_and_angle",          (PyCFunction)PyObjects_copy_pos_and_angle,          METH_O, NULL},

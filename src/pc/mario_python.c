@@ -10,6 +10,8 @@
 #include "engine/behavior_script.h"
 #include "engine/math_util.h"
 #include "object_python.h"
+#include "game/interaction.h"
+#include "mario_python_actions.h"
 
 PyObject *gMarioModule;
 extern struct MarioState *gMarioState;
@@ -286,6 +288,8 @@ MARIO_SET( actionTimer, unsigned short, PyLong_AsUnsignedLong );
 MARIO_SET( wallKickTimer, unsigned char, PyLong_AsUnsignedLong );
 MARIO_SET( forwardVel, double, PyFloat_AsDouble );
 MARIO_SET( peakHeight, double, PyFloat_AsDouble );
+MARIO_SET( numCoins, unsigned short, PyLong_AsUnsignedLong );
+MARIO_SET( healCounter, unsigned char, PyLong_AsUnsignedLong );
 MARIO_SET_VEC( vel, float, "f" );
 MARIO_SET_VEC( faceAngle, short, "h" );
 
@@ -297,6 +301,8 @@ MARIO_GET( intendedYaw, short, PyLong_FromLong );
 MARIO_GET( squishTimer, unsigned char, PyLong_FromLong );
 MARIO_GET( quicksandDepth, double, PyFloat_FromDouble );
 MARIO_GET( actionState, unsigned short, PyLong_FromUnsignedLong );
+MARIO_GET( numCoins, unsigned short, PyLong_FromUnsignedLong );
+MARIO_GET( healCounter, unsigned char, PyLong_FromUnsignedLong );
 MARIO_GET_VEC( vel, float, PyFloat_FromDouble );
 MARIO_GET_VEC( pos, float, PyFloat_FromDouble );
 MARIO_GET_VEC( faceAngle, short, PyLong_FromLong );
@@ -312,6 +318,7 @@ static PyMethodDef PyMarioState_methods[] = {
     {"set_forward_vel",             (PyCFunction)PyMario_set_forwardVel,            METH_O, NULL},
     {"set_wall_kick_timer",         (PyCFunction)PyMario_set_wallKickTimer,         METH_O, NULL},
     {"set_peak_height",             (PyCFunction)PyMario_set_peakHeight,            METH_O, NULL},
+    {"set_heal_counter",            (PyCFunction)PyMario_set_healCounter,           METH_O, NULL},
     {"get_pos",                     (PyCFunction)PyMario_get_pos,                   METH_O, NULL},
     {"get_angle_to_object",         (PyCFunction)PyMario_get_angle_to_object,       METH_O, NULL},
     {"get_action",                  (PyCFunction)PyMario_get_action,                METH_NOARGS, NULL},
@@ -322,6 +329,8 @@ static PyMethodDef PyMarioState_methods[] = {
     {"get_quicksand_depth",         (PyCFunction)PyMario_get_quicksandDepth,        METH_NOARGS, NULL},
     {"set_vel",                     (PyCFunction)PyMario_set_vel,                   METH_VARARGS, NULL},
     {"get_vel",                     (PyCFunction)PyMario_get_vel,                   METH_O, NULL},
+    {"get_num_coins",               (PyCFunction)PyMario_get_numCoins,              METH_NOARGS, NULL},
+    {"set_num_coins",               (PyCFunction)PyMario_set_numCoins,              METH_O, NULL},
     {"set_face_angle",              (PyCFunction)PyMario_set_faceAngle,             METH_VARARGS, NULL},
     {"get_face_angle",              (PyCFunction)PyMario_get_faceAngle,             METH_O, NULL},
     {"get_flags",                   (PyCFunction)PyMario_get_flags,                 METH_NOARGS, NULL},
@@ -409,7 +418,7 @@ PyObject* PyInit_mario(void) {
     Py_INCREF(&PyMarioStateType);
     gMarioState->pyState = NULL;
 
-    #include "mario_python_actions.h"
+    PYTHON_MARIO_ADD_CONSTANTS(pMario);
     #include "mario_python_terrains.h"
 
     fprintf(stdout, "mario module initialized\n");

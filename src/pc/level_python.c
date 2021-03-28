@@ -3,6 +3,7 @@
 
 #include "level_python_levels.h"
 #include "game/level_update.h"
+#include "mario_python_terrains.h"
 
 /* Levels Module */
 
@@ -52,6 +53,7 @@ PyObject* PyInit_levels(void) {
     }
 
     ADD_LEVEL_CONSTANTS(pLevels);
+    PYTHON_LEVEL_ADD_CONSTANTS(pLevels);
 
     fprintf(stdout, "levels module initialized\n");
 
