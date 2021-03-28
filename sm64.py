@@ -37,6 +37,8 @@ def mario_init():
     bhv_test.compile()
     # END DEBUG
 
+#region spawn
+
 def spawn_object( parent_obj, model, behavior ):
     obj = objects.Object( parent_obj, model, behavior )
     assert( None != obj )
@@ -53,6 +55,10 @@ def spawn_yellow_coins( parent_obj, count ):
         coin.set_forward_vel( mario.random_float() * 20 )
         coin.set_vel_y( mario.random_float() * 40 + 20 )
         coin.set_move_angle_yaw( mario.random_ushort() )
+
+#endregion
+
+#region dialog
 
 def dialog_render_frame():
     # DEBUG
@@ -83,6 +89,10 @@ def dialog_render_frame():
     for line in dead_lines:
         osd_lines.remove( line )
     # END DEBUG
+
+#endregion
+
+#region interaction
 
 def determine_interaction( mario_state, obj ):
     interaction = 0
@@ -150,6 +160,10 @@ def determine_interaction( mario_state, obj ):
                 interaction = mario.INT_HIT_FROM_BELOW
 
     return interaction
+
+#endregion
+
+#region actions
 
 def set_mario_action_moving( mario_state, action, action_arg ):
 
@@ -376,3 +390,5 @@ def set_mario_action( mario_state, action, arg ):
     mario_state.set_action_timer( 0 )
 
     return 1
+
+#endregion
