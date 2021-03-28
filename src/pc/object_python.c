@@ -4,7 +4,8 @@
 #include <Python.h>
 #include <structmember.h>
 
-#include "../game/object_helpers.h"
+#include "game/object_helpers.h"
+#include "engine/graph_node.h"
 
 #include "object_python_behavior.h"
 #include "object_python_models.h"
@@ -65,6 +66,30 @@ PyObject* PyObjects_copy_pos_and_angle(PyObjectClass *self, PyObjectClass *arg) 
     Py_RETURN_NONE;
 }
 
+PyObject* PyObjects_init_animation(PyObjectClass *self, PyObject *arg) {
+    struct Object *self_obj = NULL;
+    struct Animation **anims = NULL;
+    s32 anim_index = 0;
+
+    if (NULL == self_obj) {
+        Py_RETURN_NONE;
+    }
+
+    self_obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+
+    anims = (struct Animation **)self_obj->ptrData.asAnims[0x26];
+
+    if (NULL == self_obj) {
+        Py_RETURN_NONE;
+    }
+
+    anim_index = PyLong_AsLong(arg);
+
+    geo_obj_init_animation(&self_obj->header.gfx, &anims[anim_index]);
+
+    Py_RETURN_NONE;
+}
+
 PyObject* PyObjects_is_valid(PyObjectClass *self) {
     if (NULL != self &&
     NULL != self->native_object &&
@@ -88,8 +113,9 @@ static PyMethodDef PyObject_methods[] = {
     {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
     {"set_mario_walking_pitch",     (PyCFunction)PyObjects_set_oMarioWalkingPitch,      METH_O, NULL},
     {"set_mario_long_jump_is_slow", (PyCFunction)PyObjects_set_oMarioLongJumpIsSlow,    METH_O, NULL},
+    {"init_animation",              (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
     {"copy_pos_and_angle",          (PyCFunction)PyObjects_copy_pos_and_angle,          METH_O, NULL},
-    {"is_valid",          (PyCFunction)PyObjects_is_valid,          METH_NOARGS, NULL},
+    {"is_valid",                    (PyCFunction)PyObjects_is_valid,                    METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 

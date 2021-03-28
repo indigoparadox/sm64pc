@@ -129,9 +129,6 @@ static void deallocate_object(struct ObjectNode *freeList, struct ObjectNode *ob
     // Insert at beginning of free list
     obj->next = freeList->next;
     freeList->next = obj;
-    #ifdef USE_PYTHON
-    Py_XDECREF(((struct Object *)obj)->pyObjectState);
-    #endif /* USE_PYTHON */
 }
 
 /**
@@ -203,6 +200,11 @@ void unload_object(struct Object *obj) {
     obj->header.gfx.node.flags &= ~GRAPH_RENDER_BILLBOARD;
     obj->header.gfx.node.flags &= ~GRAPH_RENDER_CYLBOARD;
     obj->header.gfx.node.flags &= ~GRAPH_RENDER_ACTIVE;
+
+    #ifdef USE_PYTHON
+    Py_XDECREF(((struct Object *)obj)->pyObjectState);
+    ((struct Object *)obj)->pyObjectState = NULL;
+    #endif /* USE_PYTHON */
 
     deallocate_object(&gFreeObjectList, &obj->header);
 }
