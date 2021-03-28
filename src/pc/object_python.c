@@ -90,6 +90,34 @@ PyObject* PyObjects_init_animation(PyObjectClass *self, PyObject *arg) {
     Py_RETURN_NONE;
 }
 
+PyObject* PyObjects_scale(PyObjectClass *self, PyObject *args) {
+    struct Object *self_obj = NULL;
+    f32 scale_x = 0.0f,
+        scale_y = 0.0f,
+        scale_z = 0.0f;
+
+    self_obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+
+    if (NULL == self_obj) {
+        Py_RETURN_NONE;
+    }
+
+    PyArg_ParseTuple(args, "fff", &scale_x, &scale_y, &scale_z);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "object: during scale:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    self_obj->header.gfx.scale[0] = scale_x;
+    self_obj->header.gfx.scale[1] = scale_y;
+    self_obj->header.gfx.scale[2] = scale_z;
+
+    obj_apply_scale_to_transform(self_obj);
+
+    Py_RETURN_NONE;
+}
+
 PyObject* PyObjects_is_valid(PyObjectClass *self) {
     if (NULL != self &&
     NULL != self->native_object &&
@@ -114,6 +142,7 @@ static PyMethodDef PyObject_methods[] = {
     {"set_mario_walking_pitch",     (PyCFunction)PyObjects_set_oMarioWalkingPitch,      METH_O, NULL},
     {"set_mario_long_jump_is_slow", (PyCFunction)PyObjects_set_oMarioLongJumpIsSlow,    METH_O, NULL},
     {"init_animation",              (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
+    {"scale",                       (PyCFunction)PyObjects_scale,                       METH_VARARGS, NULL},
     {"copy_pos_and_angle",          (PyCFunction)PyObjects_copy_pos_and_angle,          METH_O, NULL},
     {"is_valid",                    (PyCFunction)PyObjects_is_valid,                    METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}

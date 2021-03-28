@@ -14,6 +14,10 @@ bhv_test = None
 test_fish = None
 #ready = False
 osd_lines = []
+frame_delays = []
+
+def delay_frames( frames, callback ):
+    frame_delays.append( (frames, callback) )
 
 def show_osd_line( x, y, text, ttl ):
     osd_lines.append( (x, y, text, ttl) )
@@ -45,12 +49,25 @@ def spawn_yellow_coins( parent_obj, count ):
         coin = spawn_object( parent_obj,
             objects.MODEL_YELLOW_COIN,
             objects.bhvMovingYellowCoin )
+        coin.scale( 0.5, 0.5, 0.5 )
         coin.set_forward_vel( mario.random_float() * 20 )
         coin.set_vel_y( mario.random_float() * 40 + 20 )
         coin.set_move_angle_yaw( mario.random_ushort() )
 
 def dialog_render_frame():
     # DEBUG
+    dead_delays = []
+    global frame_delays
+    for idx in range( len( frame_delays ) ):
+        if 0 < frame_delays[idx][0]:
+            frame_delays[idx] = (frame_delays[idx][0] - 1, frame_delays[idx][1])
+        else:
+            frame_delays[idx][1]()
+            dead_delays.append( frame_delays[idx] )
+
+    for delay in dead_delays:
+        frame_delays.remove( delay )
+    
     #global ready
     #if ready:
     dead_lines = []
@@ -319,7 +336,10 @@ def set_mario_action( mario_state, action, arg ):
     #ready = True
     global test_fish
     global bhv_test
-    #if action & mario.ACT_FLAG_ATTACKING:
+    if action & mario.ACT_FLAG_ATTACKING:
+        # TODO: Why doesn't Mario scale?
+        mario_state.mario_object.scale( 2.0, 2.0, 2.0 )
+        delay_frames( 20, lambda: mario_state.mario_object.scale( 1, 1, 1 ) )
     #    spawn_yellow_coins(mario_state.mario_object, 6)
     #    test_fish = spawn_object( mario_state.mario_object, objects.MODEL_NONE, bhv_test )
     #    levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
