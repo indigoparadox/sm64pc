@@ -68,6 +68,11 @@ void game_loop_one_iteration(void);
 #include "level_python.h"
 #include "dialog_python.h"
 #include "save_file_python.h"
+#include "logging_python.h"
+
+#ifdef PYTHON_MEM_DEBUG
+PyObject *gLoggerMemory = NULL;
+#endif /* PYTHON_MEM_DEBUG */
 
 extern PyObject *gMarioModule;
 
@@ -99,6 +104,11 @@ void python_init() {
     }
     Py_Initialize();
     fprintf(stdout, "python initialized\n");
+
+    python_init_logging();
+    #ifdef PYTHON_MEM_DEBUG
+    gLoggerMemory = python_get_logger("memory");
+    #endif /* PYTHON_MEM_DEBUG */
 
     /* Load the mario module. */
     /* TODO: Load from user dir? */

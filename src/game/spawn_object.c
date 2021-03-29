@@ -14,6 +14,11 @@
 #include "object_list_processor.h"
 #include "level_table.h"
 
+#ifdef PYTHON_MEM_DEBUG
+#include "pc/logging_python.h"
+extern PyObject *gLoggerMemory;
+#endif /* PYTHON_MEM_DEBUG */
+
 /**
  * An unused linked list struct that seems to have been replaced by ObjectNode.
  */
@@ -132,7 +137,7 @@ static void deallocate_object(struct ObjectNode *freeList, struct ObjectNode *ob
 
     #ifdef PYTHON_MEM_DEBUG
     assert(NULL == ((struct Object *)obj)->pyObjectState);
-    fprintf(stdout, "deallocating native object\n");
+    python_log_debug(gLoggerMemory, "deallocating native object");
     #endif /* PYTHON_MEM_DEBUG */
 }
 
@@ -213,7 +218,7 @@ void unload_object(struct Object *obj) {
     #endif /* USE_PYTHON */
 
     #ifdef PYTHON_MEM_DEBUG
-    fprintf(stdout, "unloading native object\n");
+    python_log_debug(gLoggerMemory, "unloading native object");
     #endif /* PYTHON_MEM_DEBUG */
 
     deallocate_object(&gFreeObjectList, &obj->header);
@@ -384,7 +389,7 @@ void mark_obj_for_deletion(struct Object *obj) {
     //! Same issue as obj_mark_for_deletion
     #ifdef PYTHON_MEM_DEBUG
     //assert(NULL == obj->pyObjectState);
-    fprintf(stdout, "marking object for deletion\n");
+    python_log_debug(gLoggerMemory, "marking object for deletion");
     #endif /* PYTHON_MEM_DEBUG */
     obj->activeFlags = ACTIVE_FLAGS_DEACTIVATED;
 }

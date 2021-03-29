@@ -11,7 +11,11 @@
 #include "object_python_behavior.h"
 #include "object_python_models.h"
 
+#include "logging_python.h"
+
 extern PyObject *gMarioModule;
+
+PyObject *sLogger = NULL;
 
 u32 get_mario_cap_flag(struct Object *);
 void obj_apply_scale_to_transform(struct Object *);
@@ -37,7 +41,7 @@ static PyMemberDef PyObject_members[] = {
         type var; \
         var = py_getter(args); \
         if (PyErr_Occurred()) { \
-            fprintf(stderr, "object: during set " #var ":\n"); \
+            python_log_error(sLogger, "object: during set " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -54,7 +58,7 @@ static PyMemberDef PyObject_members[] = {
         obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE); \
         var = c_getter(obj->rawData.as_union[addr]); \
         if (PyErr_Occurred()) { \
-            fprintf(stderr, "object: during set " #var ":\n"); \
+            python_log_error(sLogger, "object: during set " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -108,7 +112,7 @@ PyObject* PyObjects_scale(PyObjectClass *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "fff", &scale_x, &scale_y, &scale_z);
     if (PyErr_Occurred()) {
-        fprintf(stderr, "object: during scale:\n");
+        python_log_error(sLogger, "object: during scale:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -136,7 +140,7 @@ PyObject* PyObjects_set_angle(PyObjectClass *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "hhh", &pitch, &yaw, &roll);
     if (PyErr_Occurred()) {
-        fprintf(stderr, "object: during set angle:\n");
+        python_log_error(sLogger, "object: during set angle:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -153,7 +157,7 @@ PyObjects_get_hitbox_radius(PyObjectClass *self) {
     obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
     var = PyFloat_FromDouble(obj->hitboxRadius);
     if (PyErr_Occurred()) {
-        fprintf(stderr, "object: during get hitbox radius:\n");
+        python_log_error(sLogger, "object: during get hitbox radius:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -167,7 +171,7 @@ PyObjects_get_hitbox_height(PyObjectClass *self) {
     obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
     var = PyFloat_FromDouble(obj->hitboxHeight);
     if (PyErr_Occurred()) {
-        fprintf(stderr, "object: during get hitbox height:\n");
+        python_log_error(sLogger, "object: during get hitbox height:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -181,7 +185,7 @@ PyObjects_get_collided_obj_interact_types(PyObjectClass *self) {
     obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
     var = PyLong_FromUnsignedLong(obj->collidedObjInteractTypes);
     if (PyErr_Occurred()) {
-        fprintf(stderr, "object: during get collided obj interact types:\n");
+        python_log_error(sLogger, "object: during get collided obj interact types:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -199,7 +203,7 @@ PyObjects_get_mario_cap_flag(PyObjectClass *self) {
 
     var = PyLong_FromUnsignedLong(cap_flag);
     if (PyErr_Occurred()) {
-        fprintf(stderr, "object: during get cap flag:\n");
+        python_log_error(sLogger, "object: during get cap flag:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -298,11 +302,11 @@ PyObjects_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
     }*/
     #ifdef PYTHON_DEBUG_VERBOSE
     if(NULL != pParent) {
-        fprintf(stdout, "object init parent: 0x%016llx containing 0x%016llx\n", pParent, pParent->native_object);
+        python_log_debug(sLogger, "object init parent: 0x%016llx containing 0x%016llx", pParent, pParent->native_object);
     }
     #endif /* PYTHON_DEBUG_VERBOSE */
     if (!res || PyErr_Occurred()) {
-        fprintf(stderr, "during spawn:\n");
+        python_log_error(sLogger, "during spawn:");
         PyErr_Print();
         //Py_DECREF(args);
         return 0;
@@ -344,7 +348,7 @@ PyObjects_destroy(PyObjectClass *self) {
     //}
     Py_DECREF(self->native_object);
     #ifdef PYTHON_MEM_DEBUG
-    fprintf(stdout, "despawned python object\n");
+    python_log_debug(sLogger, "despawned python object");
     #endif /* PYTHON_MEM_DEBUG */
 }
 
@@ -379,19 +383,23 @@ PyObject* PyInit_objects(void) {
     struct _PyObjectBehaviorClass *pBhv = NULL;
     //PyMarioStateClass *pMarioState;
 
+    if (NULL == sLogger) {
+        sLogger = python_get_logger("objects");
+    }
+
     if(0 > PyType_Ready( &PyObjectType)) {
-        fprintf( stderr, "type not ready?\n" );
+        python_log_error(sLogger, "type not ready?" );
         return NULL;
     }
 
     if(0 > PyType_Ready( &PyObjectBehaviorType)) {
-        fprintf( stderr, "type not ready?\n" );
+        python_log_error(sLogger, "type not ready?" );
         return NULL;
     }
 
     pObjects = PyModule_Create(&ObjectsModule);
     if(NULL == pObjects) {
-        fprintf( stderr, "could not allocate objects module\n" );
+        python_log_error(sLogger, "could not allocate objects module" );
         return NULL;
     }
 
@@ -403,7 +411,7 @@ PyObject* PyInit_objects(void) {
 
     Py_INCREF(&PyObjectType);
     if( 0 > PyModule_AddObject(pObjects, "Object", (PyObject *)&PyObjectType)) {
-        fprintf(stderr, "unable to add Object to objects module\n");
+        python_log_error(sLogger, "unable to add Object to objects module");
         Py_DECREF(&PyObjectType);
         Py_DECREF(pObjects);
         return NULL;
@@ -411,13 +419,13 @@ PyObject* PyInit_objects(void) {
 
     Py_INCREF(&PyObjectBehaviorType);
     if( 0 > PyModule_AddObject(pObjects, "Behavior", (PyObject *)&PyObjectBehaviorType)) {
-        fprintf(stderr, "unable to add Behavior to objects module\n");
+        python_log_error(sLogger, "unable to add Behavior to objects module");
         Py_DECREF(&PyObjectBehaviorType);
         Py_DECREF(pObjects);
         return NULL;
     }
 
-    fprintf(stdout, "objects module initialized\n");
+    python_log_info(sLogger, "objects module initialized");
 
     return pObjects;
 }
@@ -439,7 +447,7 @@ PyObject* python_wrap_object(struct Object *obj) {
     }
 
     #ifdef PYTHON_MEM_DEBUG
-    fprintf(stdout, "wrapping native object in python object\n");
+    python_log_debug(sLogger, "wrapping native object in python object");
     #endif /* PYTHON_MEM_DEBUG */
 
     pObjectOut = (PyObjectClass *)PyObject_CallObject((PyObject *)&PyObjectType, NULL);

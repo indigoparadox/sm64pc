@@ -40,8 +40,13 @@ def show_osd_line( x, y, text, ttl ):
 # END DEBUG
 
 def mario_init():
-    logging.basicConfig( level= logging.DEBUG )
-    logger.getLogger( 'init' ).info( 'logger active' )
+    #logging.basicConfig( level= logging.DEBUG )
+    logger = logging.getLogger( 'init' )
+    logger.info( 'logger active' )
+
+    logging.getLogger( 'memory' ).setLevel( logging.ERROR )
+    logging.getLogger( 'action' ).setLevel( logging.ERROR )
+    logging.getLogger( 'objects' ).setLevel( logging.ERROR )
 
     # DEBUG
     global bhv_test
@@ -376,7 +381,7 @@ def interact_star_or_key( mario_state, interact_type, obj ):
 
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
         mario_state.set_interact_obj( obj )
-        mario_state.set_used_obj( o )
+        mario_state.set_used_obj( obj )
 
         star_index = (obj.get_beh_params() >> 24) & 0x1F
         save_file.collect_star_or_key( mario_state.get_num_coins(), star_index )

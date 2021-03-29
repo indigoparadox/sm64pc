@@ -1161,6 +1161,11 @@ s32 cur_obj_clear_interact_status_flag(s32 flag) {
     return FALSE;
 }
 
+#ifdef PYTHON_MEM_DEBUG
+#include "pc/logging_python.h"
+extern PyObject *gLoggerMemory;
+#endif /* PYTHON_MEM_DEBUG */
+
 /**
  * Mark an object to be unloaded at the end of the frame.
  */
@@ -1171,8 +1176,7 @@ void obj_mark_for_deletion(struct Object *obj) {
     //  so this is worth looking into.
     obj->activeFlags = ACTIVE_FLAGS_DEACTIVATED;
     #ifdef PYTHON_MEM_DEBUG
-    fprintf(stdout, "object marking for deletion\n");
-    //assert(NULL == obj->pyObjectState);
+    python_log_debug(gLoggerMemory, "object marking for deletion");
     #endif /* PYTHON_MEM_DEBUG */
 }
 
