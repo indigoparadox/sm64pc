@@ -42,8 +42,10 @@
 #define INT_ATTACK_NOT_WEAK_FROM_ABOVE                                                \
     (INT_GROUND_POUND_OR_TWIRL | INT_PUNCH | INT_KICK | INT_TRIP | INT_HIT_FROM_BELOW)
 
+#ifndef USE_PYTHON
 u8 sDelayInvincTimer;
 s16 sInvulnerable;
+#endif /* USE_PYTHON */
 extern u8 warp_pipe_seg3_collision_03009AC8[];
 u32 interact_coin(struct MarioState *, u32, struct Object *);
 u32 interact_water_ring(struct MarioState *, u32, struct Object *);
@@ -74,6 +76,12 @@ u32 interact_hoot(struct MarioState *, u32, struct Object *);
 u32 interact_cap(struct MarioState *, u32, struct Object *);
 u32 interact_grabbable(struct MarioState *, u32, struct Object *);
 u32 interact_text(struct MarioState *, u32, struct Object *);
+
+#ifdef USE_PYTHON
+
+#include "pc/mario_python.h"
+
+#else
 
 struct InteractionHandler {
     u32 interactType;
@@ -128,6 +136,9 @@ static u32 sBackwardKnockbackActions[][3] = {
 
 static u8 sDisplayingDoorText = FALSE;
 static u8 sJustTeleported = FALSE;
+
+#endif /* USE_PYTHON */
+
 static u8 sPssSlideStarted = FALSE;
 
 /**
@@ -282,8 +293,6 @@ u32 determine_interaction(struct MarioState *m, struct Object *o) {
     return interaction;
 }
 
-#endif /* USE_PYTHON */
-
 /**
  * Sets the interaction types for INT_STATUS_INTERACTED, INT_STATUS_WAS_ATTACKED
  */
@@ -316,6 +325,8 @@ u32 attack_object(struct Object *o, s32 interaction) {
     o->oInteractStatus = attackType + (INT_STATUS_INTERACTED | INT_STATUS_WAS_ATTACKED);
     return attackType;
 }
+
+#endif /* USE_PYTHON */
 
 void mario_stop_riding_object(struct MarioState *m) {
     if (m->riddenObj != NULL) {
@@ -552,6 +563,8 @@ u32 bully_knock_back_mario(struct MarioState *mario) {
     return bonkAction;
 }
 
+#ifndef USE_PYTHON
+
 void bounce_off_object(struct MarioState *m, struct Object *o, f32 velY) {
     m->pos[1] = o->oPosY + o->hitboxHeight;
     m->vel[1] = velY;
@@ -653,6 +666,8 @@ u32 determine_knockback_action(struct MarioState *m, UNUSED s32 arg) {
     return bonkAction;
 }
 
+#endif /* USE_PYTHON */
+
 void push_mario_out_of_object(struct MarioState *m, struct Object *o, f32 padding) {
     f32 minDistance = o->hitboxRadius + m->marioObj->hitboxRadius + padding;
 
@@ -686,6 +701,8 @@ void push_mario_out_of_object(struct MarioState *m, struct Object *o, f32 paddin
         }
     }
 }
+
+#ifndef USE_PYTHON
 
 void bounce_back_from_attack(struct MarioState *m, u32 interaction) {
     if (interaction & (INT_PUNCH | INT_KICK | INT_TRIP)) {
@@ -770,12 +787,52 @@ u32 take_damage_and_knock_back(struct MarioState *m, struct Object *o) {
     return FALSE;
 }
 
+#endif /* USE_PYTHON */
+
 void reset_mario_pitch(struct MarioState *m) {
     if (m->action == ACT_WATER_JUMP || m->action == ACT_SHOT_FROM_CANNON || m->action == ACT_FLYING) {
         set_camera_mode(m->area->camera, m->area->camera->defMode, 1);
         m->faceAngle[0] = 0;
     }
 }
+
+#ifdef USE_PYTHON
+
+#define WRAP_INTERACTION(interaction) \
+    u32 interaction(struct MarioState *m, u32 action, struct Object *obj) { \
+        return wrap_mario_interaction(m, action, obj, #interaction); \
+    }
+
+WRAP_INTERACTION(interact_coin);
+WRAP_INTERACTION(interact_water_ring);
+WRAP_INTERACTION(interact_star_or_key);
+WRAP_INTERACTION(interact_bbh_entrance);
+WRAP_INTERACTION(interact_warp);
+WRAP_INTERACTION(interact_warp_door);
+WRAP_INTERACTION(interact_door);
+WRAP_INTERACTION(interact_cannon_base);
+WRAP_INTERACTION(interact_igloo_barrier);
+WRAP_INTERACTION(interact_tornado);
+WRAP_INTERACTION(interact_whirlpool);
+WRAP_INTERACTION(interact_strong_wind);
+WRAP_INTERACTION(interact_flame);
+WRAP_INTERACTION(interact_snufit_bullet);
+WRAP_INTERACTION(interact_clam_or_bubba);
+WRAP_INTERACTION(interact_bully);
+WRAP_INTERACTION(interact_bounce_top);
+WRAP_INTERACTION(interact_shock);
+WRAP_INTERACTION(interact_mr_blizzard);
+WRAP_INTERACTION(interact_hit_from_below);
+WRAP_INTERACTION(interact_damage);
+WRAP_INTERACTION(interact_breakable);
+WRAP_INTERACTION(interact_koopa_shell);
+WRAP_INTERACTION(interact_unknown_08);
+WRAP_INTERACTION(interact_cap);
+WRAP_INTERACTION(interact_hoot);
+WRAP_INTERACTION(interact_pole);
+WRAP_INTERACTION(interact_grabbable);
+
+#else
 
 u32 interact_coin(struct MarioState *m, UNUSED u32 interactType, struct Object *o) {
     m->numCoins += o->oDamageOrCoinValue;
@@ -983,6 +1040,8 @@ u32 interact_warp_door(struct MarioState *m, UNUSED u32 interactType, struct Obj
     return FALSE;
 }
 
+#endif /* USE_PYTHON */
+
 u32 get_door_save_file_flag(struct Object *door) {
     u32 saveFileFlag = 0;
     s16 requiredNumStars = door->oBehParams >> 24;
@@ -1022,6 +1081,8 @@ u32 get_door_save_file_flag(struct Object *door) {
 
     return saveFileFlag;
 }
+
+#ifndef USE_PYTHON
 
 u32 interact_door(struct MarioState *m, UNUSED u32 interactType, struct Object *o) {
     s16 requiredNumStars = o->oBehParams >> 24;
@@ -1667,6 +1728,8 @@ u32 interact_grabbable(struct MarioState *m, u32 interactType, struct Object *o)
     return FALSE;
 }
 
+#endif /* USE_PYTHON */
+
 u32 mario_can_talk(struct MarioState *m, u32 arg) {
     s16 val6;
 
@@ -1739,6 +1802,8 @@ u32 check_npc_talk(struct MarioState *m, struct Object *o) {
     return FALSE;
 }
 
+#ifndef USE_PYTHON
+
 u32 interact_text(struct MarioState *m, UNUSED u32 interactType, struct Object *o) {
     u32 interact = FALSE;
 
@@ -1752,6 +1817,8 @@ u32 interact_text(struct MarioState *m, UNUSED u32 interactType, struct Object *
 
     return interact;
 }
+
+#endif /* USE_PYTHON */
 
 void check_kick_or_punch_wall(struct MarioState *m) {
     if (m->flags & (MARIO_PUNCHING | MARIO_KICKING | MARIO_TRIPPING)) {
@@ -1777,6 +1844,37 @@ void check_kick_or_punch_wall(struct MarioState *m) {
         }
     }
 }
+
+#ifdef USE_PYTHON
+
+void mario_process_interactions(struct MarioState *m) {
+    PyObject *pFunc = NULL,
+        *pArgs = NULL;
+
+    pFunc = PyObject_GetAttrString(gMarioModule, "mario_process_interactions");
+    if (!pFunc || !PyCallable_Check(pFunc)) {
+        fprintf(stderr, "unable to call process interactions\n");
+        return;
+    }
+
+    pArgs = PyTuple_New(1);
+        
+    /* The tuple will DECREF this for us later. */
+    Py_INCREF(m->pyState);
+    PyTuple_SetItem(pArgs, 0, (PyObject *)m->pyState);
+    
+    PyObject_CallObject(pFunc, pArgs);
+    
+    Py_DECREF(pArgs);
+
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+   
+    Py_XDECREF(pFunc);
+}
+
+#else
 
 void mario_process_interactions(struct MarioState *m) {
     sDelayInvincTimer = FALSE;
@@ -1816,6 +1914,8 @@ void mario_process_interactions(struct MarioState *m) {
         sJustTeleported = FALSE;
     }
 }
+
+#endif /* USE_PYTHON */
 
 void check_death_barrier(struct MarioState *m) {
     if (m->pos[1] < m->floorHeight + 2048.0f) {

@@ -1115,6 +1115,63 @@ s32 set_jumping_action(struct MarioState *m, u32 action, u32 actionArg) {
     return TRUE;
 }
 
+#ifdef USE_PYTHON
+s32 drop_and_set_mario_action(struct MarioState *m, u32 action, u32 arg) {
+    return wrap_mario_action(m, action, arg, "drop_and_set_mario_action");
+}
+
+s32 hurt_and_set_mario_action(struct MarioState *m, u32 action, u32 actionArg, s16 hurtCounter) {
+    PyObject *pFunc = NULL,
+        *pArgs = NULL,
+        *pRetVal = NULL,
+        *pMarioState = NULL,
+        *pAction = NULL,
+        *pActionArg = NULL,
+        *pHurtCounter = NULL;
+    u32 retval = 0;
+
+    pFunc = PyObject_GetAttrString(gMarioModule, "hurt_and_set_mario_action");
+    if (!pFunc || PyCallable_Check(pFunc)) {
+        fprintf(stderr, "unable to call hurt_and_set_mario_action\n");
+        return 0;
+    }
+
+    pArgs = PyTuple_New(3);
+    
+    /* The tuple will DECREF this for us later. */
+    pMarioState = (PyObject *)m->pyState;
+    Py_INCREF(pMarioState);
+    PyTuple_SetItem(pArgs, 0, pMarioState);
+    
+    /* The tuple will DECREF this for us later. */
+    pAction = PyLong_FromUnsignedLong(action);
+    PyTuple_SetItem(pArgs, 1, pAction);
+
+    /* The tuple will DECREF this for us later. */
+    pActionArg = PyLong_FromUnsignedLong(actionArg);
+    PyTuple_SetItem(pArgs, 2, pActionArg);
+
+    /* The tuple will DECREF this for us later. */
+    pHurtCounter = PyLong_FromLong(hurtCounter);
+    PyTuple_SetItem(pArgs, 3, pHurtCounter);
+
+    pRetVal = PyObject_CallObject(pFunc, pArgs);
+    
+    Py_DECREF(pArgs);
+    if(NULL != pRetVal) {
+        retval = PyLong_AsLong(pRetVal);
+        Py_DECREF(pRetVal);
+    }
+
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+   
+    Py_XDECREF(pFunc);
+
+    return retval;
+}
+#else
 /**
  * Drop anything Mario is holding and set a new action.
  */
@@ -1132,6 +1189,7 @@ s32 hurt_and_set_mario_action(struct MarioState *m, u32 action, u32 actionArg, s
 
     return set_mario_action(m, action, actionArg);
 }
+#endif /* USE_PYTHON */
 
 /**
  * Checks a variety of inputs for common transitions between

@@ -44,7 +44,9 @@ extern u32 set_mario_action(struct MarioState *, u32 action, u32 actionArg);
 extern s32 set_jump_from_landing(struct MarioState *m);
 extern s32 set_jumping_action(struct MarioState *m, u32 action, u32 actionArg);
 extern s32 drop_and_set_mario_action(struct MarioState *m, u32 action, u32 actionArg);
+#ifndef USE_PYTHON
 extern s32 hurt_and_set_mario_action(struct MarioState *m, u32 action, u32 actionArg, s16 hurtCounter);
+#endif /* USE_PYTHON */
 extern s32 check_common_action_exits(struct MarioState *m);
 extern s32 check_common_hold_action_exits(struct MarioState *m);
 extern s32 transition_submerged_to_walking(struct MarioState *m);

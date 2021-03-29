@@ -5,12 +5,16 @@
 #include <structmember.h>
 
 #include "game/object_helpers.h"
+#include "game/mario.h"
 #include "engine/graph_node.h"
 
 #include "object_python_behavior.h"
 #include "object_python_models.h"
 
 extern PyObject *gMarioModule;
+
+u32 get_mario_cap_flag(struct Object *);
+void obj_apply_scale_to_transform(struct Object *);
 
 typedef struct _PyObjectClass {
     PyObject_HEAD 
@@ -142,6 +146,66 @@ PyObject* PyObjects_set_angle(PyObjectClass *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+static PyObject *
+PyObjects_get_hitbox_radius(PyObjectClass *self) {
+    struct Object *obj = NULL;
+    PyObject *var;
+    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+    var = PyFloat_FromDouble(obj->hitboxRadius);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "object: during get hitbox radius:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+    return var;
+}
+
+static PyObject *
+PyObjects_get_hitbox_height(PyObjectClass *self) {
+    struct Object *obj = NULL;
+    PyObject *var;
+    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+    var = PyFloat_FromDouble(obj->hitboxHeight);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "object: during get hitbox height:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+    return var;
+}
+
+static PyObject *
+PyObjects_get_collided_obj_interact_types(PyObjectClass *self) {
+    struct Object *obj = NULL;
+    PyObject *var;
+    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+    var = PyLong_FromUnsignedLong(obj->collidedObjInteractTypes);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "object: during get collided obj interact types:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+    return var;
+}
+
+static PyObject *
+PyObjects_get_mario_cap_flag(PyObjectClass *self) {
+    struct Object *obj = NULL;
+    PyObject *var;
+    u32 cap_flag = 0;
+
+    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+    cap_flag = get_mario_cap_flag( obj );
+
+    var = PyLong_FromUnsignedLong(cap_flag);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "object: during get cap flag:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+    return var;
+}
+
 PyObject* PyObjects_is_valid(PyObjectClass *self) {
     if (NULL != self &&
     NULL != self->native_object &&
@@ -158,13 +222,24 @@ OBJECT_SET( oMarioWalkingPitch,     0x10, u32, PyLong_AsUnsignedLong, asU32 );
 OBJECT_SET( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong, asS32 );
 OBJECT_SET( oDamageOrCoinValue,     0x3e, s32, PyLong_AsLong, asS32 );
 OBJECT_SET( oInteractStatus,        0x2b, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oInteractionSubtype,    0x42, u32, PyLong_AsUnsignedLong, asU32 )
-OBJECT_SET( oBehParams,             0x40, s32, PyLong_AsLong, asS32 )
+OBJECT_SET( oInteractionSubtype,    0x42, u32, PyLong_AsUnsignedLong, asU32 );
+OBJECT_SET( oBehParams,             0x40, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oMarioTornadoYawVel,    0x21, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oMarioTornadoPosY,      0x22, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oMarioBurnTimer,        0x22, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oMarioPoleUnk108,       0x20, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oMarioPoleYawVel,       0x21, s32, PyLong_AsLong, asS32 );
+OBJECT_SET( oMarioPolePos,          0x22, f32, PyFloat_AsDouble, asF32 );
+OBJECT_SET( oMarioWhirlpoolPosY,    0x22, f32, PyFloat_AsDouble, asF32 );
 
+OBJECT_GET( oPosX,                  0x06, f32, PyFloat_FromDouble, asF32 );
 OBJECT_GET( oPosY,                  0x07, f32, PyFloat_FromDouble, asF32 );
 OBJECT_GET( oDamageOrCoinValue,     0x3e, s32, PyLong_FromLong, asS32 );
 OBJECT_GET( oInteractionSubtype,    0x42, u32, PyLong_FromUnsignedLong, asU32 );
-OBJECT_GET( oBehParams,             0x40, s32, PyLong_FromLong, asS32 )
+OBJECT_GET( oInteractStatus,        0x2b, s32, PyLong_FromLong, asS32 );
+OBJECT_GET( oBehParams,             0x40, s32, PyLong_FromLong, asS32 );
+OBJECT_GET( oMoveAngleYaw,          0x10, u32, PyLong_FromUnsignedLong, asU32 );
+OBJECT_GET( oMarioBurnTimer,        0x22, s32, PyLong_FromLong, asS32 );
 
 static PyMethodDef PyObject_methods[] = {
     {"set_forward_vel",             (PyCFunction)PyObjects_set_oForwardVel,             METH_O, NULL},
@@ -177,11 +252,26 @@ static PyMethodDef PyObject_methods[] = {
     {"set_interaction_subtype",     (PyCFunction)PyObjects_set_oInteractionSubtype,     METH_O, NULL},
     {"set_beh_params",              (PyCFunction)PyObjects_set_oBehParams,              METH_O, NULL},
     {"set_angle",                   (PyCFunction)PyObjects_set_angle,                   METH_VARARGS, NULL},
+    {"set_mario_tornado_yaw_vel",   (PyCFunction)PyObjects_set_oMarioTornadoYawVel,     METH_O, NULL},
+    {"set_mario_tornato_pos_y",     (PyCFunction)PyObjects_set_oMarioTornadoPosY,       METH_O, NULL},
+    {"set_mario_burn_timer",        (PyCFunction)PyObjects_set_oMarioBurnTimer,         METH_O, NULL},
+    {"set_mario_pole_unk108",       (PyCFunction)PyObjects_set_oMarioPoleUnk108,        METH_O, NULL},
+    {"set_mario_pole_yaw_vel",      (PyCFunction)PyObjects_set_oMarioPoleYawVel,        METH_O, NULL},
+    {"set_mario_pole_pos",          (PyCFunction)PyObjects_set_oMarioPolePos,           METH_O, NULL},
+    {"set_mario_whirlpool_pos_y",   (PyCFunction)PyObjects_set_oMarioWhirlpoolPosY,     METH_O, NULL},
 
     {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
+    {"get_pos_x",                   (PyCFunction)PyObjects_get_oPosX,                   METH_NOARGS, NULL},
     {"get_damage_or_coin_value",    (PyCFunction)PyObjects_get_oDamageOrCoinValue,      METH_NOARGS, NULL},
     {"get_interaction_subtype",     (PyCFunction)PyObjects_get_oInteractionSubtype,     METH_NOARGS, NULL},
+    {"get_interact_status",         (PyCFunction)PyObjects_get_oInteractStatus,         METH_NOARGS, NULL},
     {"get_beh_params",              (PyCFunction)PyObjects_get_oBehParams,              METH_NOARGS, NULL},
+    {"get_move_angle_yaw",          (PyCFunction)PyObjects_get_oMoveAngleYaw,           METH_NOARGS, NULL},
+    {"get_hitbox_radius",           (PyCFunction)PyObjects_get_hitbox_radius,           METH_NOARGS, NULL},
+    {"get_hitbox_height",           (PyCFunction)PyObjects_get_hitbox_height,           METH_NOARGS, NULL},
+    {"get_mario_burn_timer",        (PyCFunction)PyObjects_get_oMarioBurnTimer,         METH_NOARGS, NULL},
+    {"get_mario_cap_flag",          (PyCFunction)PyObjects_get_mario_cap_flag,          METH_NOARGS, NULL},
+    {"get_collided_obj_interact_types", (PyCFunction)PyObjects_get_collided_obj_interact_types, METH_NOARGS, NULL},
 
     {"init_animation",              (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
     {"scale",                       (PyCFunction)PyObjects_scale,                       METH_VARARGS, NULL},

@@ -50,6 +50,7 @@ PyObject* PyInit_levels(void) {
         return NULL;
     }
 
+    PYTHON_LEVEL_ADD_WARP_CONSTANTS(pLevels);
     PYTHON_LEVEL_ADD_TERRAIN_CONSTANTS(pLevels);
     PYTHON_LEVEL_ADD_SURFACE_CONSTANTS(pLevels);
     PYTHON_LEVEL_ADD_LEVEL_CONSTANTS(pLevels);
