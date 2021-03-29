@@ -182,20 +182,6 @@ static PyMemberDef PyMarioState_members[] = {
         Py_RETURN_NONE; \
     }
 
-PyObject *
-PyMario_set_riddenObj(PyMarioStateClass *self, PyObject *arg) {
-    struct MarioState *mario_state = NULL;
-    struct Object *obj = NULL;
-    if (Py_None != (PyObject *)arg) {
-        obj = python_object_get_native((struct _PyObjectClass *)arg);
-    }
-    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
-    Py_XDECREF(arg);
-    mario_state->riddenObj = obj;
-    Py_XINCREF(arg);
-    Py_RETURN_NONE;
-}
-
 /*
 static PyObject *
 PyMario_unset_flag(PyObject *self, PyObject *arg) {
@@ -438,7 +424,7 @@ MARIO_SET( invincTimer, short, PyLong_AsLong );
 MARIO_SET( input, unsigned short, PyLong_AsUnsignedLong );
 MARIO_SET_OBJ( interactObj );
 MARIO_SET_OBJ( usedObj );
-//MARIO_SET_OBJ( riddenObj );
+MARIO_SET_OBJ( riddenObj );
 MARIO_SET_VEC( vel, float, "f" );
 MARIO_SET_VEC( faceAngle, short, "h" );
 
@@ -527,6 +513,8 @@ static PyMethodDef PyMarioState_methods[] = {
     {"get_cap_timer",               (PyCFunction)PyMario_get_capTimer,              METH_NOARGS, NULL},
     {"get_water_level",             (PyCFunction)PyMario_get_waterLevel,            METH_NOARGS, NULL},
     {"get_health",                  (PyCFunction)PyMario_get_health,                METH_NOARGS, NULL},
+    {"get_used_obj",                (PyCFunction)PyMario_get_usedObj,               METH_NOARGS, NULL},
+    {"get_interact_obj",            (PyCFunction)PyMario_get_interactObj,           METH_NOARGS, NULL},
     {"get_collided_object",         (PyCFunction)PyMario_get_collided_object,       METH_O, NULL},
     {"get_collided_obj_interact_types", (PyCFunction)PyMario_get_collidedObjInteractTypes,      METH_NOARGS, NULL},
 
@@ -537,6 +525,8 @@ static PyMethodDef PyMarioState_methods[] = {
     {"bully_knock_back",            (PyCFunction)PyMario_bully_knock_back_mario,            METH_NOARGS, NULL},
     {"drop_held_object",            (PyCFunction)PyMario_mario_drop_held_object,            METH_NOARGS, NULL},
     {"check_kick_or_punch_wall",    (PyCFunction)PyMario_check_kick_or_punch_wall,          METH_NOARGS, NULL},
+    {"check_read_sign",             (PyCFunction)PyMario_check_read_sign,                   METH_O, NULL},
+    {"check_npc_talk",              (PyCFunction)PyMario_check_npc_talk,                    METH_O, NULL},
 
     #ifndef CHECK_PYTHON
     {"set_y_vel_based_on_fspeed",   (PyCFunction)PyMario_set_y_vel_based_on_fspeed, METH_VARARGS, NULL},
