@@ -315,6 +315,7 @@ PyObjects_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
         bhv = PyObjectBehavior_get_native(self->behavior);
     }
 
+    self->spawned_in_python = 0;
     if (NULL != pParent && NULL != bhv && 0 <= model) {
         assert(NULL != pParent->native_object);
         parent_obj = PYTHON_DECAPSULE_OBJECT(pParent->native_object, return 0);
@@ -324,7 +325,7 @@ PyObjects_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
         self->native_object = PYTHON_ENCAPSULE_OBJECT(self_obj, return 0);
         self_obj->pyObjectState = self;
         /* Decreased again in deallocate_object. */
-        Py_INCREF(self);
+        //Py_INCREF(self);
         //Py_INCREF(self->native_object);
         self->spawned_in_python = 1;
     }
@@ -336,12 +337,15 @@ void
 PyObjects_destroy(PyObjectClass *self) {
     struct Object* native_object = NULL;
     Py_XDECREF(self->behavior);
-    if (self->spawned_in_python) {
+    //if (self->spawned_in_python) {
         native_object = PYTHON_DECAPSULE_OBJECT(self->native_object, ;);
-        obj_mark_for_deletion(native_object);
-    }
-    Py_XDECREF(self->native_object);
-    fprintf(stdout, "despawned object\n");
+        native_object->pyObjectState = NULL;
+        //obj_mark_for_deletion(native_object);
+    //}
+    Py_DECREF(self->native_object);
+    #ifdef PYTHON_MEM_DEBUG
+    fprintf(stdout, "despawned python object\n");
+    #endif /* PYTHON_MEM_DEBUG */
 }
 
 static PyTypeObject PyObjectType = {
@@ -434,14 +438,22 @@ PyObject* python_wrap_object(struct Object *obj) {
         return (PyObject *)obj->pyObjectState;
     }
 
+    #ifdef PYTHON_MEM_DEBUG
+    fprintf(stdout, "wrapping native object in python object\n");
+    #endif /* PYTHON_MEM_DEBUG */
+
     pObjectOut = (PyObjectClass *)PyObject_CallObject((PyObject *)&PyObjectType, NULL);
     assert(NULL == pObjectOut->native_object);
     pObjectOut->native_object = PYTHON_ENCAPSULE_OBJECT(obj, Py_RETURN_NONE);
+    assert(NULL != pObjectOut->native_object);
+    //Py_INCREF(pObjectOut);
     
     //Py_INCREF(pObjectOut->native_object);
     
     return (PyObject *)pObjectOut;
 }
+
+#if 0
 
 struct Object *
 wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavior) {
@@ -496,7 +508,7 @@ wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavi
             object_out = PYTHON_DECAPSULE_OBJECT(pObjectOut->native_object, ;);
             object_out->pyObjectState = pObjectOut;
             /* Decreased again in deallocate_object. */
-            Py_INCREF(pObjectOut);
+            //Py_INCREF(pObjectOut);
             //Py_DECREF(pObjectOut);
         }
     }
@@ -509,6 +521,8 @@ wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavi
 
     return object_out;
 }
+
+#endif
 
 struct Object *
 python_object_get_native(PyObjectClass *self) {

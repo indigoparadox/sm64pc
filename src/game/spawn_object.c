@@ -129,6 +129,11 @@ static void deallocate_object(struct ObjectNode *freeList, struct ObjectNode *ob
     // Insert at beginning of free list
     obj->next = freeList->next;
     freeList->next = obj;
+
+    #ifdef PYTHON_MEM_DEBUG
+    assert(NULL == ((struct Object *)obj)->pyObjectState);
+    fprintf(stdout, "deallocating native object\n");
+    #endif /* PYTHON_MEM_DEBUG */
 }
 
 /**
@@ -202,9 +207,14 @@ void unload_object(struct Object *obj) {
     obj->header.gfx.node.flags &= ~GRAPH_RENDER_ACTIVE;
 
     #ifdef USE_PYTHON
+    /* The python object might go away long before the native object. */
     Py_XDECREF(((struct Object *)obj)->pyObjectState);
-    ((struct Object *)obj)->pyObjectState = NULL;
+    assert(NULL == ((struct Object *)obj)->pyObjectState);
     #endif /* USE_PYTHON */
+
+    #ifdef PYTHON_MEM_DEBUG
+    fprintf(stdout, "unloading native object\n");
+    #endif /* PYTHON_MEM_DEBUG */
 
     deallocate_object(&gFreeObjectList, &obj->header);
 }
@@ -345,6 +355,10 @@ struct Object *create_object(const BehaviorScript *bhvScript) {
         obj->activeFlags |= ACTIVE_FLAG_UNIMPORTANT;
     }
 
+    #ifdef USE_PYTHON
+    python_wrap_object(obj);
+    #endif /* USE_PYTHON */
+
     //! They intended to snap certain objects to the floor when they spawn.
     //  However, at this point the object's position is the origin. So this will
     //  place the object at the floor beneath the origin. Typically this
@@ -368,5 +382,9 @@ struct Object *create_object(const BehaviorScript *bhvScript) {
  */
 void mark_obj_for_deletion(struct Object *obj) {
     //! Same issue as obj_mark_for_deletion
+    #ifdef PYTHON_MEM_DEBUG
+    //assert(NULL == obj->pyObjectState);
+    fprintf(stdout, "marking object for deletion\n");
+    #endif /* PYTHON_MEM_DEBUG */
     obj->activeFlags = ACTIVE_FLAGS_DEACTIVATED;
 }
