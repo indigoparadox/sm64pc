@@ -101,9 +101,6 @@ PyObject* PyInit_save_file(void) {
         return NULL;
     }
 
-    PyModule_AddIntConstant(pSaveFile, "COURSE_MIN", COURSE_MIN);
-    PyModule_AddIntConstant(pSaveFile, "COURSE_MAX", COURSE_MAX);
-
     PyModule_AddIntConstant(pSaveFile, "SAVE_FLAG_FILE_EXISTS", SAVE_FLAG_FILE_EXISTS);
     PyModule_AddIntConstant(pSaveFile, "SAVE_FLAG_HAVE_WING_CAP", SAVE_FLAG_HAVE_WING_CAP);
     PyModule_AddIntConstant(pSaveFile, "SAVE_FLAG_HAVE_METAL_CAP", SAVE_FLAG_HAVE_METAL_CAP);

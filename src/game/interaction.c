@@ -208,7 +208,7 @@ u32 determine_interaction(struct MarioState *m, struct Object *o) {
     Py_XINCREF(m->pyState);
     PyTuple_SetItem(pArgs, 0, (PyObject *)m->pyState);
 
-    pObject = object_python_wrap(o);
+    pObject = python_wrap_object(o);
     PyTuple_SetItem(pArgs, 1, pObject);
     
     pRetval = PyObject_CallObject(pFunc, pArgs);
@@ -332,7 +332,11 @@ void mario_stop_riding_object(struct MarioState *m) {
     if (m->riddenObj != NULL) {
         m->riddenObj->oInteractStatus = INT_STATUS_STOP_RIDING;
         stop_shell_music();
+        #ifdef USE_PYTHON
+        PyMario_set_riddenObj(gMarioState->pyState, Py_None);
+        #else
         m->riddenObj = NULL;
+        #endif /* USE_PYTHON */
     }
 }
 
@@ -477,13 +481,21 @@ u32 mario_check_object_grab(struct MarioState *m) {
             s16 facingDYaw = m->faceAngle[1] - m->interactObj->oMoveAngleYaw;
             if (facingDYaw >= -0x5555 && facingDYaw <= 0x5555) {
                 m->faceAngle[1] = m->interactObj->oMoveAngleYaw;
+                #ifdef USE_PYTHON
+                PyMario_set_usedObj(gMarioState->pyState, python_wrap_object(m->interactObj));
+                #else
                 m->usedObj = m->interactObj;
+                #endif /* USE_PYTHON */
                 result = set_mario_action(m, ACT_PICKING_UP_BOWSER, 0);
             }
         } else {
             s16 facingDYaw = mario_obj_angle_to_object(m, m->interactObj) - m->faceAngle[1];
             if (facingDYaw >= -0x2AAA && facingDYaw <= 0x2AAA) {
+                #ifdef USE_PYTHON
+                PyMario_set_usedObj(gMarioState->pyState, python_wrap_object(m->interactObj));
+                #else
                 m->usedObj = m->interactObj;
+                #endif /* USE_PYTHON */
 
                 if (!(m->action & ACT_FLAG_AIR)) {
                     set_mario_action(
@@ -1775,8 +1787,13 @@ u32 check_read_sign(struct MarioState *m, struct Object *o) {
             m->marioObj->oMarioReadingSignDPosX = targetX - m->pos[0];
             m->marioObj->oMarioReadingSignDPosZ = targetZ - m->pos[2];
 
+            #ifdef USE_PYTHON
+            PyMario_set_interactObj(gMarioState->pyState, python_wrap_object(o));
+            PyMario_set_usedObj(gMarioState->pyState, python_wrap_object(o));
+            #else
             m->interactObj = o;
             m->usedObj = o;
+            #endif /* USE_PYTHON */
             return set_mario_action(m, ACT_READING_SIGN, 0);
         }
     }
@@ -1790,8 +1807,16 @@ u32 check_npc_talk(struct MarioState *m, struct Object *o) {
         if (facingDYaw >= -0x4000 && facingDYaw <= 0x4000) {
             o->oInteractStatus = INT_STATUS_INTERACTED;
 
+            #ifdef USE_PYTHON
+            PyMario_set_interactObj(gMarioState->pyState, python_wrap_object(o));
+            #else
             m->interactObj = o;
+            #endif /* USE_PYTHON */
+            #ifdef USE_PYTHON
+            PyMario_set_usedObj(gMarioState->pyState, python_wrap_object(o));
+            #else
             m->usedObj = o;
+            #endif /* USE_PYTHON */
 
             push_mario_out_of_object(m, o, -10.0f);
             return set_mario_action(m, ACT_WAITING_FOR_DIALOG, 0);

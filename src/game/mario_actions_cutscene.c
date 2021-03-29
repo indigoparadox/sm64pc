@@ -368,7 +368,11 @@ s32 set_mario_npc_dialog(s32 actionArg) {
             }
         }
     } else if (actionArg != 0 && mario_ready_to_speak()) {
+        #ifdef USE_PYTHON
+        PyMario_set_usedObj(gMarioState->pyState, python_wrap_object(gCurrentObject));
+        #else
         gMarioState->usedObj = gCurrentObject;
+        #endif /* USE_PYTHON */
         set_mario_action(gMarioState, ACT_READING_NPC_DIALOG, actionArg);
         dialogState = 1; // starting dialog
     }

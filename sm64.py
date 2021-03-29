@@ -8,8 +8,6 @@ import levels
 import dialog
 import save_file
 
-logger = logging.getLogger( '' )
-
 InteractionHandler = collections.namedtuple('InteractionHandler', ['interact_type', 'handler'])
 
 forward_knockback_actions = [
@@ -43,7 +41,7 @@ def show_osd_line( x, y, text, ttl ):
 
 def mario_init():
     logging.basicConfig( level= logging.DEBUG )
-    logger.info( 'logger active' )
+    logger.getLogger( 'init' ).info( 'logger active' )
 
     # DEBUG
     global bhv_test
@@ -51,13 +49,13 @@ def mario_init():
     bhv_test.bhv_BEGIN( objects.OBJ_LIST_DEFAULT )
     bhv_test.bhv_BEGIN_LOOP()
     bhv_test.bhv_END_LOOP()
-    print( bhv_test.script )
+    #print( bhv_test.script )
     bhv_test.compile()
     # END DEBUG
 
 def should_push_or_pull_door( mario_state, obj ):
-    dx = obj.get_pos_x - mario_state.get_pos( 0 )
-    dz = obj.get_pos_z - mario_state.get_pos( 2 )
+    dx = obj.get_pos_x() - mario_state.get_pos( 0 )
+    dz = obj.get_pos_z() - mario_state.get_pos( 2 )
 
     yaw = obj.get_move_angle_yaw() - mario.atan2s( dz, dx )
 
@@ -84,7 +82,7 @@ def bounce_back_from_attack( mario_state, interaction ):
 def get_door_save_file_flag( door ):
 
     save_file_flag = 0
-    required_num_stars = get.get_beh_params() >> 24
+    required_num_stars = door.get_beh_params() >> 24
 
     is_ccm_door = door.get_pos_x() < 0.0
     is_pss_door = door.get_pos_y() > 500.0
@@ -114,11 +112,13 @@ def get_door_save_file_flag( door ):
 
 def check_object_grab_mario( mario_state, interact_type, obj ):
 
+    global invulnerable
+
     air_invul_attacking = \
         ACT_FLAG_AIR | ACT_FLAG_INVULNERABLE | ACT_FLAG_ATTACKING
     if (not mario_state.get_action() & air_invul_attacking or \
         not invulnerable) and \
-    obj.get_interaction_subtype() & INT_SUBTYPE_GRABS_MARIO:
+    obj.get_interaction_subtype() & mario.INT_SUBTYPE_GRABS_MARIO:
 
         if object_facing_mario( mario_state, obj, 0x2AAA ):
             mario_state.stop_riding_and_holding()
@@ -180,6 +180,9 @@ def take_damage_from_interact_object( mario_state ):
     return damage
 
 def take_damage_and_knock_back( mario_state,  obj ):
+
+    global invulnerable
+
     damage = 0
 
     if not invulnerable and \
@@ -316,11 +319,14 @@ def interact_coin( mario_state, interact_type, obj ):
 
     obj.set_interact_status( mario.INT_STATUS_INTERACTED )
 
-    if COURSE_IS_MAIN_COURSE(gCurrCourseNum) and \
-    num_counts - coin_val < 100 and \
+    curr_course = levels.get_curr_course_num()
+    if curr_course >= levels.COURSE_MIN and \
+    curr_course <= levels.COURSE_STAGES_MAX and \
+    num_coins - coin_val < 100 and \
     num_coints >= 100:
         # bhv_spawn_star_no_level_exit(6):
-        coin_star = spawn_object( obj, objectsMODEL_STAR, objects.bhvSpawnedStarNoLevelExit )
+        coin_star = spawn_object( obj, objectsMODEL_STAR,
+            objects.bhvSpawnedStarNoLevelExit )
         coin_star.set_beh_params( 6 << 24 )
         coin_star.set_interaction_subtype( mario.INT_SUBTYPE_NO_EXIT )
         obj.set_angle( 0, 0, 0 )
@@ -357,13 +363,13 @@ def interact_star_or_key( mario_state, interact_type, obj ):
         if no_exit:
             star_grab_action = mario.ACT_STAR_DANCE_NO_EXIT
 
-        if mario_state.action &mario.ACT_FLAG_SWIMMING:
+        if mario_state.get_action() &mario.ACT_FLAG_SWIMMING:
             star_grab_action = mario.ACT_STAR_DANCE_WATER
 
-        if mario_state.action &mario.ACT_FLAG_METAL_WATER:
+        if mario_state.get_action() &mario.ACT_FLAG_METAL_WATER:
             star_grab_action = mario.ACT_STAR_DANCE_WATER
 
-        if mario_state.action &mario.ACT_FLAG_AIR:
+        if mario_state.get_action() &mario.ACT_FLAG_AIR:
             star_grab_action = mario.ACT_FALL_AFTER_STAR_GRAB
 
         spawn_object( obj, objects.MODEL_NONE, objects.bhvStarKeyCollectionPuffSpawner )
@@ -378,8 +384,8 @@ def interact_star_or_key( mario_state, interact_type, obj ):
         mario_state.set_num_stars(
             save_file.get_total_star_count(
                 save_file.get_curr_save_file_num() - 1,
-                save_file.COURSE_MIN - 1,
-                save_file.COURSE_MAX - 1 ) )
+                levels.COURSE_MIN - 1,
+                levels.COURSE_MAX - 1 ) )
 
         # TODO: Sound stuff.
         #if not no_exit:
@@ -462,6 +468,8 @@ def interact_warp( mario_state, interact_type, obj ):
 
 def interact_warp_door( mario_state, interact_type, obj ):
 
+    global displaying_door_text
+
     action_arg = 0
     door_action = 0
     action = mario_state.get_action()
@@ -504,8 +512,8 @@ def interact_warp_door( mario_state, interact_type, obj ):
 
             door_action = mario.ACT_UNLOCKING_KEY_DOOR
 
-        if mario_state.action == mario.ACT_WALKING or \
-        mario_state.action == mario.ACT_DECELERATING:
+        if mario_state.get_action() == mario.ACT_WALKING or \
+        mario_state.get_action() == mario.ACT_DECELERATING:
             action_arg = should_push_or_pull_door( mario_state, obj ) + 0x00000004
 
             if door_action == 0:
@@ -521,13 +529,17 @@ def interact_warp_door( mario_state, interact_type, obj ):
     return False
 
 def interact_door( mario_state, interact_type, obj ):
+
+    global displaying_door_text
+
     required_num_stars = obj.get_beh_params() >> 24
-    num_stars = save_file_get_total_star_count(
+    num_stars = save_file.get_total_star_count(
         save_file.get_curr_save_file_num() - 1,
         levels.COURSE_MIN - 1,
         levels.COURSE_MAX - 1 )
 
-    if mario_state.action == mario.ACT_WALKING or mario_state.action == mario.ACT_DECELERATING:
+    if mario_state.get_action() == mario.ACT_WALKING or \
+    mario_state.get_action() == mario.ACT_DECELERATING:
         if num_stars >= required_num_stars:
             action_arg = should_push_or_pull_door( mario_state, obj )
             enter_door_action = 0
@@ -581,7 +593,7 @@ def interact_door( mario_state, interact_type, obj ):
                 mario.ACT_READING_AUTOMATIC_DIALOG,
                 text )
 
-    elif mario_state.action == mario.ACT_IDLE and \
+    elif mario_state.get_action() == mario.ACT_IDLE and \
     displaying_door_text and \
     required_num_stars == 70:
         mario_state.set_interact_obj( obj )
@@ -594,7 +606,7 @@ def interact_door( mario_state, interact_type, obj ):
     return False
 
 def interact_cannon_base( mario_state, interact_type, obj ):
-    if mario_state.action != mario.ACT_IN_CANNON:
+    if mario_state.get_action() != mario.ACT_IN_CANNON:
         mario_state.stop_riding_and_holding()
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
         mario_state.set_interact_obj( obj )
@@ -615,7 +627,7 @@ def interact_igloo_barrier( mario_state, interact_type, obj ):
 def interact_tornado( mario_state, interact_type, obj ):
     mario_obj = mario_state.mario_object
 
-    if mario_state.action != mario.ACT_TORNADO_TWIRLING and mario_state.action != mario.ACT_SQUISHED:
+    if mario_state.get_action() != mario.ACT_TORNADO_TWIRLING and mario_state.get_action() != mario.ACT_SQUISHED:
         mario_state.stop_riding_and_holding()
         mario_state.set_forward_vel_all( 0.0 )
         mario_state.update_sound_and_camera()
@@ -635,14 +647,14 @@ def interact_tornado( mario_state, interact_type, obj ):
         return set_mario_action(
             mario_state,
             mario.ACT_TORNADO_TWIRLING,
-            mario_state.action == mario.ACT_TWIRLING )
+            mario_state.get_action() == mario.ACT_TWIRLING )
 
     return False
 
 def interact_whirlpool( mario_state, interact_type, obj ):
     mario_obj = mario_state.mario_object
 
-    if mario_state.action != mario.ACT_CAUGHT_IN_WHIRLPOOL:
+    if mario_state.get_action() != mario.ACT_CAUGHT_IN_WHIRLPOOL:
         mario_state.stop_riding_and_holding()
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
         mario_state.set_interact_obj( obj )
@@ -666,7 +678,7 @@ def interact_whirlpool( mario_state, interact_type, obj ):
 
 def interact_strong_wind( mario_state, interact_type, obj ):
 
-    if mario_state.action != mario.ACT_GETTING_BLOWN:
+    if mario_state.get_action() != mario.ACT_GETTING_BLOWN:
         mario_state.stop_riding_and_holding()
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
         mario_state.set_interact_obj( obj )
@@ -685,6 +697,9 @@ def interact_strong_wind( mario_state, interact_type, obj ):
     return False
 
 def interact_flame( mario_state, interact_type, obj ):
+
+    global invulnerable
+
     burning_action = mario.ACT_BURNING_JUMP
 
     if not invulnerable and \
@@ -719,6 +734,9 @@ def interact_flame( mario_state, interact_type, obj ):
 
 def interact_snufit_bullet( mario_state, interact_type, obj ):
 
+    global invulnerable
+    global delay_invinc_timer
+
     if not invulnerable and \
     not mario_state.get_flags() & MARIO_VANISH_CAP:
         if mario_state.get_flags() & MARIO_METAL_CAP:
@@ -750,6 +768,8 @@ def interact_snufit_bullet( mario_state, interact_type, obj ):
 
 def interact_clam_or_bubba( mario_state, interact_type, obj ):
 
+    global delay_invinc_timer
+
     if obj.get_interaction_subtype() & mario.INT_SUBTYPE_EATS_MARIO:
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
         mario_state.set_interact_obj( obj )
@@ -765,6 +785,8 @@ def interact_clam_or_bubba( mario_state, interact_type, obj ):
     return True
 
 def interact_bully( mario_state, interact_type, obj ):
+
+    global invulnerable
 
     interaction = 0
 
@@ -812,6 +834,9 @@ def interact_bully( mario_state, interact_type, obj ):
 
 def interact_shock( mario_state, interact_type, obj ):
 
+    global invulnerable
+    global delay_invinc_timer
+
     action_air = mario.ACT_FLAG_AIR | mario.ACT_FLAG_ON_POLE | mario.ACT_FLAG_HANGING
 
     if not invulnerable and \
@@ -847,6 +872,9 @@ def interact_shock( mario_state, interact_type, obj ):
     return False
 
 def interact_mr_blizzard( mario_state, interact_type, obj ):
+
+    global delay_invinc_timer
+
     if take_damage_and_knock_back( mario_state, obj ):
         return True
 
@@ -858,7 +886,10 @@ def interact_mr_blizzard( mario_state, interact_type, obj ):
 
 def interact_hit_from_below( mario_state, interact_type, obj ):
 
+    global delay_invinc_timer
+
     interaction = 0
+
     if mario_state.get_flags() & MARIO_METAL_CAP:
         interaction = mario.INT_FAST_ATTACK_OR_SHELL
     else:
@@ -894,7 +925,11 @@ def interact_hit_from_below( mario_state, interact_type, obj ):
     return False
 
 def interact_bounce_top( mario_state, interact_type, obj ):
+
+    global delay_invinc_timer
+
     interaction = 0
+
     if mario_state.get_flags() & MARIO_METAL_CAP:
         interaction = mario.INT_FAST_ATTACK_OR_SHELL
     else:
@@ -928,6 +963,9 @@ def interact_bounce_top( mario_state, interact_type, obj ):
     return False
 
 def interact_damage( mario_state, interact_type, obj ):
+
+    global delay_invinc_timer
+
     if take_damage_and_knock_back( mario_state, obj ):
         return True
 
@@ -938,6 +976,7 @@ def interact_damage( mario_state, interact_type, obj ):
     return False
 
 def interact_breakable( mario_state, interact_type, obj ):
+
     interaction = determine_interaction( mario_state, obj )
 
     if interaction & mario.INT_ATTACK_NOT_WEAK_FROM_ABOVE:
@@ -957,12 +996,13 @@ def interact_breakable( mario_state, interact_type, obj ):
     return False
 
 def interact_koopa_shell( mario_state, interact_type, obj ):
+
     if not mario_state.get_action() & mario.ACT_FLAG_RIDING_SHELL:
         interaction = determine_interaction( mario_state, obj )
 
         if interaction == mario.INT_HIT_FROM_ABOVE or \
         mario_state.get_action() == mario.ACT_WALKING or \
-        mario_state.action == mario.ACT_HOLD_WALKING:
+        mario_state.get_action() == mario.ACT_HOLD_WALKING:
             mario_state.set_interact_obj( obj )
             mario_state.set_used_obj( obj )
             mario_state.set_ridden_obj( obj )
@@ -1071,7 +1111,7 @@ def interact_cap( mario_state, interact_type, obj ):
         if cap_time > mario_state.capTimer:
             mario_state.set_cap_timer( cap_time )
 
-        if mario_state.action & mario.ACT_FLAG_IDLE or \
+        if mario_state.get_action() & mario.ACT_FLAG_IDLE or \
         mario_state.get_action() == mario.ACT_WALKING:
             mario_state.set_flag( MARIO_CAP_IN_HAND )
             set_mario_action( mario_state, mario.ACT_PUTTING_ON_CAP, 0 )
@@ -1127,6 +1167,9 @@ def interact_text( mario_state, interact_type, obj ):
     return interact
 
 def interact_unknown_08( mario_state, interact_type, obj ):
+
+    global delay_invinc_timer
+
     interaction = determine_interaction( mario_state, obj )
 
     if interaction & mario.INT_PUNCH:
@@ -1245,7 +1288,14 @@ def determine_interaction( mario_state, obj ):
 
     return interaction
 
+collided_obj = None
 def mario_process_interactions( mario_state ):
+
+    global collided_obj
+    global displaying_door_text
+    global invulnerable
+    global delay_invinc_timer
+
     delay_invinc_timer = False
     invulnerable = \
         (mario_state.get_action() & mario.ACT_FLAG_INVULNERABLE) or \
@@ -1258,12 +1308,14 @@ def mario_process_interactions( mario_state ):
         for i in range( 30 ):
             interact_type = interaction_handlers[i].interact_type
             if mario_state.get_collided_obj_interact_types() & interact_type:
-                obj = mario_state.get_collided_object( interact_type )
+                collided_obj = mario_state.get_collided_object( interact_type )
 
                 mario_state.unset_collided_obj_interact_type( interact_type )
 
-                if not obj.get_interact_status() & mario.INT_STATUS_INTERACTED:
-                    if interaction_handlers[i].handler( mario_state, interact_type, obj ):
+                if not collided_obj.get_interact_status() & \
+                mario.INT_STATUS_INTERACTED:
+                    if interaction_handlers[i].handler(
+                    mario_state, interact_type, collided_obj ):
                         break
 
     if mario_state.get_invinc_timer() > 0 and not delay_invinc_timer:
@@ -1356,8 +1408,6 @@ def set_mario_action_moving( mario_state, action, action_arg ):
     floor_class = mario_state.get_floor_class()
     forward_vel = mario_state.get_forward_vel()
     mag = min( [mario_state.get_intended_mag(), 8.0] )
-
-    logger.debug( "moving" )
 
     if mario.ACT_WALKING == action:
         if floor_class != levels.SURFACE_CLASS_VERY_SLIPPERY:
@@ -1526,6 +1576,8 @@ def set_mario_action_cutscene( mario_state, action, action_arg ):
     return action
 
 def set_mario_action( mario_state, action, arg ):
+
+    logger = logging.getLogger( 'action' )
 
     logger.debug( "%lu vs %lu",
         (mario.ACT_GROUP_MASK & mario.ACT_GROUP_AIRBORNE),

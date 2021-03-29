@@ -2,6 +2,9 @@
 #include "level_python.h"
 
 #include "game/level_update.h"
+#include "course_table.h"
+
+extern s16 gCurrCourseNum;
 
 /* Levels Module */
 
@@ -27,11 +30,26 @@ PyLevel_initiate_warp(PyObject *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+static PyObject *
+PyLevel_get_curr_course_num(PyObject *self) {
+    PyObject *pCurrCourseNum = NULL;
+
+    pCurrCourseNum = PyLong_FromLong(gCurrCourseNum);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during get curr save file num:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    return pCurrCourseNum;
+}
+
 #endif /* CHECK_PYTHON */
 
 static PyMethodDef PyLevels_methods[] = {
     #ifndef CHECK_PYTHON
     {"initiate_warp",   (PyCFunction)PyLevel_initiate_warp,   METH_VARARGS, NULL},
+    {"get_curr_course_num",   (PyCFunction)PyLevel_get_curr_course_num,   METH_NOARGS, NULL},
     #endif /* CHECK_PYTHON */
     {NULL, NULL, 0, NULL}
 };
@@ -54,6 +72,10 @@ PyObject* PyInit_levels(void) {
     PYTHON_LEVEL_ADD_TERRAIN_CONSTANTS(pLevels);
     PYTHON_LEVEL_ADD_SURFACE_CONSTANTS(pLevels);
     PYTHON_LEVEL_ADD_LEVEL_CONSTANTS(pLevels);
+
+    PyModule_AddIntConstant(pLevels, "COURSE_MIN", COURSE_MIN);
+    PyModule_AddIntConstant(pLevels, "COURSE_MAX", COURSE_MAX);
+    PyModule_AddIntConstant(pLevels, "COURSE_STAGES_MAX", COURSE_STAGES_MAX);
 
     fprintf(stdout, "levels module initialized\n");
 

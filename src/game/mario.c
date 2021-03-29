@@ -1916,6 +1916,12 @@ void init_mario(void) {
     Vec3s capPos;
     struct Object *capObject;
 
+    #ifdef USE_PYTHON
+    /* Init mario python stuff up here so we can refcount below. */
+    gMarioState->marioObj = gMarioObject;
+    python_init_mario();
+    #endif /* USE_PYTHON */
+
     unused80339F10 = 0;
 
     gMarioState->actionTimer = 0;
@@ -1942,14 +1948,24 @@ void init_mario(void) {
     gMarioState->quicksandDepth = 0.0f;
 
     gMarioState->heldObj = NULL;
+    #ifdef USE_PYTHON
+    PyMario_set_riddenObj(gMarioState->pyState, Py_None);
+    #else
     gMarioState->riddenObj = NULL;
+    #endif /* USE_PYTHON */
+    #ifdef USE_PYTHON
+    PyMario_set_usedObj(gMarioState->pyState, Py_None);
+    #else
     gMarioState->usedObj = NULL;
+    #endif /* USE_PYTHON */
 
     gMarioState->waterLevel =
         find_water_level(gMarioSpawnInfo->startPos[0], gMarioSpawnInfo->startPos[2]);
 
     gMarioState->area = gCurrentArea;
+    #ifndef USE_PYTHON
     gMarioState->marioObj = gMarioObject;
+    #endif /* USE_PYTHON */
     gMarioState->marioObj->header.gfx.unk38.animID = -1;
     vec3s_copy(gMarioState->faceAngle, gMarioSpawnInfo->startAngle);
     vec3s_set(gMarioState->angleVel, 0, 0, 0);
@@ -1993,10 +2009,6 @@ void init_mario(void) {
 
         capObject->oMoveAngleYaw = 0;
     }
-
-    #ifdef USE_PYTHON
-    python_init_mario();
-    #endif /* USE_PYTHON */
 }
 
 void init_mario_from_save_file(void) {

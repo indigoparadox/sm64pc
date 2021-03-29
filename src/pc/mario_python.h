@@ -442,6 +442,22 @@
     PYTHON_MARIO_ADD_CONSTANT(module, INT_HIT_FROM_ABOVE); \
     PYTHON_MARIO_ADD_CONSTANT(module, INT_HIT_FROM_BELOW); \
     \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_FADING_WARP); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_DELAY_INVINCIBILITY); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_BIG_KNOCKBACK); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_GRABS_MARIO); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_HOLDABLE_NPC); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_DROP_IMMEDIATELY); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_KICKABLE); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_NOT_GRABBABLE); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_STAR_DOOR); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_TWIRL_BOUNCE); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_NO_EXIT); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_GRAND_STAR); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_SIGN); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_NPC); \
+    PYTHON_MARIO_ADD_CONSTANT(module, INT_SUBTYPE_EATS_MARIO); \
+    \
     PYTHON_MARIO_ADD_COMPOUND_CONSTANT(module, INT_ATTACK_NOT_FROM_BELOW, \
         (INT_GROUND_POUND_OR_TWIRL | INT_PUNCH | INT_KICK | INT_TRIP | INT_SLIDE_KICK \
         | INT_FAST_ATTACK_OR_SHELL | INT_HIT_FROM_ABOVE)); \
@@ -492,5 +508,8 @@ PyObject* PyInit_mario(void);
 
 u32 wrap_mario_interaction(struct MarioState *, u32, struct Object *, const char *);
 u32 wrap_mario_action(struct MarioState *m, u32 action, u32 arg, const char *method);
+PyObject *PyMario_set_usedObj(struct _PyMarioStateClass *, PyObject *);
+PyObject *PyMario_set_interactObj(struct _PyMarioStateClass *, PyObject *);
+PyObject *PyMario_set_riddenObj(struct _PyMarioStateClass *, PyObject *);
 
 #endif /* MARIO_PYTHON_H */

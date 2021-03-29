@@ -234,6 +234,7 @@ OBJECT_SET( oMarioWhirlpoolPosY,    0x22, f32, PyFloat_AsDouble, asF32 );
 
 OBJECT_GET( oPosX,                  0x06, f32, PyFloat_FromDouble, asF32 );
 OBJECT_GET( oPosY,                  0x07, f32, PyFloat_FromDouble, asF32 );
+OBJECT_GET( oPosZ,                  0x08, f32, PyFloat_FromDouble, asF32 );
 OBJECT_GET( oDamageOrCoinValue,     0x3e, s32, PyLong_FromLong, asS32 );
 OBJECT_GET( oInteractionSubtype,    0x42, u32, PyLong_FromUnsignedLong, asU32 );
 OBJECT_GET( oInteractStatus,        0x2b, s32, PyLong_FromLong, asS32 );
@@ -260,8 +261,9 @@ static PyMethodDef PyObject_methods[] = {
     {"set_mario_pole_pos",          (PyCFunction)PyObjects_set_oMarioPolePos,           METH_O, NULL},
     {"set_mario_whirlpool_pos_y",   (PyCFunction)PyObjects_set_oMarioWhirlpoolPosY,     METH_O, NULL},
 
-    {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
     {"get_pos_x",                   (PyCFunction)PyObjects_get_oPosX,                   METH_NOARGS, NULL},
+    {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
+    {"get_pos_z",                   (PyCFunction)PyObjects_get_oPosZ,                   METH_NOARGS, NULL},
     {"get_damage_or_coin_value",    (PyCFunction)PyObjects_get_oDamageOrCoinValue,      METH_NOARGS, NULL},
     {"get_interaction_subtype",     (PyCFunction)PyObjects_get_oInteractionSubtype,     METH_NOARGS, NULL},
     {"get_interact_status",         (PyCFunction)PyObjects_get_oInteractStatus,         METH_NOARGS, NULL},
@@ -418,7 +420,7 @@ PyObject* PyInit_objects(void) {
 
 /* Native C Interface */
 
-PyObject* object_python_wrap(struct Object *obj) {
+PyObject* python_wrap_object(struct Object *obj) {
     PyObjectClass *pObjectOut;
 
     assert(NULL != obj);
@@ -477,7 +479,7 @@ wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavi
         pArgs = PyTuple_New(3);
         
         /* The tuple will DECREF this for us later. */
-        pParent = object_python_wrap( parent );
+        pParent = python_wrap_object( parent );
         PyTuple_SetItem(pArgs, 0, pParent);
         
         /* The tuple will DECREF this for us later. */

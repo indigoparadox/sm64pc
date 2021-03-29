@@ -3,6 +3,8 @@
 
 #ifdef USE_PYTHON
 #include <Python.h>
+#include "pc/mario_python.h"
+#include "pc/object_python.h"
 #endif /* USE_PYTHON */
 
 #include "sm64.h"
@@ -399,8 +401,13 @@ void init_mario_after_warp(void) {
         init_mario();
         set_mario_initial_action(gMarioState, marioSpawnType, sWarpDest.arg);
 
+        #ifdef USE_PYTHON
+        PyMario_set_interactObj(gMarioState->pyState, python_wrap_object(spawnNode->object));
+        PyMario_set_usedObj(gMarioState->pyState, python_wrap_object(spawnNode->object));
+        #else
         gMarioState->interactObj = spawnNode->object;
         gMarioState->usedObj = spawnNode->object;
+        #endif /* USE_PYTHON */
     }
 
     reset_camera(gCurrentArea->camera);

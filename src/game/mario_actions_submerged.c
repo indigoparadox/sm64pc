@@ -776,7 +776,11 @@ static s32 check_water_grab(struct MarioState *m) {
         s16 dAngleToObject = atan2s(dz, dx) - m->faceAngle[1];
 
         if (dAngleToObject >= -0x2AAA && dAngleToObject <= 0x2AAA) {
+            #ifdef USE_PYTHON
+            PyMario_set_usedObj(gMarioState->pyState, python_wrap_object(object));
+            #else
             m->usedObj = object;
+            #endif /* USE_PYTHON */
             mario_grab_used_object(m);
             m->marioBodyState->grabPos = GRAB_POS_LIGHT_OBJ;
             return TRUE;

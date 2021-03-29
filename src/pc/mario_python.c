@@ -110,17 +110,19 @@ static PyMemberDef PyMarioState_members[] = {
         return var; \
     }
 
+/* This messes with refcounts, so make sure this is used EVERYWHERE to set the obj. */
 #define MARIO_SET_OBJ(var) \
-    static PyObject * \
+    PyObject * \
     PyMario_set_ ## var(PyMarioStateClass *self, PyObject *arg) { \
         struct MarioState *mario_state = NULL; \
-        struct Object *obj; \
-        obj = python_object_get_native((struct _PyObjectClass *)arg); \
+        struct Object *obj = NULL; \
+        if (Py_None != (PyObject *)arg) { \
+            obj = python_object_get_native((struct _PyObjectClass *)arg); \
+        } \
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
-        /* TODO: This may cause trouble if objects are assigned from elsewhere... */ \
-        /*Py_XDECREF(mario_state->var->pyState);*/ \
+        Py_XDECREF(arg); \
         mario_state->var = obj; \
-        /*Py_XINCREF(mario_state->var->pyState);*/ \
+        Py_XINCREF(arg); \
         Py_RETURN_NONE; \
     }
 
@@ -129,7 +131,7 @@ static PyMemberDef PyMarioState_members[] = {
     PyMario_get_ ## var(PyMarioStateClass *self, PyObject *arg) { \
         struct MarioState *mario_state = NULL; \
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
-        return object_python_wrap(mario_state->var); \
+        return python_wrap_object(mario_state->var); \
     }
 
 #define MARIO_WRAP_NOARGS(fnc) \
@@ -179,6 +181,20 @@ static PyMemberDef PyMarioState_members[] = {
         gMarioState->flag_name ## s |= flag_name; \
         Py_RETURN_NONE; \
     }
+
+PyObject *
+PyMario_set_riddenObj(PyMarioStateClass *self, PyObject *arg) {
+    struct MarioState *mario_state = NULL;
+    struct Object *obj = NULL;
+    if (Py_None != (PyObject *)arg) {
+        obj = python_object_get_native((struct _PyObjectClass *)arg);
+    }
+    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
+    Py_XDECREF(arg);
+    mario_state->riddenObj = obj;
+    Py_XINCREF(arg);
+    Py_RETURN_NONE;
+}
 
 /*
 static PyObject *
@@ -401,7 +417,7 @@ PyMario_get_collided_object(PyMarioStateClass *self, PyObject *arg) {
 
     obj_out = mario_get_collided_object(mario_state, interaction_type);
 
-    return object_python_wrap(obj_out);
+    return python_wrap_object(obj_out);
 }
 
 #endif /* CHECK_PYTHON */
@@ -422,7 +438,7 @@ MARIO_SET( invincTimer, short, PyLong_AsLong );
 MARIO_SET( input, unsigned short, PyLong_AsUnsignedLong );
 MARIO_SET_OBJ( interactObj );
 MARIO_SET_OBJ( usedObj );
-MARIO_SET_OBJ( riddenObj );
+//MARIO_SET_OBJ( riddenObj );
 MARIO_SET_VEC( vel, float, "f" );
 MARIO_SET_VEC( faceAngle, short, "h" );
 
@@ -678,7 +694,7 @@ void python_init_mario() {
     // Get rid of old Mario wrapper.
     Py_XDECREF(gMarioState->pyState->mario_object);
 
-    pObject = object_python_wrap(gMarioState->marioObj);
+    pObject = python_wrap_object(gMarioState->marioObj);
 
     gMarioState->pyState->mario_object = (struct _PyObjectClass *)pObject;
     //Py_INCREF(gMarioState->pyState->mario_object);
@@ -720,7 +736,7 @@ u32 wrap_mario_interaction(
     PyTuple_SetItem(pArgs, 1, pInteraction);
 
     /* The tuple will DECREF this for us later. */
-    pObj = object_python_wrap(obj);
+    pObj = python_wrap_object(obj);
     PyTuple_SetItem(pArgs, 2, pObj);
 
     pValue = PyObject_CallObject(pFunc, pArgs);

@@ -21,7 +21,7 @@
         (PyObject *)&PyObjectType, args);
 
 PyObject* PyInit_objects(void);
-PyObject* object_python_wrap(struct Object*);
+PyObject* python_wrap_object(struct Object*);
 struct Object *python_object_get_native(struct _PyObjectClass *self);
 
 #endif /* OBJECT_PYTHON_H */
