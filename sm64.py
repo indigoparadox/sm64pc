@@ -1305,7 +1305,7 @@ def mario_process_interactions( mario_state ):
     mario_state.get_collided_obj_interact_types() != 0:
         #(i = 0; i < 31; i++) {
         interact_type = 0
-        for i in range( 30 ):
+        for i in range( 31 ):
             interact_type = interaction_handlers[i].interact_type
             if mario_state.get_collided_obj_interact_types() & interact_type:
                 collided_obj = mario_state.get_collided_object( interact_type )
