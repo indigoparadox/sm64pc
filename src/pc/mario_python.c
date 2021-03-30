@@ -476,6 +476,12 @@ static PyMethodDef PyMarioState_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
+void
+PyMarioState_destroy(PyMarioStateClass *self) {
+    Py_DECREF(self->mario_object);
+    Py_DECREF(self->native_state);
+}
+
 static PyTypeObject PyMarioStateType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "mario.MarioState",
@@ -484,6 +490,7 @@ static PyTypeObject PyMarioStateType = {
     .tp_new = PyType_GenericNew,
     .tp_methods = PyMarioState_methods,
     .tp_members = PyMarioState_members,
+    .tp_dealloc = (destructor)PyMarioState_destroy,
 };
 
 /* Mario Module */
@@ -642,8 +649,7 @@ void python_init_mario() {
     pObject = python_wrap_object(gMarioState->marioObj);
 
     gMarioState->pyState->mario_object = (struct _PyObjectClass *)pObject;
-
-    assert(NULL != gMarioState->pyState->mario_object);
+    Py_INCREF(gMarioState->pyState->mario_object);
 
     python_log_debug(gLoggerMario, "new mario dropped");
 }
