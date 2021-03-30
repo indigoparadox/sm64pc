@@ -558,6 +558,8 @@ PyMario_atan2s(PyObject *self, PyObject *args) {
 
 static PyObject *
 PyMario_get_mario_state(PyMarioStateClass *self) {
+    /* Python code that calls this will steal this ref. */
+    Py_INCREF(gMarioState->pyState);
     return gMarioState->pyState;
 }
 

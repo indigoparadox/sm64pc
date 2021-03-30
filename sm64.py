@@ -58,6 +58,7 @@ MARIO_PAGE = '''<!doctype HTML>
 <body>
 <form action="/" method="POST" />
 <button name="spawn" value="Coins">Spawn Coins</button>
+<button name="warp" value="bbh">Big Boo's House</button>
 </form>
 </body>
 </html>
@@ -86,6 +87,9 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
         mario_state = mario.get_mario_state()
         if 'Coins' == form.getvalue( 'spawn' ):
             spawn_yellow_coins( mario_state.mario_object, 6 )
+        
+        if 'bbh' == form.getvalue( 'warp' ):
+            levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
 
         self.send_response( 301 )
         self.send_header( 'Location', 'http://127.0.0.1:8064/' )
