@@ -46,6 +46,67 @@ def delay_frames( frames, callback ):
 
 def show_osd_line( line_x, line_y, text, ttl ):
     osd_lines.append( (line_x, line_y, text, ttl) )
+
+server_proc = None
+mario_server = None
+
+MARIO_PAGE = '''<!doctype HTML>
+<html>
+<head>
+<title>Mario 64 Web Server</title>
+</head>
+<body>
+<form action="/" method="POST" />
+<button name="spawn" value="Coins">Spawn Coins</button>
+</form>
+</body>
+</html>
+'''
+
+import http.server
+import socketserver
+import multiprocessing
+import threading
+import cgi
+
+class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
+
+    def do_POST( self ):
+
+        form_env = {
+            'REQUEST_METHOD': 'POST',
+            'CONTENT_TYPE': self.headers['Content-type']
+        }
+
+        form = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ=form_env )
+
+        mario_state = mario.get_mario_state()
+        if 'Coins' == form.getvalue( 'spawn' ):
+            spawn_yellow_coins( mario_state.mario_object, 6 )
+
+        self.send_response( 301 )
+        self.send_header( 'Location', 'http://127.0.0.1:8064/' )
+        self.end_headers()
+
+    def do_GET( self ):
+
+        #logger.debug( 'web request...' )
+
+        self.send_response( 200 )
+        self.send_header( 'Content-type', 'text/html' )
+        self.end_headers()
+
+        self.wfile.write( MARIO_PAGE.encode( 'utf-8' ) )
+
+        #logger.debug( 'web request done' )
+
+class MarioHTTPServer( socketserver.ThreadingMixIn, http.server.HTTPServer ):
+    def __init__( self, listen ):
+        super().__init__( listen, MarioHTTPHandler )
+
 # END DEBUG
 
 def mario_init():
@@ -67,6 +128,13 @@ def mario_init():
     bhv_test.bhv_END_LOOP()
     #print( bhv_test.script )
     bhv_test.compile()
+
+    global server_proc
+    global mario_server
+    mario_server = MarioHTTPServer( ('127.0.0.1', 8064) )
+    #server_proc = multiprocessing.Process( target=mario_server.serve_forever )
+    server_proc = threading.Thread( target=mario_server.serve_forever )
+    server_proc.start()
     # END DEBUG
 
 def should_push_or_pull_door( mario_state, obj ):
