@@ -1,46 +1,57 @@
 
+# pylint: disable=missing-docstring, unused-argument
+
 import logging
 import collections
 
-import mario
-import objects
-import levels
-import dialog
-import save_file
+import mario # pylint: disable=import-error
+import objects # pylint: disable=import-error
+import levels # pylint: disable=import-error
+import dialog # pylint: disable=import-error
+import save_file # pylint: disable=import-error
 
 InteractionHandler = collections.namedtuple('InteractionHandler', ['interact_type', 'handler'])
 
-forward_knockback_actions = [
-    [mario.ACT_SOFT_FORWARD_GROUND_KB, mario.ACT_FORWARD_GROUND_KB, mario.ACT_HARD_FORWARD_GROUND_KB],
-    [mario.ACT_FORWARD_AIR_KB,         mario.ACT_FORWARD_AIR_KB,    mario.ACT_HARD_FORWARD_AIR_KB],
-    [mario.ACT_FORWARD_WATER_KB,       mario.ACT_FORWARD_WATER_KB,  mario.ACT_FORWARD_WATER_KB]]
+FORWARD_KNOCKBACK_ACTIONS = [
+    [mario.ACT_SOFT_FORWARD_GROUND_KB, mario.ACT_FORWARD_GROUND_KB,
+        mario.ACT_HARD_FORWARD_GROUND_KB],
+    [mario.ACT_FORWARD_AIR_KB,         mario.ACT_FORWARD_AIR_KB,
+        mario.ACT_HARD_FORWARD_AIR_KB],
+    [mario.ACT_FORWARD_WATER_KB,       mario.ACT_FORWARD_WATER_KB,
+        mario.ACT_FORWARD_WATER_KB]]
 
-backward_knockback_actions = [
-    [mario.ACT_SOFT_BACKWARD_GROUND_KB, mario.ACT_BACKWARD_GROUND_KB, mario.ACT_HARD_BACKWARD_GROUND_KB],
-    [mario.ACT_BACKWARD_AIR_KB,         mario.ACT_BACKWARD_AIR_KB,    mario.ACT_HARD_BACKWARD_AIR_KB],
-    [mario.ACT_BACKWARD_WATER_KB,       mario.ACT_BACKWARD_WATER_KB,  mario.ACT_BACKWARD_WATER_KB]]
+BACKWARD_KNOCKBACK_ACTIONS = [
+    [mario.ACT_SOFT_BACKWARD_GROUND_KB, mario.ACT_BACKWARD_GROUND_KB,
+        mario.ACT_HARD_BACKWARD_GROUND_KB],
+    [mario.ACT_BACKWARD_AIR_KB,         mario.ACT_BACKWARD_AIR_KB,
+        mario.ACT_HARD_BACKWARD_AIR_KB],
+    [mario.ACT_BACKWARD_WATER_KB,       mario.ACT_BACKWARD_WATER_KB,
+        mario.ACT_BACKWARD_WATER_KB]]
 
-displaying_door_text = False
-invulnerable = False
-delay_invinc_timer = False
+displaying_door_text = False # pylint: disable=invalid-name
+invulnerable = False # pylint: disable=invalid-name
+delay_invinc_timer = False # pylint: disable=invalid-name
+just_teleported = False # pylint: disable=invalid-name
 
 # DEBUG
-bhv_test = None
+bhv_test = None # pylint: disable=invalid-name
 # Keep a reference hanging around globally so it doesn't despawn.
-test_fish = None
+test_fish = None # pylint: disable=invalid-name
 #ready = False
-osd_lines = []
-frame_delays = []
+osd_lines = [] # pylint: disable=invalid-name
+frame_delays = [] # pylint: disable=invalid-name
 
 def delay_frames( frames, callback ):
     frame_delays.append( (frames, callback) )
 
-def show_osd_line( x, y, text, ttl ):
-    osd_lines.append( (x, y, text, ttl) )
+def show_osd_line( line_x, line_y, text, ttl ):
+    osd_lines.append( (line_x, line_y, text, ttl) )
 # END DEBUG
 
 def mario_init():
-    #logging.basicConfig( level= logging.DEBUG )
+     # pylint: disable=no-member
+
+    logging.basicConfig( level=logging.DEBUG )
     logger = logging.getLogger( 'init' )
     logger.info( 'logger active' )
 
@@ -49,7 +60,7 @@ def mario_init():
     #logging.getLogger( 'objects' ).setLevel( logging.ERROR )
 
     # DEBUG
-    global bhv_test
+    global bhv_test # pylint: disable=invalid-name
     bhv_test = objects.Behavior()
     bhv_test.bhv_BEGIN( objects.OBJ_LIST_DEFAULT )
     bhv_test.bhv_BEGIN_LOOP()
@@ -59,26 +70,26 @@ def mario_init():
     # END DEBUG
 
 def should_push_or_pull_door( mario_state, obj ):
-    dx = obj.get_pos_x() - mario_state.get_pos( 0 )
-    dz = obj.get_pos_z() - mario_state.get_pos( 2 )
+    dist_x = obj.get_pos_x() - mario_state.get_pos( 0 )
+    dist_z = obj.get_pos_z() - mario_state.get_pos( 2 )
 
-    yaw = obj.get_move_angle_yaw() - mario.atan2s( dz, dx )
+    yaw = obj.get_move_angle_yaw() - mario.atan2s( dist_z, dist_x )
 
     return 0x00000001 if (yaw >= -0x4000 and yaw <= 0x4000) else 0x00000002
 
 def bounce_back_from_attack( mario_state, interaction ):
-    if interaction & (INT_PUNCH | INT_KICK | INT_TRIP):
-        if mario_state.get_action() == ACT_PUNCHING:
-            mario_state.set_action( ACT_MOVE_PUNCHING )
+    if interaction & (mario.INT_PUNCH | mario.INT_KICK | mario.INT_TRIP):
+        if mario_state.get_action() == mario.ACT_PUNCHING:
+            mario_state.set_action( mario.ACT_MOVE_PUNCHING )
 
-        if mario_state.get_action() & ACT_FLAG_AIR:
+        if mario_state.get_action() & mario.ACT_FLAG_AIR:
             mario_state.set_forward_vel_all( -16.0 )
         else:
             mario_state.set_forward_vel_all( -48.0 )
 
         # TODO: Camera stuff.
         #set_camera_shake_from_hit(SHAKE_ATTACK);
-        mario_state.set_particle_flags( PARTICLE_TRIANGLE )
+        mario_state.set_particle_flags( mario.PARTICLE_TRIANGLE )
 
     # TODO: Sound stuff.
     #if (interaction & (INT_PUNCH | INT_KICK | INT_TRIP | INT_FAST_ATTACK_OR_SHELL)) {
@@ -106,7 +117,7 @@ def get_door_save_file_flag( door ):
 
     elif 8 == required_num_stars:
         save_file_flag = save_file.SAVE_FLAG_UNLOCKED_BITDW_DOOR
-    
+
     elif 30 == required_num_stars:
         save_file_flag = save_file.SAVE_FLAG_UNLOCKED_BITFS_DOOR
 
@@ -117,10 +128,10 @@ def get_door_save_file_flag( door ):
 
 def check_object_grab_mario( mario_state, interact_type, obj ):
 
-    global invulnerable
+    global invulnerable # pylint: disable=invalid-name
 
     air_invul_attacking = \
-        ACT_FLAG_AIR | ACT_FLAG_INVULNERABLE | ACT_FLAG_ATTACKING
+        mario.ACT_FLAG_AIR | mario.ACT_FLAG_INVULNERABLE | mario.ACT_FLAG_ATTACKING
     if (not mario_state.get_action() & air_invul_attacking or \
         not invulnerable) and \
     obj.get_interaction_subtype() & mario.INT_SUBTYPE_GRABS_MARIO:
@@ -134,8 +145,8 @@ def check_object_grab_mario( mario_state, interact_type, obj ):
             mario_state.set_interact_obj( obj )
             mario_state.set_used_obj( obj )
 
+            mario_state.update_sound_and_camera()
             # TODO: Sound stuff.
-            #mario_state.update_sound_and_camera()
             #play_sound(SOUND_MARIO_OOOF, mario_state.marioObj->header.gfx.cameraToObject);
             # TODO: Rumble stuff.
             # queue_rumble_data\(5, 80\);
@@ -145,12 +156,28 @@ def check_object_grab_mario( mario_state, interact_type, obj ):
 
     return False
 
-def object_facing_mario( mario_state, obj, angle_range ):
-    dx = mario_state.get_pos( 0 ) - obj.get_pos_x()
-    dz = mario_state.get_pos( 2 ) - obj.get_pos_z()
+def able_to_grab_object( mario_state, obj ):
+    action = mario_state.get_action()
 
-    angle_to_mario = mario.atan2s( dz, dx )
-    angle = angle_to_mario - o.get_move_angle_yaw()
+    if action == mario.ACT_DIVE_SLIDE or \
+    action == mario.ACT_DIVE:
+        if not obj.get_interaction_subtype() & \
+        mario.INT_SUBTYPE_GRABS_MARIO:
+            return True
+
+    elif action == mario.ACT_PUNCHING or \
+    action == mario.ACT_MOVE_PUNCHING:
+        if mario_state.get_action_arg() < 2:
+            return True
+
+    return False
+
+def object_facing_mario( mario_state, obj, angle_range ):
+    dist_x = mario_state.get_pos( 0 ) - obj.get_pos_x()
+    dist_z = mario_state.get_pos( 2 ) - obj.get_pos_z()
+
+    angle_to_mario = mario.atan2s( dist_z, dist_x )
+    angle = angle_to_mario - obj.get_move_angle_yaw()
 
     if (-1 * angle_range) <= angle and angle <= angle_range:
         return True
@@ -158,6 +185,7 @@ def object_facing_mario( mario_state, obj, angle_range ):
     return False
 
 def take_damage_from_interact_object( mario_state ):
+
     shake = 0
     damage = mario_state.get_interact_obj().get_damage_or_coin_value()
 
@@ -169,7 +197,7 @@ def take_damage_from_interact_object( mario_state ):
     #} else {
     #    shake = SHAKE_SMALL_DAMAGE;
 
-    if not mario_state.get_flags() & MARIO_CAP_ON_HEAD:
+    if not mario_state.get_flags() & mario.MARIO_CAP_ON_HEAD:
         damage += (damage + 1) / 2
 
     if mario_state.get_flags() & mario.MARIO_METAL_CAP:
@@ -186,13 +214,13 @@ def take_damage_from_interact_object( mario_state ):
 
 def take_damage_and_knock_back( mario_state,  obj ):
 
-    global invulnerable
+    global invulnerable # pylint: disable=invalid-name
 
     damage = 0
 
     if not invulnerable and \
     not mario_state.get_flags() & mario.MARIO_VANISH_CAP and \
-    not o.get_interaction_subtype() & mario.INT_SUBTYPE_DELAY_INVINCIBILITY:
+    not obj.get_interaction_subtype() & mario.INT_SUBTYPE_DELAY_INVINCIBILITY:
         obj.set_interact_status(
             mario.INT_STATUS_INTERACTED | mario.INT_STATUS_ATTACKED_MARIO )
         mario_state.set_interact_obj( obj )
@@ -207,8 +235,7 @@ def take_damage_and_knock_back( mario_state,  obj ):
             # TODO: Sound stuff.
             # play_sound(SOUND_MARIO_ATTACKED, m->marioObj->header.gfx.cameraToObject);
 
-        # TODO: Sound stuff.
-        #update_mario_sound_and_camera(m);
+        mario_state.update_sound_and_camera()
         return drop_and_set_mario_action(
             mario_state, determine_knockback_action(
                 mario_state, obj.get_damage_or_coin_value() ), damage )
@@ -234,39 +261,43 @@ def attack_object( obj, interaction ):
     attack_type = 0
 
     if mario.INT_GROUND_POUND_OR_TWIRL:
-            attack_type = ATTACK_GROUND_POUND_OR_TWIRL
+        attack_type = mario.ATTACK_GROUND_POUND_OR_TWIRL
 
     elif mario.INT_PUNCH:
-            attack_type = ATTACK_PUNCH
+        attack_type = mario.ATTACK_PUNCH
 
     elif mario.INT_KICK == interaction or \
     mario.INT_TRIP == interaction:
-            attack_type = ATTACK_KICK_OR_TRIP
+        attack_type = mario.ATTACK_KICK_OR_TRIP
 
     elif mario.INT_SLIDE_KICK == interaction or\
     mario.INT_FAST_ATTACK_OR_SHELL == interaction:
-        attack_type = ATTACK_FAST_ATTACK
+        attack_type = mario.ATTACK_FAST_ATTACK
 
     elif mario.INT_HIT_FROM_ABOVE == interaction:
-        attack_type = ATTACK_FROM_ABOVE
+        attack_type = mario.ATTACK_FROM_ABOVE
 
     elif mario.INT_HIT_FROM_BELOW == interaction:
-        attack_type = ATTACK_FROM_BELOW
+        attack_type = mario.ATTACK_FROM_BELOW
 
     obj.set_interact_status(
-        attack_type + (INT_STATUS_INTERACTED | INT_STATUS_WAS_ATTACKED) )
+        attack_type + (mario.INT_STATUS_INTERACTED | \
+            mario.INT_STATUS_WAS_ATTACKED) )
 
     return attack_type
 
 #region spawn
 
 def spawn_object( parent_obj, model, behavior ):
+     # pylint: disable=no-member
+
     obj = objects.Object( parent_obj, model, behavior )
     assert( None != obj )
     obj.copy_pos_and_angle( parent_obj )
     return obj
 
 def spawn_yellow_coins( parent_obj, count ):
+    # pylint: disable=no-member, unused-variable
 
     for i in range( count ):
         coin = spawn_object( parent_obj,
@@ -282,9 +313,11 @@ def spawn_yellow_coins( parent_obj, count ):
 #region dialog
 
 def dialog_render_frame():
+    # pylint: disable=consider-using-enumerate
+
     # DEBUG
     dead_delays = []
-    global frame_delays
+    global frame_delays # pylint: disable=invalid-name
     for idx in range( len( frame_delays ) ):
         if 0 < frame_delays[idx][0]:
             frame_delays[idx] = (frame_delays[idx][0] - 1, frame_delays[idx][1])
@@ -294,7 +327,7 @@ def dialog_render_frame():
 
     for delay in dead_delays:
         frame_delays.remove( delay )
-    
+
     #global ready
     #if ready:
     dead_lines = []
@@ -316,6 +349,8 @@ def dialog_render_frame():
 #region interaction
 
 def interact_coin( mario_state, interact_type, obj ):
+    # pylint: disable=no-member
+
     num_coins = mario_state.get_num_coins()
     coin_val = obj.get_damage_or_coin_value()
 
@@ -328,14 +363,14 @@ def interact_coin( mario_state, interact_type, obj ):
     if curr_course >= levels.COURSE_MIN and \
     curr_course <= levels.COURSE_STAGES_MAX and \
     num_coins - coin_val < 100 and \
-    num_coints >= 100:
+    num_coins >= 100:
         # bhv_spawn_star_no_level_exit(6):
-        coin_star = spawn_object( obj, objectsMODEL_STAR,
+        coin_star = spawn_object( obj, objects.MODEL_STAR,
             objects.bhvSpawnedStarNoLevelExit )
         coin_star.set_beh_params( 6 << 24 )
         coin_star.set_interaction_subtype( mario.INT_SUBTYPE_NO_EXIT )
         obj.set_angle( 0, 0, 0 )
-   
+
     # TODO: Rumble stuff.
     #if obj.oDamageOrCoinValue >= 2:
     # queue_rumble_data\(5, 80\);
@@ -349,6 +384,8 @@ def interact_water_ring( mario_state, interact_type, obj ):
     return False
 
 def interact_star_or_key( mario_state, interact_type, obj ):
+     # pylint: disable=no-member
+
     interaction_subtype = obj.get_interaction_subtype()
     star_grab_action = mario.ACT_STAR_DANCE_EXIT
     no_exit = interaction_subtype & mario.INT_SUBTYPE_NO_EXIT
@@ -398,12 +435,12 @@ def interact_star_or_key( mario_state, interact_type, obj ):
         #    fadeout_level_music(126);
         #
         #play_sound(SOUND_MENU_STAR_SOUND, mario_state.marioObj->header.gfx.cameraToObject);
-        #mario_state.update_sound_and_camera()
+        mario_state.update_sound_and_camera()
 
         if grand_star:
             return set_mario_action( mario_state, mario.ACT_JUMBO_STAR_CUTSCENE, 0 )
 
-        return set_mario_action( mario_state, starGrabAction, no_exit + 2 * grand_star )
+        return set_mario_action( mario_state, star_grab_action, no_exit + 2 * grand_star )
 
     return False
 
@@ -425,6 +462,9 @@ def interact_bbh_entrance( mario_state, interact_type, obj ):
     return False
 
 def interact_warp( mario_state, interact_type, obj ):
+    # pylint: disable=no-member
+
+    global just_teleported # pylint: disable=invalid-name
 
     if obj.get_interaction_subtype() & mario.INT_SUBTYPE_FADING_WARP:
         action = mario_state.get_action()
@@ -473,7 +513,7 @@ def interact_warp( mario_state, interact_type, obj ):
 
 def interact_warp_door( mario_state, interact_type, obj ):
 
-    global displaying_door_text
+    global displaying_door_text # pylint: disable=invalid-name
 
     action_arg = 0
     door_action = 0
@@ -534,8 +574,9 @@ def interact_warp_door( mario_state, interact_type, obj ):
     return False
 
 def interact_door( mario_state, interact_type, obj ):
+    # pylint: disable=no-member
 
-    global displaying_door_text
+    global displaying_door_text # pylint: disable=invalid-name
 
     required_num_stars = obj.get_beh_params() >> 24
     num_stars = save_file.get_total_star_count(
@@ -632,7 +673,8 @@ def interact_igloo_barrier( mario_state, interact_type, obj ):
 def interact_tornado( mario_state, interact_type, obj ):
     mario_obj = mario_state.mario_object
 
-    if mario_state.get_action() != mario.ACT_TORNADO_TWIRLING and mario_state.get_action() != mario.ACT_SQUISHED:
+    if mario_state.get_action() != mario.ACT_TORNADO_TWIRLING and \
+    mario_state.get_action() != mario.ACT_SQUISHED:
         mario_state.stop_riding_and_holding()
         mario_state.set_forward_vel_all( 0.0 )
         mario_state.update_sound_and_camera()
@@ -641,14 +683,14 @@ def interact_tornado( mario_state, interact_type, obj ):
         mario_state.set_interact_obj( obj )
         mario_state.set_used_obj( obj )
 
-        marioObj.set_mario_tornado_yaw_vel( 0x400 )
-        marioObj.set_mario_tornado_pos_y( mario_state.get_pos( 1 ) - obj.get_pos_y() )
+        mario_obj.set_mario_tornado_yaw_vel( 0x400 )
+        mario_obj.set_mario_tornado_pos_y( mario_state.get_pos( 1 ) - obj.get_pos_y() )
 
         # TODO: Sound stuff.
         #play_sound(SOUND_MARIO_WAAAOOOW, mario_state.marioObj->header.gfx.cameraToObject);
         # TODO: Rumble stuff.
         # queue_rumble_data\(30, 60\);
-        
+
         return set_mario_action(
             mario_state,
             mario.ACT_TORNADO_TWIRLING,
@@ -673,7 +715,7 @@ def interact_whirlpool( mario_state, interact_type, obj ):
         #play_sound(SOUND_MARIO_WAAAOOOW, mario_state.marioObj->header.gfx.cameraToObject);
         # TODO: Rumble stuff.
         # queue_rumble_data\(30, 60\);
-        
+
         return set_mario_action(
             mario_state,
             mario.ACT_CAUGHT_IN_WHIRLPOOL,
@@ -696,24 +738,24 @@ def interact_strong_wind( mario_state, interact_type, obj ):
 
         # TODO: Sound stuff.
         #play_sound(SOUND_MARIO_WAAAOOOW, mario_state.marioObj->header.gfx.cameraToObject);
-        #mario_state.update_sound_and_camera()
+        mario_state.update_sound_and_camera()
         return set_mario_action( mario_state, mario.ACT_GETTING_BLOWN, 0 )
 
     return False
 
 def interact_flame( mario_state, interact_type, obj ):
 
-    global invulnerable
+    global invulnerable # pylint: disable=invalid-name
 
     burning_action = mario.ACT_BURNING_JUMP
 
     if not invulnerable and \
-    not mario_state.get_flags() & MARIO_METAL_CAP and \
-    not mario_state.get_flags() & MARIO_VANISH_CAP and \
+    not mario_state.get_flags() & mario.MARIO_METAL_CAP and \
+    not mario_state.get_flags() & mario.MARIO_VANISH_CAP and \
     not obj.get_interaction_subtype() & mario.INT_SUBTYPE_DELAY_INVINCIBILITY:
         # TODO: Rumble stuff.
         # queue_rumble_data\(5, 80\);
-        
+
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
         mario_state.set_interact_obj( obj )
 
@@ -739,12 +781,12 @@ def interact_flame( mario_state, interact_type, obj ):
 
 def interact_snufit_bullet( mario_state, interact_type, obj ):
 
-    global invulnerable
-    global delay_invinc_timer
+    global invulnerable # pylint: disable=invalid-name
+    global delay_invinc_timer # pylint: disable=invalid-name
 
     if not invulnerable and \
-    not mario_state.get_flags() & MARIO_VANISH_CAP:
-        if mario_state.get_flags() & MARIO_METAL_CAP:
+    not mario_state.get_flags() & mario.MARIO_VANISH_CAP:
+        if mario_state.get_flags() & mario.MARIO_METAL_CAP:
             obj.set_interact_status(
                 mario.INT_STATUS_INTERACTED | mario.INT_STATUS_WAS_ATTACKED )
             # TODO: Sound stuff
@@ -758,7 +800,7 @@ def interact_snufit_bullet( mario_state, interact_type, obj ):
 
             # TODO: Sound stuff.
             #play_sound(SOUND_MARIO_ATTACKED, mario_state.marioObj->header.gfx.cameraToObject);
-            #mario_state.update_sound_and_camera()
+            mario_state.update_sound_and_camera()
 
             return drop_and_set_mario_action(
                 mario_state,
@@ -773,7 +815,7 @@ def interact_snufit_bullet( mario_state, interact_type, obj ):
 
 def interact_clam_or_bubba( mario_state, interact_type, obj ):
 
-    global delay_invinc_timer
+    global delay_invinc_timer # pylint: disable=invalid-name
 
     if obj.get_interaction_subtype() & mario.INT_SUBTYPE_EATS_MARIO:
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
@@ -791,11 +833,11 @@ def interact_clam_or_bubba( mario_state, interact_type, obj ):
 
 def interact_bully( mario_state, interact_type, obj ):
 
-    global invulnerable
+    global invulnerable # pylint: disable=invalid-name
 
     interaction = 0
 
-    if mario_state.get_flags() & MARIO_METAL_CAP:
+    if mario_state.get_flags() & mario.MARIO_METAL_CAP:
         interaction = mario.INT_FAST_ATTACK_OR_SHELL
     else:
         interaction = determine_interaction( mario_state, obj )
@@ -813,17 +855,17 @@ def interact_bully( mario_state, interact_type, obj ):
 
         attack_object( obj, interaction )
         bounce_back_from_attack( mario_state, interaction )
-        
+
         return True
 
     elif not invulnerable and \
-    not mario_state.get_flags() & MARIO_VANISH_CAP and \
+    not mario_state.get_flags() & mario.MARIO_VANISH_CAP and \
     not (obj.get_nteraction_subtype() & mario.INT_SUBTYPE_DELAY_INVINCIBILITY):
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
         mario_state.set_invinc_timer( 2 )
 
+        mario_state.update_sound_and_camera()
         # TODO: Sound stuff.
-        #mario_state.update_sound_and_camera()
         #play_sound(SOUND_MARIO_EEUH, mario_state.marioObj->header.gfx.cameraToObject);
         #play_sound(SOUND_OBJ_BULLY_METAL, mario_state.marioObj->header.gfx.cameraToObject);
 
@@ -832,20 +874,20 @@ def interact_bully( mario_state, interact_type, obj ):
             mario_state, mario_state.bully_knock_back(), 0 )
         # TODO: Rumble stuff.
         # queue_rumble_data\(5, 80\);
-        
+
         return True
 
     return False
 
 def interact_shock( mario_state, interact_type, obj ):
 
-    global invulnerable
-    global delay_invinc_timer
+    global invulnerable # pylint: disable=invalid-name
+    global delay_invinc_timer # pylint: disable=invalid-name
 
     action_air = mario.ACT_FLAG_AIR | mario.ACT_FLAG_ON_POLE | mario.ACT_FLAG_HANGING
 
     if not invulnerable and \
-    not mario_state.get_flags() & MARIO_VANISH_CAP and \
+    not mario_state.get_flags() & mario.MARIO_VANISH_CAP and \
     not obj.get_interaction_subtype() & mario.INT_SUBTYPE_DELAY_INVINCIBILITY:
         action_arg = (mario_state.get_action() & action_air) == 0
 
@@ -854,7 +896,7 @@ def interact_shock( mario_state, interact_type, obj ):
         mario_state.set_interact_obj( obj )
 
         take_damage_from_interact_object( mario_state )
-        
+
         # TODO: Sound stuff.
         #play_sound(SOUND_MARIO_ATTACKED, mario_state.marioObj->header.gfx.cameraToObject);
         # TODO: Rumble stuff.
@@ -865,8 +907,7 @@ def interact_shock( mario_state, interact_type, obj ):
             return drop_and_set_mario_action(
                 mario_state, mario.ACT_WATER_SHOCKED, 0 )
         else:
-            # TODO: Camera stuff.
-            #mario_state.update_sound_and_camera()
+            mario_state.update_sound_and_camera()
             return drop_and_set_mario_action(
                 mario_state, mario.ACT_SHOCKED, action_arg )
 
@@ -878,7 +919,7 @@ def interact_shock( mario_state, interact_type, obj ):
 
 def interact_mr_blizzard( mario_state, interact_type, obj ):
 
-    global delay_invinc_timer
+    global delay_invinc_timer # pylint: disable=invalid-name
 
     if take_damage_and_knock_back( mario_state, obj ):
         return True
@@ -891,11 +932,11 @@ def interact_mr_blizzard( mario_state, interact_type, obj ):
 
 def interact_hit_from_below( mario_state, interact_type, obj ):
 
-    global delay_invinc_timer
+    global delay_invinc_timer # pylint: disable=invalid-name
 
     interaction = 0
 
-    if mario_state.get_flags() & MARIO_METAL_CAP:
+    if mario_state.get_flags() & mario.MARIO_METAL_CAP:
         interaction = mario.INT_FAST_ATTACK_OR_SHELL
     else:
         interaction = determine_interaction( mario_state, obj )
@@ -931,11 +972,11 @@ def interact_hit_from_below( mario_state, interact_type, obj ):
 
 def interact_bounce_top( mario_state, interact_type, obj ):
 
-    global delay_invinc_timer
+    global delay_invinc_timer # pylint: disable=invalid-name
 
     interaction = 0
 
-    if mario_state.get_flags() & MARIO_METAL_CAP:
+    if mario_state.get_flags() & mario.MARIO_METAL_CAP:
         interaction = mario.INT_FAST_ATTACK_OR_SHELL
     else:
         interaction = determine_interaction( mario_state, obj )
@@ -969,7 +1010,7 @@ def interact_bounce_top( mario_state, interact_type, obj ):
 
 def interact_damage( mario_state, interact_type, obj ):
 
-    global delay_invinc_timer
+    global delay_invinc_timer # pylint: disable=invalid-name
 
     if take_damage_and_knock_back( mario_state, obj ):
         return True
@@ -1013,8 +1054,8 @@ def interact_koopa_shell( mario_state, interact_type, obj ):
             mario_state.set_ridden_obj( obj )
 
             attack_object( obj, interaction )
+            mario_state.update_sound_and_camera()
             # TODO: Sound stuff.
-            #mario_state.update_sound_and_camera()
             #play_shell_music();
             mario_state.drop_held_object()
 
@@ -1068,7 +1109,7 @@ def interact_hoot( mario_state, interact_type, obj ):
     # Can pause to advance the global timer without falling too far, allowing
     # you to regrab after letting go.
     if action_id >= 0x080 and \
-    actionId < 0x098 and \
+    action_id < 0x098 and \
     mario.get_global_timer() - \
     mario_state.get_used_obj().get_hoot_mario_release_time() > 30:
         mario_state.stop_riding_and_holding()
@@ -1078,8 +1119,7 @@ def interact_hoot( mario_state, interact_type, obj ):
 
         # TODO: Rumble stuff.
         # queue_rumble_data\(5, 80\);
-        # TODO: Sound stuff.
-        #mario_state.update_sound_and_camera()
+        mario_state.update_sound_and_camera()
         return set_mario_action( mario_state, mario.ACT_RIDING_HOOT, 0 )
 
     return False
@@ -1098,17 +1138,17 @@ def interact_cap( mario_state, interact_type, obj ):
         mario_state.unset_flag( mario.MARIO_CAP_IN_HAND )
         mario_state.set_flag( cap_flag )
 
-        if MARIO_VANISH_CAP == cap_flag:
+        if mario.MARIO_VANISH_CAP == cap_flag:
             cap_time = 600
             # TODO: Sound stuff.
             #cap_music = SEQUENCE_ARGS(4, SEQ_EVENT_POWERUP);
 
-        elif MARIO_METAL_CAP == cap_flag:
+        elif mario.MARIO_METAL_CAP == cap_flag:
             cap_time = 600
             # TODO: Sound stuff.
             #cap_music = SEQUENCE_ARGS(4, SEQ_EVENT_METAL_CAP);
 
-        elif MARIO_WING_CAP == cap_flag:
+        elif mario.MARIO_WING_CAP == cap_flag:
             cap_time = 1800
             # TODO: Sound stuff.
             #cap_music = SEQUENCE_ARGS(4, SEQ_EVENT_POWERUP);
@@ -1118,10 +1158,10 @@ def interact_cap( mario_state, interact_type, obj ):
 
         if mario_state.get_action() & mario.ACT_FLAG_IDLE or \
         mario_state.get_action() == mario.ACT_WALKING:
-            mario_state.set_flag( MARIO_CAP_IN_HAND )
+            mario_state.set_flag( mario.MARIO_CAP_IN_HAND )
             set_mario_action( mario_state, mario.ACT_PUTTING_ON_CAP, 0 )
         else:
-            mario_state.set_flag( MARIO_CAP_ON_HEAD )
+            mario_state.set_flag( mario.MARIO_CAP_ON_HEAD )
 
         # TODO: Sound stuff.
         #play_sound(SOUND_MENU_STAR_SOUND, mario_state.marioObj->header.gfx.cameraToObject);
@@ -1136,10 +1176,11 @@ def interact_cap( mario_state, interact_type, obj ):
     return False
 
 def interact_grabbable( mario_state, interact_type, obj ):
+    # pylint: disable=no-member
 
     if obj.get_interaction_subtype() & mario.INT_SUBTYPE_KICKABLE:
         interaction = determine_interaction( mario_state, obj )
-        if interaction & (INT_KICK | mario.INT_TRIP):
+        if interaction & (mario.INT_KICK | mario.INT_TRIP):
             attack_object( obj, interaction )
             bounce_back_from_attack( mario_state, interaction )
             return False
@@ -1148,18 +1189,21 @@ def interact_grabbable( mario_state, interact_type, obj ):
         if check_object_grab_mario( mario_state, interact_type, obj ):
             return True
 
-    if able_to_grab_object(m, o):
-        if not obj.get_interaction_subtype() & mario.INT_SUBTYPE_NOT_GRABBABLE:
+    if able_to_grab_object( mario_state, obj ):
+        if not obj.get_interaction_subtype() & \
+        mario.INT_SUBTYPE_NOT_GRABBABLE:
             mario_state.set_interact_obj( obj )
-            mario_state.set_input( mario_state.get_input() | INPUT_INTERACT_OBJ_GRABBABLE )
+            mario_state.set_input( mario_state.get_input() | \
+                mario.INPUT_INTERACT_OBJ_GRABBABLE )
             return True
 
-    if obj.behavior_name != bhvBowser:
+    if obj.behavior_name != objects.bhvBowser:
         mario_state.push_out_of_object( obj, -5.0 )
 
     return False
 
 def interact_text( mario_state, interact_type, obj ):
+
     interact = False
 
     if obj.get_interaction_subtype() & mario.INT_SUBTYPE_SIGN:
@@ -1173,7 +1217,7 @@ def interact_text( mario_state, interact_type, obj ):
 
 def interact_unknown_08( mario_state, interact_type, obj ):
 
-    global delay_invinc_timer
+    global delay_invinc_timer # pylint: disable=invalid-name
 
     interaction = determine_interaction( mario_state, obj )
 
@@ -1192,7 +1236,7 @@ def interact_unknown_08( mario_state, interact_type, obj ):
 
     return False
 
-interaction_handlers = [
+interaction_handlers = [ # pylint: disable=invalid-name
     InteractionHandler( mario.INTERACT_COIN,           interact_coin ),
     InteractionHandler( mario.INTERACT_WATER_RING,     interact_water_ring ),
     InteractionHandler( mario.INTERACT_STAR_OR_KEY,    interact_star_or_key ),
@@ -1293,13 +1337,14 @@ def determine_interaction( mario_state, obj ):
 
     return interaction
 
-collided_obj = None
+collided_obj = None # pylint: disable=invalid-name
 def mario_process_interactions( mario_state ):
 
-    global collided_obj
-    global displaying_door_text
-    global invulnerable
-    global delay_invinc_timer
+    global collided_obj # pylint: disable=invalid-name
+    global displaying_door_text # pylint: disable=invalid-name
+    global invulnerable # pylint: disable=invalid-name
+    global delay_invinc_timer # pylint: disable=invalid-name
+    global just_teleported # pylint: disable=invalid-name
 
     delay_invinc_timer = False
     invulnerable = \
@@ -1328,7 +1373,6 @@ def mario_process_interactions( mario_state ):
 
     # If the kick/punch flags are set and an object collision changes mario's
     # action, he will get the kick/punch wall speed anyway.
-    # TODO: Port to python.
     mario_state.check_kick_or_punch_wall()
     mario_state.unset_flag( mario.MARIO_PUNCHING )
     mario_state.unset_flag( mario.MARIO_KICKING )
@@ -1359,10 +1403,10 @@ def determine_knockback_action( mario_state, arg ):
     remaining_health = \
         mario_state.get_health() - 0x40 * mario_state.get_hurt_counter()
 
-    if mario_state.get_action() & (ACT_FLAG_SWIMMING | ACT_FLAG_METAL_WATER):
+    if mario_state.get_action() & (mario.ACT_FLAG_SWIMMING | mario.ACT_FLAG_METAL_WATER):
         terrain_index = 2
     elif mario_state.get_action() & \
-    (ACT_FLAG_AIR | ACT_FLAG_ON_POLE | ACT_FLAG_HANGING):
+    (mario.ACT_FLAG_AIR | mario.ACT_FLAG_ON_POLE | mario.ACT_FLAG_HANGING):
         terrain_index = 1
 
     if remaining_health < 0x100:
@@ -1390,11 +1434,11 @@ def determine_knockback_action( mario_state, arg ):
 
     if -0x4000 <= facing_d_yaw and facing_d_yaw <= 0x4000:
         mario_state.set_forward_vel( mario_state.get_forward_vel() * -1.0 )
-        bonk_action = backward_knockback_actions[terrain_index][strength_index]
+        bonk_action = BACKWARD_KNOCKBACK_ACTIONS[terrain_index][strength_index]
     else:
         mario_state.set_face_angle(
             1, mario_state.get_face_angle( 1 ) + 0x8000 )
-        bonk_action = forward_knockback_actions[terrain_index][strength_index]
+        bonk_action = FORWARD_KNOCKBACK_ACTIONS[terrain_index][strength_index]
 
     return bonk_action
 
@@ -1403,12 +1447,13 @@ def drop_and_set_mario_action( mario_state, action, action_arg ):
     return set_mario_action( mario_state, action, action_arg )
 
 def hurt_and_set_mario_action( mario_state, action, action_arg, hurt_counter ):
-    mario_state.set_hurt_counter( hurtCounter )
+    mario_state.set_hurt_counter( hurt_counter )
 
     return set_mario_action(
         mario_state, action, action_arg )
 
 def set_mario_action_moving( mario_state, action, action_arg ):
+    # pylint: disable=no-member
 
     floor_class = mario_state.get_floor_class()
     forward_vel = mario_state.get_forward_vel()
@@ -1591,8 +1636,8 @@ def set_mario_action( mario_state, action, arg ):
     # DEBUG
     #global ready
     #ready = True
-    global test_fish
-    global bhv_test
+    global test_fish # pylint: disable=invalid-name
+    global bhv_test # pylint: disable=invalid-name
     if action & mario.ACT_FLAG_ATTACKING:
         # TODO: Why doesn't Mario scale?
         mario_state.mario_object.scale( 2.0, 2.0, 2.0 )

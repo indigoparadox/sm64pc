@@ -342,14 +342,11 @@ void
 PyObjects_destroy(PyObjectClass *self) {
     struct Object* native_object = NULL;
     Py_XDECREF(self->behavior);
-    //if (self->spawned_in_python) {
-        native_object = PYTHON_DECAPSULE_OBJECT(self->native_object, ;);
-        native_object->pyObjectState = NULL;
-        //obj_mark_for_deletion(native_object);
-    //}
+    native_object = PYTHON_DECAPSULE_OBJECT(self->native_object, ;);
+    native_object->pyObjectState = NULL;
     Py_DECREF(self->native_object);
     #ifdef PYTHON_MEM_DEBUG
-    python_log_debug(sLogger, "despawned python object");
+    python_log_debug(sLogger, "despawned python object for obj %llx", native_object);
     #endif /* PYTHON_MEM_DEBUG */
 }
 
@@ -451,7 +448,7 @@ PyObject* python_wrap_object(struct Object *obj) {
     }
 
     #ifdef PYTHON_MEM_DEBUG
-    python_log_debug(sLogger, "wrapping native object in python object");
+    python_log_debug(sLogger, "wrapping native obj %llx in python object", obj);
     #endif /* PYTHON_MEM_DEBUG */
 
     pObjectOut = (PyObjectClass *)PyObject_CallObject((PyObject *)&PyObjectType, NULL);

@@ -442,6 +442,8 @@ void mario_retrieve_cap(void) {
     gMarioState->flags |= MARIO_NORMAL_CAP | MARIO_CAP_IN_HAND;
 }
 
+#ifndef USE_PYTHON
+
 u32 able_to_grab_object(struct MarioState *m, UNUSED struct Object *o) {
     u32 action = m->action;
 
@@ -457,6 +459,8 @@ u32 able_to_grab_object(struct MarioState *m, UNUSED struct Object *o) {
 
     return FALSE;
 }
+
+#endif /* USE_PYTHON */
 
 struct Object *mario_get_collided_object(struct MarioState *m, u32 interactType) {
     s32 i;

@@ -46,14 +46,14 @@ static PyMemberDef PyMarioState_members[] = {
     PyMario_set_ ## var(PyMarioStateClass *self, PyObject *args) { \
         struct MarioState *mario_state = NULL; \
         type var; \
-        var = py_getter(args); \
+        var = (type)py_getter(args); \
         if (PyErr_Occurred()) { \
             python_log_error(sLogger, "mario: during set " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
-        mario_state->var = var; \
+        mario_state->var = (type)var; \
         Py_RETURN_NONE; \
     }
 
@@ -122,9 +122,10 @@ static PyMemberDef PyMarioState_members[] = {
             obj = python_object_get_native((struct _PyObjectClass *)arg); \
         } \
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
-        Py_XDECREF(mario_state->usedObj); \
+        /* These refcount adjustments cause corruption in gfx lists. */ \
+        /* Py_XDECREF(mario_state->usedObj); */ \
         mario_state->var = obj; \
-        Py_XINCREF(mario_state->usedObj); \
+        /* Py_XINCREF(mario_state->usedObj); */ \
         Py_RETURN_NONE; \
     }
 
@@ -183,82 +184,6 @@ static PyMemberDef PyMarioState_members[] = {
         gMarioState->flag_name ## s |= flag_name; \
         Py_RETURN_NONE; \
     }
-
-PyObject *
-PyMario_set_usedObj(PyMarioStateClass *self, PyObject *arg) { \
-    struct MarioState *mario_state = NULL;
-    struct Object *obj = NULL;
-    if (Py_None != (PyObject *)arg) {
-        obj = python_object_get_native((struct _PyObjectClass *)arg);
-    }
-    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
-    Py_XDECREF(mario_state->usedObj);
-    mario_state->usedObj = obj;
-    Py_XINCREF(mario_state->usedObj);
-    Py_RETURN_NONE;
-}
-
-/*
-static PyObject *
-PyMario_unset_flag(PyObject *self, PyObject *arg) {
-    unsigned long flag;
-
-    flag = PyLong_AsUnsignedLong( arg );
-    if (PyErr_Occurred()) {
-        python_log_error(sLogger, "during unset flag:");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-    gMarioState->flags &= ~flag;
-
-    Py_RETURN_NONE;
-}
-
-static PyObject *
-PyMario_set_flag(PyObject *self, PyObject *arg) {
-    unsigned long flag;
-
-    flag = PyLong_AsUnsignedLong( arg );
-    if (PyErr_Occurred()) {
-        python_log_error(sLogger, "during set flag:");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-    gMarioState->flags |= flag;
-
-    Py_RETURN_NONE;
-}
-
-static PyObject *
-PyMario_unset_particle_flag(PyObject *self, PyObject *arg) {
-    unsigned long flag;
-
-    flag = PyLong_AsUnsignedLong( arg );
-    if (PyErr_Occurred()) {
-        python_log_error(sLogger, "during unset flag:");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-    gMarioState->particleFlags &= ~flag;
-
-    Py_RETURN_NONE;
-}
-
-static PyObject *
-PyMario_set_particle_flag(PyObject *self, PyObject *arg) {
-    unsigned long flag;
-
-    flag = PyLong_AsUnsignedLong( arg );
-    if (PyErr_Occurred()) {
-        python_log_error(sLogger, "during set flag:");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-    gMarioState->particleFlags |= flag;
-
-    Py_RETURN_NONE;
-}
-*/
 
 #ifndef CHECK_PYTHON
 
@@ -433,7 +358,7 @@ MARIO_SET( hurtCounter, unsigned char, PyLong_AsUnsignedLong );
 MARIO_SET( invincTimer, short, PyLong_AsLong );
 MARIO_SET( input, unsigned short, PyLong_AsUnsignedLong );
 MARIO_SET_OBJ( interactObj );
-//MARIO_SET_OBJ( usedObj );
+MARIO_SET_OBJ( usedObj );
 MARIO_SET_OBJ( riddenObj );
 MARIO_SET_VEC( vel, float, "f" );
 MARIO_SET_VEC( faceAngle, short, "h" );
@@ -701,9 +626,6 @@ void python_init_mario() {
     pObject = python_wrap_object(gMarioState->marioObj);
 
     gMarioState->pyState->mario_object = (struct _PyObjectClass *)pObject;
-    //Py_INCREF(gMarioState->pyState->mario_object);
-    //Py_INCREF(gMarioState->pyState->mario_object->native_object);
-    //assert(PyCapsule_IsValid(gMarioState->pyState->mario_object->native_object, "objects.Object._native_object"));
 
     assert(NULL != gMarioState->pyState->mario_object);
 
@@ -768,12 +690,6 @@ u32 wrap_mario_action(struct MarioState *m, u32 action, u32 arg, const char *met
         *pAction = NULL,
         *pActionArg = NULL;
     u32 retval = 0;
-
-    assert(NULL != gMarioState->pyState->mario_object);
-    assert(NULL != m->pyState->mario_object);
-
-    //assert(PyCapsule_IsValid(m->pyState->mario_object->native_object, "objects.Object._native_object"));
-    assert(PyCapsule_IsValid(m->pyState->native_state, "mario.MarioState._native_state"));
 
     pFunc = PyObject_GetAttrString(gMarioModule, method);
     if (pFunc && PyCallable_Check(pFunc)) {
