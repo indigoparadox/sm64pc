@@ -4,7 +4,11 @@
 #include "game/level_update.h"
 #include "course_table.h"
 
+u8 gSafeToWarp = 0;
+
 extern s16 gCurrCourseNum;
+
+void initiate_warp(s16, s16, s16, s32);
 
 /* Levels Module */
 

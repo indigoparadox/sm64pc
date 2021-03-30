@@ -64,9 +64,13 @@ MARIO_PAGE = '''<!doctype HTML>
 </head>
 <body>
 <form action="/" method="POST" />
-<div 
+<div>
 <button name="spawn" value="Coins">Spawn Coins</button>
+</div>
+<div>
 <button name="warp" value="bbh">Big Boo's House</button>
+<button name="warp" value="ddd">Dire Dire Docks</button>
+</div>
 </form>
 </body>
 </html>

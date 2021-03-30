@@ -39,6 +39,10 @@
 
 #include "pc/cliopts.h"
 
+#ifdef USE_PYTHON
+extern u8 gSafeToWarp;
+#endif /* USE_PYTHON */
+
 #define PLAY_MODE_NORMAL 0
 #define PLAY_MODE_PAUSED 2
 #define PLAY_MODE_CHANGE_AREA 3
@@ -629,6 +633,11 @@ s16 music_changed_through_warp(s16 arg) {
  * Set the current warp type and destination level/area/node.
  */
 void initiate_warp(s16 destLevel, s16 destArea, s16 destWarpNode, s32 arg3) {
+
+    #ifdef USE_PYTHON
+    gSafeToWarp = 0;
+    #endif /* USE_PYTHON */
+
     if (destWarpNode >= WARP_NODE_CREDITS_MIN) {
         sWarpDest.type = WARP_TYPE_CHANGE_LEVEL;
     } else if (destLevel != gCurrLevelNum) {
