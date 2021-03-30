@@ -1710,6 +1710,7 @@ def set_mario_action_cutscene( mario_state, action, action_arg ):
 
     return action
 
+text1 = dialog.Dialog( "Foo\n" )
 def set_mario_action( mario_state, action, arg ):
 
     logger = logging.getLogger( 'action' )
@@ -1724,6 +1725,7 @@ def set_mario_action( mario_state, action, arg ):
     global test_fish # pylint: disable=invalid-name
     global bhv_test # pylint: disable=invalid-name
     if action & mario.ACT_FLAG_ATTACKING:
+        text1.render()
         # TODO: Why doesn't Mario scale?
         mario_state.mario_object.scale( 2.0, 2.0, 2.0 )
         delay_frames( 20, lambda: mario_state.mario_object.scale( 1, 1, 1 ) )
