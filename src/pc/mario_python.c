@@ -65,7 +65,7 @@ static PyMemberDef PyMarioState_members[] = {
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         var = c_getter(mario_state->var); \
         if (PyErr_Occurred()) { \
-            fprintf( stderr, "during get " #var ":" ); \
+            python_log_error(sLogger, "during get " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -105,7 +105,7 @@ static PyMemberDef PyMarioState_members[] = {
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         var = c_getter(mario_state->var[idx]); \
         if (PyErr_Occurred()) { \
-            fprintf( stderr, "mario: during get " #var ":" ); \
+            python_log_error(sLogger, "mario: during get " #var ":" ); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -268,13 +268,10 @@ PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
     s32 res;
     PyObject *pRes;
     struct MarioState *mario_state = NULL;
-
-    //assert(PyCapsule_IsValid(self->mario_object->native_object, "objects.Object._native_object"));
-    assert(PyCapsule_IsValid(self->native_state, "mario.MarioState._native_state"));
     
-    turnYaw = PyLong_AsLong( arg );
+    turnYaw = PyLong_AsLong(arg);
     if (PyErr_Occurred()) {
-        fprintf( stderr, "during facing_downhill:" );
+        python_log_error(sLogger, "during facing_downhill:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -282,7 +279,7 @@ PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
     mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
 
     res = mario_facing_downhill(mario_state, turnYaw);
-    pRes = PyLong_FromLong( res );
+    pRes = PyLong_FromLong(res);
     if (PyErr_Occurred()) {
         python_log_error(sLogger, "during facing_downhill:");
         PyErr_Print();
@@ -299,9 +296,6 @@ PyMario_get_floor_class(PyMarioStateClass *self) {
     struct MarioState *mario_state = NULL;
 
     mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
-
-    //assert(PyCapsule_IsValid(self->mario_object->native_object, "objects.Object._native_object"));
-    assert(PyCapsule_IsValid(self->native_state, "mario.MarioState._native_state"));
     
     floorClass = mario_get_floor_class(mario_state);
     

@@ -80,6 +80,9 @@ u32 interact_text(struct MarioState *, u32, struct Object *);
 #ifdef USE_PYTHON
 
 #include "pc/mario_python.h"
+#include "pc/logging_python.h"
+
+extern PyObject *gLoggerInteract;
 
 #else
 
@@ -199,7 +202,7 @@ u32 determine_interaction(struct MarioState *m, struct Object *o) {
 
     pFunc = PyObject_GetAttrString(gMarioModule, "determine_interaction");
     if (!pFunc || !PyCallable_Check(pFunc)) {
-        fprintf(stderr, "no method determine_interaction found in mario module\n");
+        python_log_error(gLoggerInteract, "no method determine_interaction found in mario module");
         return 0;
     }
 
@@ -1054,6 +1057,39 @@ u32 interact_warp_door(struct MarioState *m, UNUSED u32 interactType, struct Obj
 
 #endif /* USE_PYTHON */
 
+#ifdef USE_PYTHON
+
+u32 get_door_save_file_flag(struct Object *door) {
+    PyObject *pDoor = NULL,
+        *pFunc = NULL,
+        *pArgs = NULL,
+        *pRetVal = NULL;
+    u32 retval = 0;
+
+    pFunc = PyObject_GetAttrString(gMarioModule, "get_door_save_file_flag");
+    if (!pFunc || !PyCallable_Check(pFunc)) {
+        python_log_error(gLoggerInteract, "unable to call get door savefile flag");
+        return 0;
+    }
+
+    pDoor = python_wrap_object(door);
+
+    pArgs = PyTuple_New(1);
+        
+    /* The tuple will DECREF this for us later. */
+    Py_INCREF(pDoor);
+    PyTuple_SetItem(pArgs, 0, pDoor);
+    
+    pRetVal = PyObject_CallObject(pFunc, pArgs);
+    Py_DECREF(pArgs);
+
+    retval = PyLong_AsUnsignedLong(pRetVal);
+
+    return retval;
+}    
+
+#else
+
 u32 get_door_save_file_flag(struct Object *door) {
     u32 saveFileFlag = 0;
     s16 requiredNumStars = door->oBehParams >> 24;
@@ -1093,8 +1129,6 @@ u32 get_door_save_file_flag(struct Object *door) {
 
     return saveFileFlag;
 }
-
-#ifndef USE_PYTHON
 
 u32 interact_door(struct MarioState *m, UNUSED u32 interactType, struct Object *o) {
     s16 requiredNumStars = o->oBehParams >> 24;
@@ -1878,7 +1912,7 @@ void mario_process_interactions(struct MarioState *m) {
 
     pFunc = PyObject_GetAttrString(gMarioModule, "mario_process_interactions");
     if (!pFunc || !PyCallable_Check(pFunc)) {
-        fprintf(stderr, "unable to call process interactions\n");
+        python_log_error(gLoggerInteract, "unable to call process interactions");
         return;
     }
 

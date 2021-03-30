@@ -44,9 +44,9 @@ def mario_init():
     logger = logging.getLogger( 'init' )
     logger.info( 'logger active' )
 
-    logging.getLogger( 'memory' ).setLevel( logging.ERROR )
-    logging.getLogger( 'action' ).setLevel( logging.ERROR )
-    logging.getLogger( 'objects' ).setLevel( logging.ERROR )
+    #logging.getLogger( 'memory' ).setLevel( logging.ERROR )
+    #logging.getLogger( 'action' ).setLevel( logging.ERROR )
+    #logging.getLogger( 'objects' ).setLevel( logging.ERROR )
 
     # DEBUG
     global bhv_test

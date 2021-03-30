@@ -74,6 +74,8 @@ void game_loop_one_iteration(void);
 PyObject *gLoggerMemory = NULL;
 #endif /* PYTHON_MEM_DEBUG */
 
+PyObject *gLoggerInteract = NULL;
+
 extern PyObject *gMarioModule;
 
 /* This is the hook called by main() to get ALL of python running. */
@@ -109,6 +111,7 @@ void python_init() {
     #ifdef PYTHON_MEM_DEBUG
     gLoggerMemory = python_get_logger("memory");
     #endif /* PYTHON_MEM_DEBUG */
+    gLoggerInteract = python_get_logger("interact");
 
     /* Load the mario module. */
     /* TODO: Load from user dir? */

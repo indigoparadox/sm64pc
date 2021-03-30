@@ -15,7 +15,8 @@
 
 extern PyObject *gMarioModule;
 
-PyObject *sLogger = NULL;
+static PyObject *sLogger = NULL;
+PyObject *gLoggerBehavior = NULL;
 
 u32 get_mario_cap_flag(struct Object *);
 void obj_apply_scale_to_transform(struct Object *);
@@ -385,6 +386,9 @@ PyObject* PyInit_objects(void) {
 
     if (NULL == sLogger) {
         sLogger = python_get_logger("objects");
+    }
+    if (NULL == gLoggerBehavior) {
+        gLoggerBehavior = python_get_logger("objects.behavior");
     }
 
     if(0 > PyType_Ready( &PyObjectType)) {

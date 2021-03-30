@@ -3,6 +3,10 @@
 
 #include <structmember.h>
 
+#include "logging_python.h"
+
+extern PyObject *gLoggerBehavior;
+
 typedef struct _PyObjectBehaviorClass {
     PyObject_HEAD
     PyObject *native_behavior;
@@ -57,7 +61,7 @@ PyObject_Behavior_add_to_list(PyObjectBehaviorClass *self, u32 bhv) {
 
     bBegin = PyLong_FromUnsignedLong(bhv);
     if (0 > PyList_Append((PyObject *)self->script, bBegin)) {
-        fprintf(stderr, "behavior: during append:\n");
+       python_log_error(gLoggerBehavior, "behavior: during append:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -76,7 +80,7 @@ PyObject_Behavior_BEGIN(PyObjectBehaviorClass *self, PyObject *arg) {
     
     objList = PyLong_AsLong(arg);
     if (PyErr_Occurred()) {
-        fprintf(stderr, "behavior: during BEGIN:\n");
+        python_log_error(gLoggerBehavior, "behavior: during BEGIN:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -357,7 +361,7 @@ PyObject_Behavior_compile(PyObjectBehaviorClass *self) {
         pBhvInstruction = PyList_GetItem((PyObject *)self->script, i);
         bhv_compiled[i] = (u32)PyLong_AsUnsignedLong(pBhvInstruction);
         if (PyErr_Occurred()) {
-            fprintf(stderr, "behavior: during compile:\n");
+            python_log_error(gLoggerBehavior, "behavior: during compile:");
             PyErr_Print();
             Py_RETURN_NONE;
         }
@@ -365,7 +369,7 @@ PyObject_Behavior_compile(PyObjectBehaviorClass *self) {
 
     // TODO: A destructor that frees the ptr.
     self->native_behavior = PYTHON_ENCAPSULE_BEHAVIOR(bhv_compiled, Py_RETURN_NONE);
-    fprintf(stderr, "behavior compiled: %ld instructions\n", list_sz);
+    python_log_debug(gLoggerBehavior, "behavior compiled: %ld instructions", list_sz);
     assert(PyCapsule_IsValid(self->native_behavior, "objects.Behavior._native_behavior"));
 
     Py_RETURN_NONE;
@@ -387,7 +391,7 @@ PyObjectBehavior_init(PyObjectBehaviorClass *self, PyObject *args, PyObject *kwd
 
     res = PyArg_ParseTuple(args, "|Os", &pBhv, &bhv_name);
     if (!res || PyErr_Occurred()) {
-        fprintf(stderr, "during behavior init:\n");
+        python_log_error(gLoggerBehavior, "during behavior init:");
         PyErr_Print();
         return 0;
     }
@@ -412,7 +416,7 @@ PyObjectBehavior_destroy(PyObjectBehaviorClass *self) {
     Py_XDECREF(self->script);
     // TODO: Free native behavior if compiled in python.
     Py_XDECREF(self->native_behavior);
-    fprintf(stdout, "destroyed behavior\n");
+    python_log_debug(gLoggerBehavior, "destroyed behavior");
 }
 
 BehaviorScript *
