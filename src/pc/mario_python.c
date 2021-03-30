@@ -556,10 +556,16 @@ PyMario_atan2s(PyObject *self, PyObject *args) {
     return pTanOut;
 }
 
+static PyObject *
+PyMario_get_mario_state(PyMarioStateClass *self) {
+    return gMarioState->pyState;
+}
+
 static PyMethodDef PyMarioMethods[] = {
     {"random_float",    (PyCFunction)PyMario_random_float,      METH_NOARGS, NULL},
     {"random_ushort",   (PyCFunction)PyMario_random_ushort,     METH_NOARGS, NULL},
     {"get_global_timer",(PyCFunction)PyMario_random_ushort,     METH_NOARGS, NULL},
+    {"get_mario_state", (PyCFunction)PyMario_get_mario_state,   METH_NOARGS, NULL},
     {"atan2s",          (PyCFunction)PyMario_atan2s,            METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
