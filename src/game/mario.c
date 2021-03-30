@@ -42,8 +42,11 @@
 #endif
 
 #ifdef USE_PYTHON
+#include "pc/logging_python.h"
+
 extern PyObject *gMarioModule;
 extern PyObject *gLoggerMario;
+extern u8 gSafeToWarp;
 #endif /* USE_PYTHON */
 
 u32 unused80339F10;
@@ -2037,6 +2040,8 @@ void init_mario(void) {
     }
    
     Py_XDECREF(pFunc);
+
+    gSafeToWarp = 1;
     #endif /* USE_PYTHON */
 }
 

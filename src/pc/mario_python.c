@@ -560,9 +560,15 @@ PyMario_atan2s(PyObject *self, PyObject *args) {
 
 static PyObject *
 PyMario_get_mario_state(PyMarioStateClass *self) {
+    PyObject *state_out = Py_None;
+
+    if (NULL != gMarioState && NULL != gMarioState->pyState) {
+        state_out = (PyObject *)gMarioState->pyState;
+    }
+
     /* Python code that calls this will steal this ref. */
-    Py_INCREF(gMarioState->pyState);
-    return gMarioState->pyState;
+    Py_INCREF(state_out);
+    return state_out;
 }
 
 static PyMethodDef PyMarioMethods[] = {
