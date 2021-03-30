@@ -25,10 +25,10 @@
 #define PYTHON_WRAP_NATIVE_BEHAVIOR(module, bhv) \
     pBhvNative = PYTHON_ENCAPSULE_BEHAVIOR(bhv, return NULL) \
     Py_INCREF(pBhvNative); \
-    pBhvArgs = PyTuple_New(2); \
+    pBhvArgs = PyTuple_New(1); \
     PyTuple_SetItem(pBhvArgs, 0, pBhvNative); \
-    pBhvName = PyUnicode_FromString(#bhv); \
-    PyTuple_SetItem(pBhvArgs, 1, pBhvName); \
+    /*pBhvName = PyUnicode_FromString(#bhv); \
+    PyTuple_SetItem(pBhvArgs, 1, pBhvName); */ \
     pBhv = PYTHON_CALL_BEHAVIOR(pBhvArgs); \
     if (0 > PyModule_AddObject(module, #bhv, (PyObject *)pBhv)) { \
         Py_XDECREF(pBhv); \

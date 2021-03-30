@@ -298,27 +298,19 @@ PyObjects_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
     struct Object *self_obj = NULL;
 
     res = PyArg_ParseTuple(args, "|OlO", &pParent, &model, &pBhv);
-    /*if (NULL != pParent) {
-        Py_INCREF(pParent);
-    }*/
-    #ifdef PYTHON_DEBUG_VERBOSE
-    if(NULL != pParent) {
-        python_log_debug(sLogger, "object init parent: 0x%016llx containing 0x%016llx", pParent, pParent->native_object);
-    }
-    #endif /* PYTHON_DEBUG_VERBOSE */
     if (!res || PyErr_Occurred()) {
         python_log_error(sLogger, "during spawn:");
         PyErr_Print();
-        //Py_DECREF(args);
         return 0;
     }
-    //Py_DECREF(args);
 
     if (NULL != pBhv) {
         self->behavior = pBhv;
-        Py_INCREF(self->behavior);
         bhv = PyObjectBehavior_get_native(self->behavior);
+    } else {
+        self->behavior = (struct _PyObjectBehaviorClass *)Py_None;
     }
+    Py_INCREF(self->behavior);
 
     self->spawned_in_python = 0;
     if (NULL != pParent && NULL != bhv && 0 <= model) {
@@ -329,9 +321,6 @@ PyObjects_init(PyObjectClass *self, PyObject *args, PyObject *kwds) {
         assert(NULL != self_obj);
         self->native_object = PYTHON_ENCAPSULE_OBJECT(self_obj, return 0);
         self_obj->pyObjectState = self;
-        /* Decreased again in deallocate_object. */
-        //Py_INCREF(self);
-        //Py_INCREF(self->native_object);
         self->spawned_in_python = 1;
     }
 
@@ -376,8 +365,7 @@ static PyModuleDef ObjectsModule = {
 PyObject* PyInit_objects(void) {
     PyObject *pObjects = NULL,
         *pBhvNative = NULL,
-        *pBhvArgs = NULL,
-        *pBhvName = NULL;
+        *pBhvArgs = NULL;
     struct _PyObjectBehaviorClass *pBhv = NULL;
     //PyMarioStateClass *pMarioState;
 
@@ -434,7 +422,9 @@ PyObject* PyInit_objects(void) {
 /* Native C Interface */
 
 PyObject* python_wrap_object(struct Object *obj) {
-    PyObjectClass *pObjectOut;
+    PyObjectClass *pObjectOut = NULL;
+    PyObject *pBehaviorCapsule = NULL,
+        *pBehaviorArgs = NULL;
 
     assert(NULL != obj);
 
@@ -455,10 +445,14 @@ PyObject* python_wrap_object(struct Object *obj) {
     assert(NULL == pObjectOut->native_object);
     pObjectOut->native_object = PYTHON_ENCAPSULE_OBJECT(obj, Py_RETURN_NONE);
     assert(NULL != pObjectOut->native_object);
-    //Py_INCREF(pObjectOut);
-    
-    //Py_INCREF(pObjectOut->native_object);
-    
+
+    Py_DECREF(pObjectOut->behavior);
+    pBehaviorArgs = PyTuple_New(1);
+    pBehaviorCapsule = PYTHON_ENCAPSULE(obj->behavior, "objects.Behavior._native_behavior", ;);
+    PyTuple_SetItem(pBehaviorArgs, 0, pBehaviorCapsule);
+    pObjectOut->behavior = (struct _PyObjectBehaviorClass *)PyObject_CallObject((PyObject *)&PyObjectBehaviorType, pBehaviorArgs);
+    Py_DECREF(pBehaviorArgs);
+
     return (PyObject *)pObjectOut;
 }
 

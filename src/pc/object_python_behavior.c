@@ -11,13 +11,12 @@ typedef struct _PyObjectBehaviorClass {
     PyObject_HEAD
     PyObject *native_behavior;
     PyListObject *script;
-    const char *behavior_name;
+    //const char *behavior_name;
 } PyObjectBehaviorClass;
 
 static PyMemberDef PyObjectBehavior_members[] = {
     {"_native_behavior", T_OBJECT_EX, offsetof(PyObjectBehaviorClass, native_behavior), READONLY, NULL},
     {"script", T_OBJECT_EX, offsetof(PyObjectBehaviorClass, script), 0, NULL},
-    {"behavior_name", T_STRING, offsetof(PyObjectBehaviorClass, behavior_name), READONLY, NULL},
     {NULL}
 };
 
@@ -61,7 +60,7 @@ PyObject_Behavior_add_to_list(PyObjectBehaviorClass *self, u32 bhv) {
 
     bBegin = PyLong_FromUnsignedLong(bhv);
     if (0 > PyList_Append((PyObject *)self->script, bBegin)) {
-       python_log_error(gLoggerBehavior, "behavior: during append:");
+        python_log_error(gLoggerBehavior, "behavior: during append:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -353,23 +352,22 @@ PyObject_Behavior_compile(PyObjectBehaviorClass *self) {
     u32 *bhv_compiled = NULL;
     PyObject *pBhvInstruction = NULL;
 
-    assert(NULL == self->native_behavior);
-
     list_sz = PyList_Size((PyObject *)self->script);
     bhv_compiled = calloc(list_sz, sizeof(u32));
     for(i = 0;list_sz > i;i++) {
         pBhvInstruction = PyList_GetItem((PyObject *)self->script, i);
         bhv_compiled[i] = (u32)PyLong_AsUnsignedLong(pBhvInstruction);
         if (PyErr_Occurred()) {
-            python_log_error(gLoggerBehavior, "behavior: during compile:");
+            //python_log_error(gLoggerBehavior, "behavior: during compile:");
             PyErr_Print();
             Py_RETURN_NONE;
         }
     }
 
     // TODO: A destructor that frees the ptr.
+    Py_DECREF(self->native_behavior);
     self->native_behavior = PYTHON_ENCAPSULE_BEHAVIOR(bhv_compiled, Py_RETURN_NONE);
-    python_log_debug(gLoggerBehavior, "behavior compiled: %ld instructions", list_sz);
+    //python_log_debug(gLoggerBehavior, "behavior compiled: %ld instructions", list_sz);
     assert(PyCapsule_IsValid(self->native_behavior, "objects.Behavior._native_behavior"));
 
     Py_RETURN_NONE;
@@ -387,9 +385,9 @@ static int
 PyObjectBehavior_init(PyObjectBehaviorClass *self, PyObject *args, PyObject *kwds) {
     PyObject *pBhv = NULL;
     int res = 0;
-    char *bhv_name = NULL;
+    //char *bhv_name = NULL;
 
-    res = PyArg_ParseTuple(args, "|Os", &pBhv, &bhv_name);
+    res = PyArg_ParseTuple(args, "|O", &pBhv); // &bhv_name);
     if (!res || PyErr_Occurred()) {
         python_log_error(gLoggerBehavior, "during behavior init:");
         PyErr_Print();
@@ -397,12 +395,17 @@ PyObjectBehavior_init(PyObjectBehaviorClass *self, PyObject *args, PyObject *kwd
     }
     
     self->script = (PyListObject *)PyList_New(0);
-    self->native_behavior = pBhv;
-    self->behavior_name = bhv_name;
-    Py_INCREF(self->script);
     if (NULL != pBhv) {
-        Py_INCREF(self->native_behavior);
+        self->native_behavior = pBhv;
+    } else {
+        self->native_behavior = (PyObject *)Py_None;
     }
+    Py_INCREF(self->native_behavior);
+
+    self->script = PyList_New(0);
+
+    //self->behavior_name = bhv_name;
+    //Py_INCREF(self->script);
 
     assert(
         NULL == pBhv ||
@@ -426,6 +429,24 @@ PyObjectBehavior_get_native(PyObjectBehaviorClass *self) {
     return bhv;
 }
 
+PyObject *PyObject_Behavior_compare(PyObjectBehaviorClass *self, PyObjectBehaviorClass *other, int op) {
+    PyObject *pRetVal = NULL;
+    BehaviorScript *a = NULL,
+        *b = NULL;
+
+    a = PYTHON_DECAPSULE_BEHAVIOR(self->native_behavior, Py_RETURN_NONE);
+    b = PYTHON_DECAPSULE_BEHAVIOR(other->native_behavior, Py_RETURN_NONE);
+
+    if (a == b) {
+        pRetVal = Py_True;
+    } else {
+        pRetVal = Py_False;
+    }
+
+    Py_INCREF(pRetVal);
+    return pRetVal;
+}
+
 PyTypeObject PyObjectBehaviorType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "objects.Behavior",
@@ -436,4 +457,5 @@ PyTypeObject PyObjectBehaviorType = {
     .tp_dealloc = (destructor)PyObjectBehavior_destroy,
     .tp_methods = PyObjectBehavior_methods,
     .tp_members = PyObjectBehavior_members,
+    .tp_richcompare = (richcmpfunc)PyObject_Behavior_compare,
 };

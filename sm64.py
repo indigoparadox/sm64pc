@@ -4,6 +4,12 @@
 import logging
 import collections
 
+import http.server
+import socketserver
+import multiprocessing
+import threading
+import cgi
+
 import mario # pylint: disable=import-error
 import objects # pylint: disable=import-error
 import levels # pylint: disable=import-error
@@ -49,6 +55,7 @@ def show_osd_line( line_x, line_y, text, ttl ):
 
 server_proc = None
 mario_server = None
+can_warp = False
 
 MARIO_PAGE = '''<!doctype HTML>
 <html>
@@ -57,18 +64,13 @@ MARIO_PAGE = '''<!doctype HTML>
 </head>
 <body>
 <form action="/" method="POST" />
+<div 
 <button name="spawn" value="Coins">Spawn Coins</button>
 <button name="warp" value="bbh">Big Boo's House</button>
 </form>
 </body>
 </html>
 '''
-
-import http.server
-import socketserver
-import multiprocessing
-import threading
-import cgi
 
 class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
 
@@ -90,6 +92,8 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
         
         if 'bbh' == form.getvalue( 'warp' ):
             levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
+        elif 'ddd' == form.getvalue( 'warp' ):
+            levels.initiate_warp( levels.LEVEL_DDD, 0x01, 0x0a, 0 )
 
         self.send_response( 301 )
         self.send_header( 'Location', 'http://127.0.0.1:8064/' )
@@ -113,6 +117,10 @@ class MarioHTTPServer( socketserver.ThreadingMixIn, http.server.HTTPServer ):
 
 # END DEBUG
 
+def mario_init_state( mario_state ):
+    logger = logging.getLogger( 'mario' )
+    logger.info( 'mario init state' )
+
 def mario_init():
      # pylint: disable=no-member
 
@@ -120,9 +128,9 @@ def mario_init():
     logger = logging.getLogger( 'init' )
     logger.info( 'logger active' )
 
-    #logging.getLogger( 'memory' ).setLevel( logging.ERROR )
-    #logging.getLogger( 'action' ).setLevel( logging.ERROR )
-    #logging.getLogger( 'objects' ).setLevel( logging.ERROR )
+    logging.getLogger( 'memory' ).setLevel( logging.ERROR )
+    logging.getLogger( 'action' ).setLevel( logging.ERROR )
+    logging.getLogger( 'objects' ).setLevel( logging.ERROR )
 
     # DEBUG
     global bhv_test # pylint: disable=invalid-name
@@ -239,6 +247,7 @@ def able_to_grab_object( mario_state, obj ):
 
     elif action == mario.ACT_PUNCHING or \
     action == mario.ACT_MOVE_PUNCHING:
+        # TODO: Weird action arg here? Doesn't work!
         if mario_state.get_action_arg() < 2:
             return True
 
@@ -1269,7 +1278,7 @@ def interact_grabbable( mario_state, interact_type, obj ):
                 mario.INPUT_INTERACT_OBJ_GRABBABLE )
             return True
 
-    if obj.behavior_name != objects.bhvBowser:
+    if obj.behavior != objects.bhvBowser:
         mario_state.push_out_of_object( obj, -5.0 )
 
     return False

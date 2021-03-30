@@ -13,7 +13,7 @@
 #include "game/interaction.h"
 #include "logging_python.h"
 
-static PyObject *sLogger = NULL;
+PyObject *gLoggerMario = NULL;
 PyObject *gMarioModule;
 extern struct MarioState *gMarioState;
 extern u32 gGlobalTimer;
@@ -48,7 +48,7 @@ static PyMemberDef PyMarioState_members[] = {
         type var; \
         var = (type)py_getter(args); \
         if (PyErr_Occurred()) { \
-            python_log_error(sLogger, "mario: during set " #var ":"); \
+            python_log_error(gLoggerMario, "mario: during set " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -65,7 +65,7 @@ static PyMemberDef PyMarioState_members[] = {
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         var = c_getter(mario_state->var); \
         if (PyErr_Occurred()) { \
-            python_log_error(sLogger, "during get " #var ":"); \
+            python_log_error(gLoggerMario, "during get " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -81,7 +81,7 @@ static PyMemberDef PyMarioState_members[] = {
         int res = 0; \
         res = PyArg_ParseTuple(args, "l" #py_fmt, &idx, &val); \
         if (!res || PyErr_Occurred()) { \
-            python_log_error(sLogger, "during set " #var ":"); \
+            python_log_error(gLoggerMario, "during set " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -98,14 +98,14 @@ static PyMemberDef PyMarioState_members[] = {
         PyObject *var = 0; \
         idx = PyLong_AsLong(arg); \
         if (PyErr_Occurred()) { \
-            python_log_error(sLogger, "mario: during get " #var ":"); \
+            python_log_error(gLoggerMario, "mario: during get " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         var = c_getter(mario_state->var[idx]); \
         if (PyErr_Occurred()) { \
-            python_log_error(sLogger, "mario: during get " #var ":" ); \
+            python_log_error(gLoggerMario, "mario: during get " #var ":" ); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -164,7 +164,7 @@ static PyMemberDef PyMarioState_members[] = {
         u32 flag_name; \
         flag_name = PyLong_AsUnsignedLong( arg ); \
         if (PyErr_Occurred()) { \
-            python_log_error(sLogger, "during unset flag:"); \
+            python_log_error(gLoggerMario, "during unset flag:"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -177,7 +177,7 @@ static PyMemberDef PyMarioState_members[] = {
         u32 flag_name; \
         flag_name = PyLong_AsUnsignedLong( arg ); \
         if (PyErr_Occurred()) { \
-            python_log_error(sLogger, "during unset flag:"); \
+            python_log_error(gLoggerMario, "during unset flag:"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -196,7 +196,7 @@ PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
     
     turnYaw = PyLong_AsLong(arg);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "during facing_downhill:");
+        python_log_error(gLoggerMario, "during facing_downhill:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -206,7 +206,7 @@ PyMario_facing_downhill(const PyMarioStateClass *self, PyObject *arg) {
     res = mario_facing_downhill(mario_state, turnYaw);
     pRes = PyLong_FromLong(res);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "during facing_downhill:");
+        python_log_error(gLoggerMario, "during facing_downhill:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -226,7 +226,7 @@ PyMario_get_floor_class(PyMarioStateClass *self) {
     
     pRes = PyLong_FromLong( floorClass );
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "during floor_class:");
+        python_log_error(gLoggerMario, "during floor_class:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -243,7 +243,7 @@ PyMario_set_y_vel_based_on_fspeed(PyMarioStateClass *self, PyObject *args) {
 
     res = PyArg_ParseTuple(args, "ff", &initialVelY, &multiplier);
     if (!res || PyErr_Occurred()) {
-        python_log_error(sLogger, "during setVel:");
+        python_log_error(gLoggerMario, "during setVel:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -268,7 +268,7 @@ PyMario_set_forwardVel_all(PyMarioStateClass *self, PyObject *arg) {
     
     forwardVel = PyFloat_AsDouble(arg);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "mario: during set forwardVel_all:");
+        python_log_error(gLoggerMario, "mario: during set forwardVel_all:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -293,7 +293,7 @@ PyMario_set_animID(PyMarioStateClass *self, PyObject *args) {
 
     var = PyLong_AsLong(args);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "mario: during set animID:");
+        python_log_error(gLoggerMario, "mario: during set animID:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -314,7 +314,7 @@ PyMario_push_out_of_object(PyMarioStateClass *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "Of", &pObjIn, &padding);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "mario: during push out of object:");
+        python_log_error(gLoggerMario, "mario: during push out of object:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -366,6 +366,7 @@ MARIO_SET_VEC( faceAngle, short, "h" );
 MARIO_GET( flags, unsigned long, PyLong_FromUnsignedLong );
 MARIO_GET( action, unsigned long, PyLong_FromUnsignedLong );
 MARIO_GET( prevAction, unsigned long, PyLong_FromUnsignedLong );
+MARIO_GET( actionArg, unsigned long, PyLong_FromUnsignedLong );
 MARIO_GET( forwardVel, double, PyFloat_FromDouble );
 MARIO_GET( intendedMag, double, PyFloat_FromDouble );
 MARIO_GET( intendedYaw, short, PyLong_FromLong );
@@ -430,6 +431,7 @@ static PyMethodDef PyMarioState_methods[] = {
     {"get_pos",                     (PyCFunction)PyMario_get_pos,                   METH_O, NULL},
     {"get_angle_to_object",         (PyCFunction)PyMario_mario_obj_angle_to_object, METH_O, NULL},
     {"get_action",                  (PyCFunction)PyMario_get_action,                METH_NOARGS, NULL},
+    {"get_action_arg",              (PyCFunction)PyMario_get_action,                METH_NOARGS, NULL},
     {"get_prev_action",             (PyCFunction)PyMario_get_prevAction,            METH_NOARGS, NULL},
     {"get_invinc_timer",            (PyCFunction)PyMario_get_invincTimer,           METH_NOARGS, NULL},
     {"get_forward_vel",             (PyCFunction)PyMario_get_forwardVel,            METH_NOARGS, NULL},
@@ -540,7 +542,7 @@ PyMario_atan2s(PyObject *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "ff", &a, &b);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "during atan2s:");
+        python_log_error(gLoggerMario, "during atan2s:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -581,18 +583,18 @@ PyObject* PyInit_mario(void) {
     PyObject *pMario;
     //PyMarioStateClass *pMarioState;
 
-    if (NULL == sLogger) {
-        sLogger = python_get_logger("mario");
+    if (NULL == gLoggerMario) {
+        gLoggerMario = python_get_logger("mario");
     }
 
     if(0 > PyType_Ready( &PyMarioStateType)) {
-        python_log_error(sLogger, "type not ready?");
+        python_log_error(gLoggerMario, "type not ready?");
         return NULL;
     }
 
     pMario = PyModule_Create(&MarioModule);
     if(NULL == pMario) {
-        python_log_error(sLogger, "could not allocate mario module");
+        python_log_error(gLoggerMario, "could not allocate mario module");
         return NULL;
     }
 
@@ -607,7 +609,7 @@ PyObject* PyInit_mario(void) {
     PYTHON_MARIO_ADD_ACTION_CONSTANTS(pMario);
     PYTHON_MARIO_ADD_INTERACTION_CONSTANTS(pMario);
 
-    python_log_info(sLogger, "mario module initialized");
+    python_log_info(gLoggerMario, "mario module initialized");
 
     return pMario;
 }
@@ -617,7 +619,7 @@ void python_init_mario() {
     PyMarioStateClass *pMarioState = NULL;
 
     if (NULL == gMarioState->pyState) {
-        python_log_debug(sLogger, "setting up mario python state...");
+        python_log_debug(gLoggerMario, "setting up mario python state...");
         Py_INCREF(&PyMarioStateType);
         pMarioState = (PyMarioStateClass *)PyObject_CallObject((PyObject *)&PyMarioStateType, NULL);
         pMarioState->native_state = PYTHON_ENCAPSULE_MARIO(gMarioState, ;);
@@ -637,7 +639,7 @@ void python_init_mario() {
 
     assert(NULL != gMarioState->pyState->mario_object);
 
-    python_log_debug(sLogger, "new mario dropped");
+    python_log_debug(gLoggerMario, "new mario dropped");
 }
 
 u32 wrap_mario_interaction(
@@ -655,7 +657,7 @@ u32 wrap_mario_interaction(
 
     pFunc = PyObject_GetAttrString(gMarioModule, method);
     if (!pFunc || !PyCallable_Check(pFunc)) {
-        python_log_error(sLogger, "unable to call interaction: %s", method);
+        python_log_error(gLoggerMario, "unable to call interaction: %s", method);
         return 0;
     }
 

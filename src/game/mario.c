@@ -43,6 +43,7 @@
 
 #ifdef USE_PYTHON
 extern PyObject *gMarioModule;
+extern PyObject *gLoggerMario;
 #endif /* USE_PYTHON */
 
 u32 unused80339F10;
@@ -1915,6 +1916,10 @@ s32 execute_mario_action(UNUSED struct Object *o) {
 void init_mario(void) {
     Vec3s capPos;
     struct Object *capObject;
+    #ifdef USE_PYTHON
+    PyObject *pFunc = NULL,
+            *pArgs = NULL;
+    #endif /* USE_PYTHON */
 
     #ifdef USE_PYTHON
     /* Init mario python stuff up here so we can refcount below. */
@@ -2009,6 +2014,30 @@ void init_mario(void) {
 
         capObject->oMoveAngleYaw = 0;
     }
+
+    #ifdef USE_PYTHON
+    pFunc = PyObject_GetAttrString(gMarioModule, "mario_init_state");
+    if (!pFunc || !PyCallable_Check(pFunc)) {
+        python_log_error(gLoggerMario, "unable to call mario_init_state");
+        return;
+    }
+
+    pArgs = PyTuple_New(1);
+        
+    /* The tuple will DECREF this for us later. */
+    Py_INCREF(gMarioState->pyState);
+    PyTuple_SetItem(pArgs, 0, (PyObject *)gMarioState->pyState);
+    
+    PyObject_CallObject(pFunc, pArgs);
+    
+    Py_DECREF(pArgs);
+
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+   
+    Py_XDECREF(pFunc);
+    #endif /* USE_PYTHON */
 }
 
 void init_mario_from_save_file(void) {
