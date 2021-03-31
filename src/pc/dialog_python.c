@@ -104,7 +104,7 @@ static PyMemberDef PyDialogClass_members[] = {
 // TODO
 static PyObject *
 PyDialog_show(PyDialogClass *self) {
-    //struct DialogEntry *dialog;
+    /* Ref decreased when it closes in render func below. */
     gPyDialogPtr = (PyObject *)self;
     Py_INCREF(self);
     Py_RETURN_NONE;

@@ -341,6 +341,7 @@ MARIO_SET_VEC( faceAngle, short, "h" );
 
 MARIO_GET( flags, unsigned long, PyLong_FromUnsignedLong );
 MARIO_GET( action, unsigned long, PyLong_FromUnsignedLong );
+MARIO_GET( hurtCounter, unsigned char, PyLong_FromUnsignedLong );
 MARIO_GET( prevAction, unsigned long, PyLong_FromUnsignedLong );
 MARIO_GET( actionArg, unsigned long, PyLong_FromUnsignedLong );
 MARIO_GET( forwardVel, double, PyFloat_FromDouble );
@@ -405,6 +406,7 @@ static PyMethodDef PyMarioState_methods[] = {
     {"set_num_coins",               (PyCFunction)PyMario_set_numCoins,              METH_O, NULL},
     {"set_invinc_timer",            (PyCFunction)PyMario_set_invincTimer,           METH_O, NULL},
     {"set_input",                   (PyCFunction)PyMario_set_input,                 METH_O, NULL},
+    {"set_vel",                     (PyCFunction)PyMario_set_vel,                   METH_VARARGS, NULL},
     {"set_face_angle",              (PyCFunction)PyMario_set_faceAngle,             METH_VARARGS, NULL},
 
     {"get_pos",                     (PyCFunction)PyMario_get_pos,                   METH_O, NULL},
@@ -418,12 +420,12 @@ static PyMethodDef PyMarioState_methods[] = {
     {"get_intended_yaw",            (PyCFunction)PyMario_get_intendedYaw,           METH_NOARGS, NULL},
     {"get_squish_timer",            (PyCFunction)PyMario_get_squishTimer,           METH_NOARGS, NULL},
     {"get_quicksand_depth",         (PyCFunction)PyMario_get_quicksandDepth,        METH_NOARGS, NULL},
-    {"set_vel",                     (PyCFunction)PyMario_set_vel,                   METH_VARARGS, NULL},
+    {"get_hurt_counter",            (PyCFunction)PyMario_get_hurtCounter,           METH_NOARGS, NULL},
     {"get_vel",                     (PyCFunction)PyMario_get_vel,                   METH_O, NULL},
     {"get_num_coins",               (PyCFunction)PyMario_get_numCoins,              METH_NOARGS, NULL},
     {"get_num_stars",               (PyCFunction)PyMario_get_numStars,              METH_NOARGS, NULL},
     {"get_face_angle",              (PyCFunction)PyMario_get_faceAngle,             METH_O, NULL},
-    {"get_input",                   (PyCFunction)PyMario_get_input,                 METH_O, NULL},
+    {"get_input",                   (PyCFunction)PyMario_get_input,                 METH_NOARGS, NULL},
     {"get_flags",                   (PyCFunction)PyMario_get_flags,                 METH_NOARGS, NULL},
     {"get_action_state",            (PyCFunction)PyMario_get_actionState,           METH_NOARGS, NULL},
     {"get_cap_timer",               (PyCFunction)PyMario_get_capTimer,              METH_NOARGS, NULL},

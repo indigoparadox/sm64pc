@@ -71,6 +71,9 @@ MARIO_PAGE = '''<!doctype HTML>
 <button name="warp" value="bbh">Big Boo's House</button>
 <button name="warp" value="ddd">Dire Dire Docks</button>
 </div>
+<div>
+<textarea name="send_text"></textarea>
+<button name="action" value="send_text">Send Text</button>
 </form>
 </body>
 </html>
@@ -94,10 +97,15 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
         if 'Coins' == form.getvalue( 'spawn' ):
             spawn_yellow_coins( mario_state.mario_object, 6 )
         
-        if 'bbh' == form.getvalue( 'warp' ):
+        elif 'bbh' == form.getvalue( 'warp' ):
             levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
         elif 'ddd' == form.getvalue( 'warp' ):
             levels.initiate_warp( levels.LEVEL_DDD, 0x01, 0x0a, 0 )
+
+        elif 'send_text' == form.getvalue( 'action' ):
+            dlg_text = form.getvalue( 'send_text' )
+            dlg = dialog.Dialog( dlg_text )
+            dlg.show()
 
         self.send_response( 301 )
         self.send_header( 'Location', 'http://127.0.0.1:8064/' )
@@ -245,6 +253,7 @@ def able_to_grab_object( mario_state, obj ):
 
     if action == mario.ACT_DIVE_SLIDE or \
     action == mario.ACT_DIVE:
+        # This works!
         if not obj.get_interaction_subtype() & \
         mario.INT_SUBTYPE_GRABS_MARIO:
             return True
@@ -1710,7 +1719,6 @@ def set_mario_action_cutscene( mario_state, action, action_arg ):
 
     return action
 
-text1 = dialog.Dialog( "This is a text dialog.\nThis is just a test.\n\nIt's a test.\n" )
 def set_mario_action( mario_state, action, arg ):
 
     logger = logging.getLogger( 'action' )
