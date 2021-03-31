@@ -30,5 +30,31 @@
         __VA_ARGS__; \
     }
 
+#define PYTHON_WRAP_FLAGS(flag_name, flag_var, flag_module, logger) \
+    static PyObject * \
+    flag_module ## _unset_ ## flag_name(PyObject *self, PyObject *arg) { \
+        u32 flag_name; \
+        flag_name = PyLong_AsUnsignedLong( arg ); \
+        if (PyErr_Occurred()) { \
+            python_log_error(logger, "during unset flag:"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        flag_var &= ~flag_name; \
+        Py_RETURN_NONE; \
+    } \
+    \
+    static PyObject * \
+    flag_module ## _set_ ## flag_name(PyObject *self, PyObject *arg) { \
+        u32 flag_name; \
+        flag_name = PyLong_AsUnsignedLong( arg ); \
+        if (PyErr_Occurred()) { \
+            python_log_error(logger, "during unset flag:"); \
+            PyErr_Print(); \
+            Py_RETURN_NONE; \
+        } \
+        flag_var |= flag_name; \
+        Py_RETURN_NONE; \
+    }
 
 #endif /* PYTHOH_HELPERS_H */

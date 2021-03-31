@@ -55,6 +55,10 @@ s16 gCutsceneMsgXOffset;
 s16 gCutsceneMsgYOffset;
 s8 gRedCoinsCollected;
 
+#ifdef USE_PYTHON
+extern PyObject *gPyDialogPtr;
+#endif /* USE_PYTHON */
+
 extern u8 gLastCompletedCourseNum;
 extern u8 gLastCompletedStarNum;
 
@@ -3097,6 +3101,17 @@ s16 render_menus_and_dialogs() {
     dialog_python_render_frame();
     #endif /* USE_PYTHON */
 
+    #ifdef USE_PYTHON
+    if (NULL != gPyDialogPtr) {
+        /* Prevent pausing during display ('cause it crashes). */
+        raise_background_noise(1);
+        gCameraMovementFlags &= ~CAM_MOVE_PAUSE_SCREEN;
+        set_play_mode(0);
+
+        dialog_python_render_dialog();
+        gDialogColorFadeTimer = (s16) gDialogColorFadeTimer + 0x1000;
+    } else
+    #endif /* USE_PYTHON */
     if (gMenuMode != -1) {
         switch (gMenuMode) {
             case 0:
@@ -3114,6 +3129,7 @@ s16 render_menus_and_dialogs() {
         }
 
         gDialogColorFadeTimer = (s16) gDialogColorFadeTimer + 0x1000;
+
     } else if (gDialogID != -1) {
         // Peach message "Dear Mario" new game dialog
         if (gDialogID == 20) {

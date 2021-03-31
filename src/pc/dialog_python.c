@@ -12,6 +12,7 @@
 #include "audio_defines.h"
 #include "make_const_nonconst.h"
 #include "game/print.h"
+#include "audio/external.h"
 
 extern PyObject *gMarioModule;
 
@@ -44,7 +45,13 @@ extern s32 gDialogResponse;
 extern f32 gDefaultSoundArgs[];
 extern struct Controller *gPlayer3Controller;
 
-struct DialogEntry *gPyDialogPtr = NULL;
+PyObject *gPyDialogPtr = NULL;
+
+void render_dialog_box_type(struct DialogEntry *, s8 );
+void render_dialog_triangle_choice(void);
+u32 ensure_nonnegative(s16);
+void handle_dialog_text_and_pages(s8, struct DialogEntry *, s8);
+void render_dialog_string_color(s8);
 
 #define DEFAULT_DIALOG_BOX_ANGLE 90.0f
 #define DEFAULT_DIALOG_BOX_SCALE 19.0f
@@ -97,110 +104,9 @@ static PyMemberDef PyDialogClass_members[] = {
 // TODO
 static PyObject *
 PyDialog_render(PyDialogClass *self) {
-    void **dialogTable;
-    struct DialogEntry *dialog;
-    s8 lowerBound;
-    //dialogTable = segmented_to_virtual(seg2_dialog_table);
-    //dialog = segmented_to_virtual(dialogTable[gDialogID]);
-    dialog = PYTHON_DECAPSULE(self->dialog_entry, "dialog.Dialog._dialog_entry", struct DialogEntry, Py_RETURN_NONE);
-    gDialogID = 1;
-
-    // if the dialog entry is invalid, set the ID to -1.
-    //if (segmented_to_virtual(NULL) == dialog) {
-    //    gDialogID = -1;
-    //    return;
-    //}
-
-    switch (gDialogBoxState) {
-        case DIALOG_STATE_OPENING:
-            if (gDialogBoxOpenTimer == DEFAULT_DIALOG_BOX_ANGLE) {
-                //play_dialog_sound(gDialogID);
-                play_sound(SOUND_MENU_MESSAGE_APPEAR, gDefaultSoundArgs);
-            }
-
-            if (gDialogBoxType == DIALOG_TYPE_ROTATE) {
-                gDialogBoxOpenTimer -= 7.5;
-                gDialogBoxScale -= 1.5;
-            } else {
-                gDialogBoxOpenTimer -= 10.0;
-                gDialogBoxScale -= 2.0;
-            }
-
-            if (gDialogBoxOpenTimer == 0.0f) {
-                gDialogBoxState = DIALOG_STATE_VERTICAL;
-                gDialogLineNum = 1;
-            }
-            lowerBound = 1;
-            break;
-        case DIALOG_STATE_VERTICAL:
-            gDialogBoxOpenTimer = 0.0f;
-
-            if ((gPlayer3Controller->buttonPressed & A_BUTTON)
-                || (gPlayer3Controller->buttonPressed & B_BUTTON)) {
-                if (gLastDialogPageStrPos == -1) {
-                    //handle_special_dialog_text(gDialogID);
-                    gDialogBoxState = DIALOG_STATE_CLOSING;
-                } else {
-                    gDialogBoxState = DIALOG_STATE_HORIZONTAL;
-                    play_sound(SOUND_MENU_MESSAGE_NEXT_PAGE, gDefaultSoundArgs);
-                }
-            }
-            lowerBound = 1;
-            break;
-        case DIALOG_STATE_HORIZONTAL:
-            gDialogScrollOffsetY += dialog->linesPerBox * 2;
-
-            if (gDialogScrollOffsetY >= dialog->linesPerBox * DIAG_VAL1) {
-                gDialogTextPos = gLastDialogPageStrPos;
-                gDialogBoxState = DIALOG_STATE_VERTICAL;
-                gDialogScrollOffsetY = 0;
-            }
-            lowerBound = (gDialogScrollOffsetY / 16) + 1;
-            break;
-        case DIALOG_STATE_CLOSING:
-            if (gDialogBoxOpenTimer == 20.0f) {
-                //level_set_transition(0, 0);
-                play_sound(SOUND_MENU_MESSAGE_DISAPPEAR, gDefaultSoundArgs);
-
-                //if (gDialogBoxType == DIALOG_TYPE_ZOOM) {
-                //    trigger_cutscene_dialog(2);
-                //}
-
-                gDialogResponse = gDialogLineNum;
-            }
-
-            gDialogBoxOpenTimer = gDialogBoxOpenTimer + 10.0f;
-            gDialogBoxScale = gDialogBoxScale + 2.0f;
-
-            if (gDialogBoxOpenTimer == DEFAULT_DIALOG_BOX_ANGLE) {
-                gDialogBoxState = DIALOG_STATE_OPENING;
-                gDialogID = -1;
-                gDialogTextPos = 0;
-                gLastDialogResponse = 0;
-                gLastDialogPageStrPos = 0;
-                gDialogResponse = 0;
-            }
-            lowerBound = 1;
-            break;
-    }
-
-    render_dialog_box_type(dialog, dialog->linesPerBox);
-
-    gDPSetScissor(gDisplayListHead++, G_SC_NON_INTERLACE,
-                  0,
-                  ensure_nonnegative(DIAG_VAL2 - dialog->width),
-                  SCREEN_WIDTH,
-                  ensure_nonnegative(240 + ((dialog->linesPerBox * 80) / DIAG_VAL4) - dialog->width));
-    handle_dialog_text_and_pages(0, dialog, lowerBound);
-
-    if (gLastDialogPageStrPos == -1 && gLastDialogResponse == 1) {
-        render_dialog_triangle_choice();
-    }
-    gDPSetScissor(gDisplayListHead++, G_SC_NON_INTERLACE, 2, 2, SCREEN_WIDTH - BORDER_HEIGHT/2, SCREEN_HEIGHT - BORDER_HEIGHT/2);
-    if (gLastDialogPageStrPos != -1 && gDialogBoxState == DIALOG_STATE_VERTICAL) {
-        render_dialog_string_color(dialog->linesPerBox);
-    }
-
+    //struct DialogEntry *dialog;
+    gPyDialogPtr = (PyObject *)self;
+    Py_INCREF(self);
     Py_RETURN_NONE;
 }
 
@@ -212,10 +118,11 @@ static PyMethodDef PyDialogClass_methods[] = {
 static int
 PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
     const char *text = NULL;
-    char *buf = NULL;
+    u8 *buf = NULL;
     struct DialogEntry *dialog_entry = NULL;
     int res = 0,
-        text_len = 0;
+        text_len = 0,
+        i = 0;
     //char *bhv_name = NULL;
 
     res = PyArg_ParseTuple(args, "s", &text);
@@ -225,14 +132,40 @@ PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
         return 0;
     }
 
-    text_len = strlen(text);
+    /* +1 for the dialog text terminator. */
+    text_len = strlen(text) + 1;
 
-    dialog_entry = calloc(1, sizeof(struct DialogEntry));
-    dialog_entry->linesPerBox = 5;
-    dialog_entry->leftOffset = 10;
-    dialog_entry->width = 20;
+    dialog_entry = calloc(1, sizeof(struct DialogEntry) + 1); /* +1 for the NULL. */
+    dialog_entry->linesPerBox = 4;
+    dialog_entry->leftOffset = 30;
+    dialog_entry->width = 200;
+    
     buf = calloc(text_len, 1);
-    strncpy(buf, text, text_len);
+    //memcpy(buf, text, text_len);
+
+    /* Copy the parsed text to the struct buffer, and while doing so,
+     * translate it into the weird encoding Mario 64 uses.
+     */
+    for (i = 0;text_len > i;i++) {
+        if (' ' == text[i]) {
+            buf[i] = DIALOG_CHAR_SPACE;
+        } else if ('\n' == text[i]) {
+            buf[i] = DIALOG_CHAR_NEWLINE;
+        } else if ('.' == text[i]) {
+            buf[i] = DIALOG_CHAR_PERIOD_OR_HANDAKUTEN;
+        } else if (',' == text[i]) {
+            buf[i] = DIALOG_CHAR_COMMA;
+        } else if ('\'' == text[i]) {
+            buf[i] = DIALOG_CHAR_DAKUTEN;
+        } else if ('/' == text[i]) {
+            buf[i] = DIALOG_CHAR_SLASH;
+        } else if ('\0' == text[i]) {
+            buf[i] = DIALOG_CHAR_TERMINATOR;
+        } else {
+            buf[i] = ASCII_TO_DIALOG(text[i]);
+        }
+    }
+
     dialog_entry->str = buf;
 
     self->dialog_entry = PYTHON_ENCAPSULE(dialog_entry, "dialog.Dialog._dialog_entry", ;);
@@ -244,10 +177,13 @@ void
 PyDialog_destroy(PyDialogClass *self) {
     struct DialogEntry *dialog_entry = NULL;
 
-    dialog_entry = PYTHON_DECAPSULE(self->dialog_entry, "dialog.Dialog._dialog_entry", struct DialogEntry, return);
+    dialog_entry = PYTHON_DECAPSULE(
+        self->dialog_entry,
+        "dialog.Dialog._dialog_entry",
+        struct DialogEntry, return);
 
-    free(dialog_entry->str);
-    free(dialog_entry);
+    free((void*)dialog_entry->str);
+    free((void*)dialog_entry);
 
     Py_DECREF(self->dialog_entry);
 }
@@ -339,4 +275,115 @@ void dialog_python_render_frame() {
     }
    
     Py_XDECREF(pFunc);
+}
+
+void dialog_python_render_dialog() {
+    //void **dialogTable;
+    struct DialogEntry *dialog;
+    s8 lowerBound;
+    //dialogTable = segmented_to_virtual(seg2_dialog_table);
+    //dialog = segmented_to_virtual(dialogTable[gDialogID]);
+    gDialogID = -1;
+    dialog = PYTHON_DECAPSULE(
+        ((PyDialogClass *)gPyDialogPtr)->dialog_entry,
+        "dialog.Dialog._dialog_entry",
+        struct DialogEntry, return);
+
+    // if the dialog entry is invalid, set the ID to -1.
+    //if (segmented_to_virtual(NULL) == dialog) {
+    //    gDialogID = -1;
+    //    return;
+    //}
+
+    switch (gDialogBoxState) {
+        case DIALOG_STATE_OPENING:
+            if (gDialogBoxOpenTimer == DEFAULT_DIALOG_BOX_ANGLE) {
+                //play_dialog_sound(gDialogID);
+                play_sound(SOUND_MENU_MESSAGE_APPEAR, gDefaultSoundArgs);
+            }
+
+            if (gDialogBoxType == DIALOG_TYPE_ROTATE) {
+                gDialogBoxOpenTimer -= 7.5;
+                gDialogBoxScale -= 1.5;
+            } else {
+                gDialogBoxOpenTimer -= 10.0;
+                gDialogBoxScale -= 2.0;
+            }
+
+            if (gDialogBoxOpenTimer == 0.0f) {
+                gDialogBoxState = DIALOG_STATE_VERTICAL;
+                gDialogLineNum = 1;
+            }
+            lowerBound = 1;
+            break;
+        case DIALOG_STATE_VERTICAL:
+            gDialogBoxOpenTimer = 0.0f;
+
+            if ((gPlayer3Controller->buttonPressed & A_BUTTON)
+                || (gPlayer3Controller->buttonPressed & B_BUTTON)) {
+                if (gLastDialogPageStrPos == -1) {
+                    //handle_special_dialog_text(gDialogID);
+                    gDialogBoxState = DIALOG_STATE_CLOSING;
+                } else {
+                    gDialogBoxState = DIALOG_STATE_HORIZONTAL;
+                    play_sound(SOUND_MENU_MESSAGE_NEXT_PAGE, gDefaultSoundArgs);
+                }
+            }
+            lowerBound = 1;
+            break;
+        case DIALOG_STATE_HORIZONTAL:
+            gDialogScrollOffsetY += dialog->linesPerBox * 2;
+
+            if (gDialogScrollOffsetY >= dialog->linesPerBox * DIAG_VAL1) {
+                gDialogTextPos = gLastDialogPageStrPos;
+                gDialogBoxState = DIALOG_STATE_VERTICAL;
+                gDialogScrollOffsetY = 0;
+            }
+            lowerBound = (gDialogScrollOffsetY / 16) + 1;
+            break;
+        case DIALOG_STATE_CLOSING:
+            if (gDialogBoxOpenTimer == 20.0f) {
+                //level_set_transition(0, 0);
+                play_sound(SOUND_MENU_MESSAGE_DISAPPEAR, gDefaultSoundArgs);
+
+                //if (gDialogBoxType == DIALOG_TYPE_ZOOM) {
+                //    trigger_cutscene_dialog(2);
+                //}
+
+                gDialogResponse = gDialogLineNum;
+            }
+
+            gDialogBoxOpenTimer = gDialogBoxOpenTimer + 10.0f;
+            gDialogBoxScale = gDialogBoxScale + 2.0f;
+
+            if (gDialogBoxOpenTimer == DEFAULT_DIALOG_BOX_ANGLE) {
+                gDialogBoxState = DIALOG_STATE_OPENING;
+                gDialogID = -1;
+                gDialogTextPos = 0;
+                gLastDialogResponse = 0;
+                gLastDialogPageStrPos = 0;
+                gDialogResponse = 0;
+                Py_DECREF(gPyDialogPtr);
+                gPyDialogPtr = NULL;
+            }
+            lowerBound = 1;
+            break;
+    }
+
+    render_dialog_box_type(dialog, dialog->linesPerBox);
+
+    gDPSetScissor(gDisplayListHead++, G_SC_NON_INTERLACE,
+                  0,
+                  ensure_nonnegative(DIAG_VAL2 - dialog->width),
+                  SCREEN_WIDTH,
+                  ensure_nonnegative(240 + ((dialog->linesPerBox * 80) / DIAG_VAL4) - dialog->width));
+    handle_dialog_text_and_pages(0, dialog, lowerBound);
+
+    if (gLastDialogPageStrPos == -1 && gLastDialogResponse == 1) {
+        render_dialog_triangle_choice();
+    }
+    gDPSetScissor(gDisplayListHead++, G_SC_NON_INTERLACE, 2, 2, SCREEN_WIDTH - BORDER_HEIGHT/2, SCREEN_HEIGHT - BORDER_HEIGHT/2);
+    if (gLastDialogPageStrPos != -1 && gDialogBoxState == DIALOG_STATE_VERTICAL) {
+        render_dialog_string_color(dialog->linesPerBox);
+    }
 }

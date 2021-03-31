@@ -6,5 +6,6 @@
 
 PyObject* PyInit_dialog(void);
 void dialog_python_render_frame();
+void dialog_python_render_dialog();
 
 #endif /* DIALOG_PYTHON_H */

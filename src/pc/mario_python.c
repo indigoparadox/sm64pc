@@ -159,31 +159,7 @@ static PyMemberDef PyMarioState_members[] = {
     }
 
 #define MARIO_WRAP_FLAGS(flag_name) \
-    static PyObject * \
-    PyMario_unset_ ## flag_name(PyObject *self, PyObject *arg) { \
-        u32 flag_name; \
-        flag_name = PyLong_AsUnsignedLong( arg ); \
-        if (PyErr_Occurred()) { \
-            python_log_error(gLoggerMario, "during unset flag:"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
-        gMarioState->flag_name ## s &= ~flag_name; \
-        Py_RETURN_NONE; \
-    } \
-    \
-    static PyObject * \
-    PyMario_set_ ## flag_name(PyObject *self, PyObject *arg) { \
-        u32 flag_name; \
-        flag_name = PyLong_AsUnsignedLong( arg ); \
-        if (PyErr_Occurred()) { \
-            python_log_error(gLoggerMario, "during unset flag:"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
-        gMarioState->flag_name ## s |= flag_name; \
-        Py_RETURN_NONE; \
-    }
+    PYTHON_WRAP_FLAGS(flag_name, gMarioState->flag_name ## s, PyMario, gLoggerMario);
 
 #ifndef CHECK_PYTHON
 
@@ -388,6 +364,7 @@ MARIO_GET_VEC( vel, float, PyFloat_FromDouble );
 MARIO_GET_VEC( pos, float, PyFloat_FromDouble );
 MARIO_GET_VEC( faceAngle, short, PyLong_FromLong );
 
+PYTHON_WRAP_FLAGS(gCameraMovementFlag, gCameraMovementFlags, PyMario, gLoggerMario);
 MARIO_WRAP_FLAGS(flag);
 MARIO_WRAP_FLAGS(particleFlag);
 MARIO_WRAP_FLAGS(collidedObjInteractType);
@@ -403,6 +380,8 @@ MARIO_WRAP_OBJ_ARG(check_read_sign, u32, PyLong_FromUnsignedLong);
 MARIO_WRAP_OBJ_ARG(check_npc_talk, u32, PyLong_FromUnsignedLong);
 
 static PyMethodDef PyMarioState_methods[] = {
+    {"unset_camera_movement_flag",  (PyCFunction)PyMario_unset_gCameraMovementFlag, METH_O, NULL},
+    {"set_camera_movement_flag",    (PyCFunction)PyMario_set_gCameraMovementFlag,   METH_O, NULL},
     {"unset_flag",                  (PyCFunction)PyMario_unset_flag,                METH_O, NULL},
     {"set_flag",                    (PyCFunction)PyMario_set_flag,                  METH_O, NULL},
     {"unset_particle_flag",         (PyCFunction)PyMario_unset_flag,                METH_O, NULL},

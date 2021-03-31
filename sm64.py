@@ -1710,7 +1710,7 @@ def set_mario_action_cutscene( mario_state, action, action_arg ):
 
     return action
 
-text1 = dialog.Dialog( "Foo\n" )
+text1 = dialog.Dialog( "This is a text dialog.\nThis is just a test.\n\nIt's a test.\n" )
 def set_mario_action( mario_state, action, arg ):
 
     logger = logging.getLogger( 'action' )
