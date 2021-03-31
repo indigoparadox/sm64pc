@@ -69,6 +69,7 @@ MARIO_PAGE = '''<!doctype HTML>
 <button name="spawn" value="Coins">Spawn Coins</button>
 </div>
 <div>
+<button name="warp" value="bob">Bob-Omb Battlefield</button>
 <button name="warp" value="bbh">Big Boo's House</button>
 <button name="warp" value="ddd">Dire Dire Docks</button>
 </div>
@@ -103,6 +104,8 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
         if 'Coins' == form.getvalue( 'spawn' ):
             spawn_yellow_coins( mario_state.mario_object, 6 )
         
+        elif 'bob' == form.getvalue( 'warp' ):
+            levels.initiate_warp( levels.LEVEL_BOB, 0x01, 0x0a, 0 )
         elif 'bbh' == form.getvalue( 'warp' ):
             levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
         elif 'ddd' == form.getvalue( 'warp' ):
@@ -192,7 +195,7 @@ def bounce_back_from_attack( mario_state, interaction ):
             mario_state.set_forward_vel_all( -48.0 )
 
         cameras.set_shake_from_hit( cameras.SHAKE_ATTACK )
-        mario_state.set_particle_flags( mario.PARTICLE_TRIANGLE )
+        mario_state.set_particle_flag( mario.PARTICLE_TRIANGLE )
 
     # TODO: Sound stuff.
     #if (interaction & (INT_PUNCH | INT_KICK | INT_TRIP | INT_FAST_ATTACK_OR_SHELL)) {
