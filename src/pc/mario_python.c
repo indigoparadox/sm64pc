@@ -79,7 +79,7 @@ static PyMemberDef PyMarioState_members[] = {
         u32 idx = 0; \
         type val = 0; \
         int res = 0; \
-        res = PyArg_ParseTuple(args, "l" #py_fmt, &idx, &val); \
+        res = PyArg_ParseTuple(args, "k" py_fmt, &idx, &val); \
         if (!res || PyErr_Occurred()) { \
             python_log_error(gLoggerMario, "during set " #var ":"); \
             PyErr_Print(); \
@@ -138,13 +138,7 @@ static PyMemberDef PyMarioState_members[] = {
     }
 
 #define MARIO_WRAP_NOARGS(fnc) \
-    static PyObject * \
-    PyMario_ ## fnc(PyMarioStateClass *self) { \
-        struct MarioState *mario_state = NULL; \
-        mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
-        fnc( mario_state ); \
-        Py_RETURN_NONE; \
-    }
+    PYTHON_WRAP_NOARGS(PyMarioStateClass, PYCAPSULE_TYPE_MARIO, struct MarioState, fnc)
 
 #define MARIO_WRAP_OBJ_ARG(fnc, return_type, return_getter) \
     static PyObject * \
@@ -317,6 +311,20 @@ PyMario_get_collided_object(PyMarioStateClass *self, PyObject *arg) {
     return python_wrap_object(obj_out);
 }
 
+static PyObject *
+PyMario_get_area_camera(PyMarioStateClass *self) {
+    struct MarioState *mario_state = NULL;
+    PyObject *pCameraOut = NULL;
+
+    mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE);
+
+    pCameraOut = (PyObject *)mario_state->area->camera->pyCameraState;
+    assert(NULL != pCameraOut);
+    Py_INCREF(pCameraOut);
+
+    return pCameraOut;
+}
+
 #endif /* CHECK_PYTHON */
 
 MARIO_SET( action, unsigned long, PyLong_AsUnsignedLong );
@@ -365,7 +373,6 @@ MARIO_GET_VEC( vel, float, PyFloat_FromDouble );
 MARIO_GET_VEC( pos, float, PyFloat_FromDouble );
 MARIO_GET_VEC( faceAngle, short, PyLong_FromLong );
 
-PYTHON_WRAP_FLAGS(gCameraMovementFlag, gCameraMovementFlags, PyMario, gLoggerMario);
 MARIO_WRAP_FLAGS(flag);
 MARIO_WRAP_FLAGS(particleFlag);
 MARIO_WRAP_FLAGS(collidedObjInteractType);
@@ -381,8 +388,6 @@ MARIO_WRAP_OBJ_ARG(check_read_sign, u32, PyLong_FromUnsignedLong);
 MARIO_WRAP_OBJ_ARG(check_npc_talk, u32, PyLong_FromUnsignedLong);
 
 static PyMethodDef PyMarioState_methods[] = {
-    {"unset_camera_movement_flag",  (PyCFunction)PyMario_unset_gCameraMovementFlag, METH_O, NULL},
-    {"set_camera_movement_flag",    (PyCFunction)PyMario_set_gCameraMovementFlag,   METH_O, NULL},
     {"unset_flag",                  (PyCFunction)PyMario_unset_flag,                METH_O, NULL},
     {"set_flag",                    (PyCFunction)PyMario_set_flag,                  METH_O, NULL},
     {"unset_particle_flag",         (PyCFunction)PyMario_unset_flag,                METH_O, NULL},
@@ -433,6 +438,7 @@ static PyMethodDef PyMarioState_methods[] = {
     {"get_health",                  (PyCFunction)PyMario_get_health,                METH_NOARGS, NULL},
     {"get_used_obj",                (PyCFunction)PyMario_get_usedObj,               METH_NOARGS, NULL},
     {"get_interact_obj",            (PyCFunction)PyMario_get_interactObj,           METH_NOARGS, NULL},
+    {"get_area_camera",             (PyCFunction)PyMario_get_area_camera,           METH_NOARGS, NULL},
     {"get_collided_object",         (PyCFunction)PyMario_get_collided_object,       METH_O, NULL},
     {"get_collided_obj_interact_types", (PyCFunction)PyMario_get_collidedObjInteractTypes,      METH_NOARGS, NULL},
 

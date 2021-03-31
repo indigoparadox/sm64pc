@@ -57,4 +57,16 @@
         Py_RETURN_NONE; \
     }
 
+#define PYTHON_WRAP_NOARGS(self_type, cap_type, struct_type, fnc) \
+    static PyObject * \
+    PyMario_ ## fnc(self_type *self) { \
+        struct_type *var = NULL; \
+        var = PYTHON_DECAPSULE(self->native_state, cap_type, struct_type, Py_RETURN_NONE); \
+        fnc( var ); \
+        Py_RETURN_NONE; \
+    }
+
+#define PYTHON_ADD_CONSTANT(module, constant) \
+    PyModule_AddIntConstant(module, #constant, constant);
+
 #endif /* PYTHOH_HELPERS_H */

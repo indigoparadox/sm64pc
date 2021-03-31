@@ -15,6 +15,7 @@ import objects # pylint: disable=import-error
 import levels # pylint: disable=import-error
 import dialog # pylint: disable=import-error
 import save_file # pylint: disable=import-error
+import cameras # pylint: disable=import-error
 
 InteractionHandler = collections.namedtuple('InteractionHandler', ['interact_type', 'handler'])
 
@@ -72,6 +73,10 @@ MARIO_PAGE = '''<!doctype HTML>
 <button name="warp" value="ddd">Dire Dire Docks</button>
 </div>
 <div>
+<button name="camera" value="normal">Normal Camera</button>
+<button name="camera" value="pause">Pause Camera</button>
+</div>
+<div>
 <textarea name="send_text"></textarea>
 <button name="action" value="send_text">Send Text</button>
 </form>
@@ -82,6 +87,7 @@ MARIO_PAGE = '''<!doctype HTML>
 class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
 
     def do_POST( self ):
+        # pylint: disable=no-member
 
         form_env = {
             'REQUEST_METHOD': 'POST',
@@ -106,6 +112,12 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
             dlg_text = form.getvalue( 'send_text' )
             dlg = dialog.Dialog( dlg_text )
             dlg.show()
+
+        elif 'normal' == form.getvalue( 'camera' ):
+            cameras.unset_movement_flag( cameras.CAM_MOVE_PAUSE_SCREEN )
+
+        elif 'pause' == form.getvalue( 'camera' ):
+            cameras.set_movement_flag( cameras.CAM_MOVE_PAUSE_SCREEN )
 
         self.send_response( 301 )
         self.send_header( 'Location', 'http://127.0.0.1:8064/' )
@@ -179,8 +191,7 @@ def bounce_back_from_attack( mario_state, interaction ):
         else:
             mario_state.set_forward_vel_all( -48.0 )
 
-        # TODO: Camera stuff.
-        #set_camera_shake_from_hit(SHAKE_ATTACK);
+        cameras.set_shake_from_hit( cameras.SHAKE_ATTACK )
         mario_state.set_particle_flags( mario.PARTICLE_TRIANGLE )
 
     # TODO: Sound stuff.
@@ -283,13 +294,12 @@ def take_damage_from_interact_object( mario_state ):
     shake = 0
     damage = mario_state.get_interact_obj().get_damage_or_coin_value()
 
-    # TODO: Camera stuff.
-    #if damage >= 4:
-    #    shake = SHAKE_LARGE_DAMAGE;
-    #} else if (damage >= 2) {
-    #    shake = SHAKE_MED_DAMAGE;
-    #} else {
-    #    shake = SHAKE_SMALL_DAMAGE;
+    if damage >= 4:
+        shake = cameras.SHAKE_LARGE_DAMAGE
+    elif damage >= 2:
+        shake = cameras.SHAKE_MED_DAMAGE
+    else:
+        shake = cameras.SHAKE_SMALL_DAMAGE
 
     if not mario_state.get_flags() & mario.MARIO_CAP_ON_HEAD:
         damage += (damage + 1) / 2
@@ -301,8 +311,8 @@ def take_damage_from_interact_object( mario_state ):
 
     # TODO: Rumble stuff.
     #queue_rumble_data(5, 80);
-    # TODO: Camera stuff.
-    #set_camera_shake_from_hit(shake);
+    
+    cameras.set_shake_from_hit(shake);
 
     return damage
 
@@ -347,8 +357,7 @@ def bounce_off_object( mario_state, obj, vel_y ):
 
 def hit_object_from_below( mario_state, obj ):
     mario_state.set_vel( 1, 0.0 )
-    # TODO: Camera stuff.
-    #set_camera_shake_from_hit(SHAKE_HIT_FROM_BELOW);
+    cameras.set_shake_from_hit( cameras.SHAKE_HIT_FROM_BELOW )
 
 
 def attack_object( obj, interaction ):

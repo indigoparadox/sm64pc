@@ -28,6 +28,11 @@
 #include "engine/graph_node.h"
 #include "level_table.h"
 
+#ifdef USE_PYTHON
+#include "pc/camera_python.h"
+PyTypeObject PyCameraType;
+#endif /* USE_PYTHONG */
+
 #define CBUTTON_MASK (U_CBUTTONS | D_CBUTTONS | L_CBUTTONS | R_CBUTTONS)
 
 /**
@@ -3539,6 +3544,10 @@ void select_mario_cam_mode(void) {
 void create_camera(struct GraphNodeCamera *gc, struct AllocOnlyPool *pool) {
     s16 mode = gc->config.mode;
     struct Camera *c = alloc_only_pool_alloc(pool, sizeof(struct Camera));
+
+    #ifdef USE_PYTHON
+    python_camera_wrap(c);
+    #endif /* USE_PYTHON */
 
     gc->config.camera = c;
     c->mode = mode;

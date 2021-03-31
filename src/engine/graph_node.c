@@ -546,6 +546,10 @@ struct GraphNode *geo_add_child(struct GraphNode *parent, struct GraphNode *chil
     return childNode;
 }
 
+#ifdef USE_PYTHON
+#include "pc/camera_python.h"
+#endif /* USE_PYTHON */
+
 /**
  * Remove a node from the scene graph. It changes the links with its
  * siblings and with its parent, it doesn't deallocate the memory
@@ -562,6 +566,10 @@ struct GraphNode *geo_remove_child(struct GraphNode *graphNode) {
     // Remove link with siblings
     graphNode->prev->next = graphNode->next;
     graphNode->next->prev = graphNode->prev;
+
+    #ifdef USE_PYTHON
+    python_camera_test_and_remove_state(graphNode);
+    #endif /* USE_PYTHON */
 
     // If this node was the first child, a new first child must be chosen
     if (*firstChild == graphNode) {
