@@ -103,7 +103,7 @@ static PyMemberDef PyDialogClass_members[] = {
 
 // TODO
 static PyObject *
-PyDialog_render(PyDialogClass *self) {
+PyDialog_show(PyDialogClass *self) {
     //struct DialogEntry *dialog;
     gPyDialogPtr = (PyObject *)self;
     Py_INCREF(self);
@@ -111,7 +111,7 @@ PyDialog_render(PyDialogClass *self) {
 }
 
 static PyMethodDef PyDialogClass_methods[] = {
-    {"render",    (PyCFunction)PyDialog_render,      METH_NOARGS, NULL},
+    {"show",    (PyCFunction)PyDialog_show,      METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
