@@ -24,8 +24,13 @@ NON_MATCHING ?= 1
 # Build and optimize for Raspberry Pi(s)
 TARGET_RPI ?= 0
 
+# Build with python support.
 USE_PYTHON ?= 1
 
+# Version of python to use.
+PYTHON_VER := python3.6m
+
+# Compile unit tests for python stuff (broken).
 CHECK_PYTHON ?= 0
 
 # Build for Emscripten/WebGL
@@ -526,7 +531,7 @@ INCLUDE_CFLAGS := -I include -I $(BUILD_DIR) -I $(BUILD_DIR)/include -I src -I .
 ENDIAN_BITWIDTH := $(BUILD_DIR)/endian-and-bitwidth
 
 ifeq ($(USE_PYTHON),1)
-  INCLUDE_CFLAGS := $(INCLUDE_CFLAGS) -I/usr/include/python3.6m
+  INCLUDE_CFLAGS := $(INCLUDE_CFLAGS) -I/usr/include/$(PYTHON_VER)
 endif
 
 ifeq ($(CHECK_PYTHON),1)
@@ -739,7 +744,7 @@ else
 endif # End of LDFLAGS
 
 ifeq ($(USE_PYTHON),1)
-   LDFLAGS += -lpython3.6m
+   LDFLAGS += -l$(PYTHON_VER)
 endif
 
 # Prevent a crash with -sopt
