@@ -497,7 +497,7 @@ def interact_star_or_key( mario_state, interact_type, obj ):
     no_exit = interaction_subtype & mario.INT_SUBTYPE_NO_EXIT
     grand_star = interaction_subtype & mario.INT_SUBTYPE_GRAND_STAR
 
-    if mario_state.health >= 0x100:
+    if mario_state.get_health() >= 0x100:
         mario_state.stop_riding_and_holding()
         # TODO: Rumble stuff.
         # queue_rumble_data\(5, 80\);

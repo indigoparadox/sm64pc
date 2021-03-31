@@ -30,6 +30,11 @@
 #include "../../include/libc/stdlib.h"
 #include "../pc/pc_main.h"
 
+#ifdef USE_PYTHON
+#include "pc/mario_python.h"
+#include "pc/object_python.h"
+#endif /* USE_PYTHON */
+
 // TODO: put this elsewhere
 enum SaveOption { SAVE_OPT_SAVE_AND_CONTINUE = 1, SAVE_OPT_SAVE_AND_QUIT, SAVE_OPT_SAVE_EXIT_GAME, SAVE_OPT_CONTINUE_DONT_SAVE };
 
@@ -354,6 +359,9 @@ s32 mario_ready_to_speak(void) {
 // 2 = speaking
 s32 set_mario_npc_dialog(s32 actionArg) {
     s32 dialogState = 0;
+    #ifdef USE_PYTHON
+    PyObject *pCurrentObject = NULL;
+    #endif /* USE_PYTHON */
 
     // in dialog
     if (gMarioState->action == ACT_READING_NPC_DIALOG) {
@@ -369,7 +377,8 @@ s32 set_mario_npc_dialog(s32 actionArg) {
         }
     } else if (actionArg != 0 && mario_ready_to_speak()) {
         #ifdef USE_PYTHON
-        PyMario_set_usedObj(gMarioState->pyState, python_wrap_object(gCurrentObject));
+        pCurrentObject = python_wrap_object(gCurrentObject);
+        PyMario_set_usedObj(gMarioState->pyState, pCurrentObject);
         #else
         gMarioState->usedObj = gCurrentObject;
         #endif /* USE_PYTHON */

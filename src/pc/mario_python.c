@@ -42,10 +42,10 @@ static PyMemberDef PyMarioState_members[] = {
 };
 
 #define MARIO_SET(var, type, py_getter) \
-    PYTHON_SET(var, type, PYCAPSULE_TYPE_MARIO, struct MarioState, py_getter, PyMario, native_state, gLoggerMario)
+    PYTHON_SET(var, type, PYCAPSULE_TYPE_MARIO, struct MarioState, PyMarioStateClass, py_getter, PyMario, native_state, gLoggerMario)
 
 #define MARIO_GET(var, type, c_getter) \
-    PYTHON_GET(var, PYCAPSULE_TYPE_MARIO, struct MarioState, c_getter, PyMario, native_state, gLoggerMario)
+    PYTHON_GET(var, PYCAPSULE_TYPE_MARIO, struct MarioState, PyMarioStateClass, c_getter, PyMario, native_state, gLoggerMario)
 
 #define MARIO_SET_VEC(var, type, py_fmt) \
     static PyObject * \
@@ -310,7 +310,8 @@ MARIO_SET( actionTimer, unsigned short, PyLong_AsUnsignedLong );
 MARIO_SET( wallKickTimer, unsigned char, PyLong_AsUnsignedLong );
 MARIO_SET( forwardVel, double, PyFloat_AsDouble );
 MARIO_SET( peakHeight, double, PyFloat_AsDouble );
-MARIO_SET( numCoins, unsigned short, PyLong_AsUnsignedLong );
+MARIO_SET( numCoins, short, PyLong_AsLong );
+MARIO_SET( numStars, short, PyLong_AsLong );
 MARIO_SET( capTimer, unsigned short, PyLong_AsUnsignedLong );
 MARIO_SET( healCounter, unsigned char, PyLong_AsUnsignedLong );
 MARIO_SET( hurtCounter, unsigned char, PyLong_AsUnsignedLong );
@@ -386,6 +387,7 @@ static PyMethodDef PyMarioState_methods[] = {
     {"set_num_coins",               (PyCFunction)PyMario_set_numCoins,              METH_O, NULL},
     {"set_invinc_timer",            (PyCFunction)PyMario_set_invincTimer,           METH_O, NULL},
     {"set_input",                   (PyCFunction)PyMario_set_input,                 METH_O, NULL},
+    {"set_num_stars",               (PyCFunction)PyMario_set_numStars,              METH_O, NULL},
     {"set_vel",                     (PyCFunction)PyMario_set_vel,                   METH_VARARGS, NULL},
     {"set_face_angle",              (PyCFunction)PyMario_set_faceAngle,             METH_VARARGS, NULL},
 

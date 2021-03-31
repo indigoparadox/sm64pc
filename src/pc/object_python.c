@@ -35,6 +35,12 @@ static PyMemberDef PyObject_members[] = {
     {NULL}
 };
 
+#define OBJECT_SET(var, type, py_getter) \
+    PYTHON_SET(var, type, PYCAPSULE_TYPE_OBJECT, struct Object, PyObjectClass, py_getter, PyObjects, native_object, sLogger)
+
+#define OBJECT_GET(var, type, c_getter) \
+    PYTHON_GET(var, PYCAPSULE_TYPE_OBJECT, struct Object, PyObjectClass, c_getter, PyObjects, native_object, sLogger)
+
 /* This one is a special setter, since some fields of this union have no name. */
 #define OBJECT_SET_ADDR( var, addr, type, py_getter, as_union ) \
     static PyObject * \
@@ -156,48 +162,6 @@ PyObject* PyObjects_set_angle(PyObjectClass *self, PyObject *args) {
 }
 
 static PyObject *
-PyObjects_get_hitbox_radius(PyObjectClass *self) {
-    struct Object *obj = NULL;
-    PyObject *var;
-    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
-    var = PyFloat_FromDouble(obj->hitboxRadius);
-    if (PyErr_Occurred()) {
-        python_log_error(sLogger, "object: during get hitbox radius:");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-    return var;
-}
-
-static PyObject *
-PyObjects_get_hitbox_height(PyObjectClass *self) {
-    struct Object *obj = NULL;
-    PyObject *var;
-    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
-    var = PyFloat_FromDouble(obj->hitboxHeight);
-    if (PyErr_Occurred()) {
-        python_log_error(sLogger, "object: during get hitbox height:");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-    return var;
-}
-
-static PyObject *
-PyObjects_get_collided_obj_interact_types(PyObjectClass *self) {
-    struct Object *obj = NULL;
-    PyObject *var;
-    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
-    var = PyLong_FromUnsignedLong(obj->collidedObjInteractTypes);
-    if (PyErr_Occurred()) {
-        python_log_error(sLogger, "object: during get collided obj interact types:");
-        PyErr_Print();
-        Py_RETURN_NONE;
-    }
-    return var;
-}
-
-static PyObject *
 PyObjects_get_mario_cap_flag(PyObjectClass *self) {
     struct Object *obj = NULL;
     PyObject *var;
@@ -224,32 +188,36 @@ PyObject* PyObjects_is_valid(PyObjectClass *self) {
     Py_RETURN_FALSE;
 }
 
-OBJECT_SET_ADDR( oForwardVel,            0x0C, f32, PyFloat_AsDouble, asF32 );
-OBJECT_SET_ADDR( oVelY,                  0x0A, f32, PyFloat_AsDouble, asF32 );
-OBJECT_SET_ADDR( oMoveAngleYaw,          0x10, u32, PyLong_AsUnsignedLong, asU32 );
-OBJECT_SET_ADDR( oMarioWalkingPitch,     0x10, u32, PyLong_AsUnsignedLong, asU32 );
-OBJECT_SET_ADDR( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oDamageOrCoinValue,     0x3e, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oInteractStatus,        0x2b, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oInteractionSubtype,    0x42, u32, PyLong_AsUnsignedLong, asU32 );
-OBJECT_SET_ADDR( oBehParams,             0x40, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oMarioTornadoYawVel,    0x21, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oMarioTornadoPosY,      0x22, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oMarioBurnTimer,        0x22, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oMarioPoleUnk108,       0x20, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oMarioPoleYawVel,       0x21, s32, PyLong_AsLong, asS32 );
-OBJECT_SET_ADDR( oMarioPolePos,          0x22, f32, PyFloat_AsDouble, asF32 );
-OBJECT_SET_ADDR( oMarioWhirlpoolPosY,    0x22, f32, PyFloat_AsDouble, asF32 );
+OBJECT_GET(hitboxRadius, f32, PyFloat_FromDouble);
+OBJECT_GET(hitboxHeight, f32, PyFloat_FromDouble);
+OBJECT_GET(collidedObjInteractTypes, u32, PyLong_FromUnsignedLong);
 
-OBJECT_GET_ADDR( oPosX,                  0x06, f32, PyFloat_FromDouble, asF32 );
-OBJECT_GET_ADDR( oPosY,                  0x07, f32, PyFloat_FromDouble, asF32 );
-OBJECT_GET_ADDR( oPosZ,                  0x08, f32, PyFloat_FromDouble, asF32 );
-OBJECT_GET_ADDR( oDamageOrCoinValue,     0x3e, s32, PyLong_FromLong, asS32 );
-OBJECT_GET_ADDR( oInteractionSubtype,    0x42, u32, PyLong_FromUnsignedLong, asU32 );
-OBJECT_GET_ADDR( oInteractStatus,        0x2b, s32, PyLong_FromLong, asS32 );
-OBJECT_GET_ADDR( oBehParams,             0x40, s32, PyLong_FromLong, asS32 );
-OBJECT_GET_ADDR( oMoveAngleYaw,          0x10, u32, PyLong_FromUnsignedLong, asU32 );
-OBJECT_GET_ADDR( oMarioBurnTimer,        0x22, s32, PyLong_FromLong, asS32 );
+OBJECT_SET_ADDR(oForwardVel,            0x0C, f32, PyFloat_AsDouble, asF32);
+OBJECT_SET_ADDR(oVelY,                  0x0A, f32, PyFloat_AsDouble, asF32);
+OBJECT_SET_ADDR(oMoveAngleYaw,          0x10, u32, PyLong_AsUnsignedLong, asU32);
+OBJECT_SET_ADDR(oMarioWalkingPitch,     0x10, u32, PyLong_AsUnsignedLong, asU32);
+OBJECT_SET_ADDR(oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oDamageOrCoinValue,     0x3e, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oInteractStatus,        0x2b, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oInteractionSubtype,    0x42, u32, PyLong_AsUnsignedLong, asU32);
+OBJECT_SET_ADDR(oBehParams,             0x40, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oMarioTornadoYawVel,    0x21, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oMarioTornadoPosY,      0x22, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oMarioBurnTimer,        0x22, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oMarioPoleUnk108,       0x20, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oMarioPoleYawVel,       0x21, s32, PyLong_AsLong, asS32);
+OBJECT_SET_ADDR(oMarioPolePos,          0x22, f32, PyFloat_AsDouble, asF32);
+OBJECT_SET_ADDR(oMarioWhirlpoolPosY,    0x22, f32, PyFloat_AsDouble, asF32);
+
+OBJECT_GET_ADDR(oPosX,                  0x06, f32, PyFloat_FromDouble, asF32);
+OBJECT_GET_ADDR(oPosY,                  0x07, f32, PyFloat_FromDouble, asF32);
+OBJECT_GET_ADDR(oPosZ,                  0x08, f32, PyFloat_FromDouble, asF32);
+OBJECT_GET_ADDR(oDamageOrCoinValue,     0x3e, s32, PyLong_FromLong, asS32);
+OBJECT_GET_ADDR(oInteractionSubtype,    0x42, u32, PyLong_FromUnsignedLong, asU32);
+OBJECT_GET_ADDR(oInteractStatus,        0x2b, s32, PyLong_FromLong, asS32);
+OBJECT_GET_ADDR(oBehParams,             0x40, s32, PyLong_FromLong, asS32);
+OBJECT_GET_ADDR(oMoveAngleYaw,          0x10, u32, PyLong_FromUnsignedLong, asU32);
+OBJECT_GET_ADDR(oMarioBurnTimer,        0x22, s32, PyLong_FromLong, asS32);
 
 static PyMethodDef PyObject_methods[] = {
     {"set_forward_vel",             (PyCFunction)PyObjects_set_oForwardVel,             METH_O, NULL},
@@ -278,11 +246,11 @@ static PyMethodDef PyObject_methods[] = {
     {"get_interact_status",         (PyCFunction)PyObjects_get_oInteractStatus,         METH_NOARGS, NULL},
     {"get_beh_params",              (PyCFunction)PyObjects_get_oBehParams,              METH_NOARGS, NULL},
     {"get_move_angle_yaw",          (PyCFunction)PyObjects_get_oMoveAngleYaw,           METH_NOARGS, NULL},
-    {"get_hitbox_radius",           (PyCFunction)PyObjects_get_hitbox_radius,           METH_NOARGS, NULL},
-    {"get_hitbox_height",           (PyCFunction)PyObjects_get_hitbox_height,           METH_NOARGS, NULL},
+    {"get_hitbox_radius",           (PyCFunction)PyObjects_get_hitboxRadius,           METH_NOARGS, NULL},
+    {"get_hitbox_height",           (PyCFunction)PyObjects_get_hitboxHeight,           METH_NOARGS, NULL},
     {"get_mario_burn_timer",        (PyCFunction)PyObjects_get_oMarioBurnTimer,         METH_NOARGS, NULL},
     {"get_mario_cap_flag",          (PyCFunction)PyObjects_get_mario_cap_flag,          METH_NOARGS, NULL},
-    {"get_collided_obj_interact_types", (PyCFunction)PyObjects_get_collided_obj_interact_types, METH_NOARGS, NULL},
+    {"get_collided_obj_interact_types", (PyCFunction)PyObjects_get_collidedObjInteractTypes, METH_NOARGS, NULL},
 
     {"init_animation",              (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
     {"scale",                       (PyCFunction)PyObjects_scale,                       METH_VARARGS, NULL},
@@ -459,77 +427,6 @@ PyObject* python_wrap_object(struct Object *obj) {
 
     return (PyObject *)pObjectOut;
 }
-
-#if 0
-
-struct Object *
-wrap_spawn_object(struct Object *parent, s32 model, const BehaviorScript *behavior) {
-    PyObjectClass *pObjectOut = NULL;
-    PyObject *pFunc = NULL,
-        *pArgs = NULL,
-        *pParent = NULL,
-        *pModel = NULL,
-        *pBhvNative = NULL,
-        *pBhv = NULL,
-        *pBhvArgs = NULL;
-    struct Object *object_out = NULL;
-
-    pFunc = PyObject_GetAttrString(gMarioModule, "spawn_object");
-    if (pFunc && PyCallable_Check(pFunc)) {
-
-        /* pBhvNative Ref: 1 */
-        pBhvNative = PYTHON_ENCAPSULE_BEHAVIOR(behavior, return NULL);
-        
-        pBhvArgs = PyTuple_New(1);
-        PyTuple_SetItem(pBhvArgs, 0, pBhvNative);
-
-        /* pBhvNative Ref: 2, pBhv Ref: 1 */
-        pBhv = PyObject_CallObject((PyObject *)&PyObjectBehaviorType, pBhvArgs);
-        if (PyErr_Occurred()) {
-            fprintf(stderr, "during wrap:\n");
-            Py_XDECREF(pBhvNative);
-            PyErr_Print();
-            return NULL;
-        }
-        
-        /* pBhvNative Ref: 1 */
-        Py_DECREF(pBhvArgs);
-        
-        pArgs = PyTuple_New(3);
-        
-        /* The tuple will DECREF this for us later. */
-        pParent = python_wrap_object( parent );
-        PyTuple_SetItem(pArgs, 0, pParent);
-        
-        /* The tuple will DECREF this for us later. */
-        pModel = PyLong_FromLong(model);
-        PyTuple_SetItem(pArgs, 1, pModel);
-    
-        PyTuple_SetItem(pArgs, 2, pBhv);
-
-        pObjectOut = (PyObjectClass *)PyObject_CallObject(pFunc, pArgs);
-        
-        /* pBhv Ref: 0 */
-        Py_XDECREF(pArgs);
-        if(NULL != pObjectOut) {
-            object_out = PYTHON_DECAPSULE_OBJECT(pObjectOut->native_object, ;);
-            object_out->pyObjectState = pObjectOut;
-            /* Decreased again in deallocate_object. */
-            //Py_INCREF(pObjectOut);
-            //Py_DECREF(pObjectOut);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        PyErr_Print();
-    }
-   
-    Py_XDECREF(pFunc);
-
-    return object_out;
-}
-
-#endif
 
 struct Object *
 python_object_get_native(PyObjectClass *self) {

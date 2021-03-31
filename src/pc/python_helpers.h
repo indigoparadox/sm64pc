@@ -30,9 +30,9 @@
         __VA_ARGS__; \
     }
 
-#define PYTHON_SET(var, var_type, cap_type, struct_type, py_getter, module, native_prop, logger) \
+#define PYTHON_SET(var, var_type, cap_type, struct_type, py_type, py_getter, module, native_prop, logger) \
     static PyObject * \
-    module ## _set_ ## var(PyMarioStateClass *self, PyObject *args) { \
+    module ## _set_ ## var(py_type *self, PyObject *args) { \
         struct_type *owner = NULL; \
         var_type var; \
         var = (var_type)py_getter(args); \
@@ -47,9 +47,9 @@
         Py_RETURN_NONE; \
     }
 
-#define PYTHON_GET(var, cap_type, struct_type, c_getter, module, native_prop, logger) \
+#define PYTHON_GET(var, cap_type, struct_type, py_type, c_getter, module, native_prop, logger) \
     static PyObject * \
-    module ## _get_ ## var(const PyMarioStateClass *self) { \
+    module ## _get_ ## var(const py_type *self) { \
         struct_type *owner = NULL; \
         PyObject *var; \
         owner = PYTHON_DECAPSULE(self->native_prop, cap_type, struct_type, logger, Py_RETURN_NONE); \
@@ -60,6 +60,7 @@
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
+        /* No Py_INCREF because the 1 ref from c_getter is sufficient. */ \
         return var; \
     }
 

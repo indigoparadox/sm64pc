@@ -20,8 +20,8 @@
     (struct _PyObjectClass *)PyObject_CallObject( \
         (PyObject *)&PyObjectType, args);
 
-PyObject* PyInit_objects(void);
-PyObject* python_wrap_object(struct Object*);
+PyObject *PyInit_objects(void);
+PyObject *python_wrap_object(struct Object*);
 struct Object *python_object_get_native(struct _PyObjectClass *self);
 
 #endif /* OBJECT_PYTHON_H */
