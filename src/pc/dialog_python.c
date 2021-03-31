@@ -168,7 +168,7 @@ PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
 
     dialog_entry->str = buf;
 
-    self->dialog_entry = PYTHON_ENCAPSULE(dialog_entry, "dialog.Dialog._dialog_entry", ;);
+    self->dialog_entry = PYTHON_ENCAPSULE(dialog_entry, PYCAPSULE_TYPE_DIALOG, sLogger, ;);
 
     return 0;
 }
@@ -179,8 +179,8 @@ PyDialog_destroy(PyDialogClass *self) {
 
     dialog_entry = PYTHON_DECAPSULE(
         self->dialog_entry,
-        "dialog.Dialog._dialog_entry",
-        struct DialogEntry, return);
+        PYCAPSULE_TYPE_DIALOG,
+        struct DialogEntry, sLogger, return);
 
     free((void*)dialog_entry->str);
     free((void*)dialog_entry);
@@ -286,8 +286,8 @@ void dialog_python_render_dialog() {
     gDialogID = -1;
     dialog = PYTHON_DECAPSULE(
         ((PyDialogClass *)gPyDialogPtr)->dialog_entry,
-        "dialog.Dialog._dialog_entry",
-        struct DialogEntry, return);
+        PYCAPSULE_TYPE_DIALOG,
+        struct DialogEntry, sLogger, return);
 
     // if the dialog entry is invalid, set the ID to -1.
     //if (segmented_to_virtual(NULL) == dialog) {

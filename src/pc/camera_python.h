@@ -6,6 +6,8 @@
 
 #include "python_helpers.h"
 
+#define PYCAPSULE_TYPE_CAMERA "cameras.Camera._native_camera"
+
 #define PYTHON_CAMERA_ADD_CONSTANTS(module) \
     PYTHON_ADD_CONSTANT(module, CAM_MOVE_RETURN_TO_MIDDLE); \
     PYTHON_ADD_CONSTANT(module, CAM_MOVE_ZOOMED_OUT); \

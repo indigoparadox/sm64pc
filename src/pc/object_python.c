@@ -35,14 +35,16 @@ static PyMemberDef PyObject_members[] = {
     {NULL}
 };
 
-#define OBJECT_SET( var, addr, type, py_getter, as_union ) \
+/* This one is a special setter, since some fields of this union have no name. */
+#define OBJECT_SET_ADDR( var, addr, type, py_getter, as_union ) \
     static PyObject * \
     PyObjects_set_ ## var(PyObjectClass *self, PyObject *args) { \
         struct Object *obj = NULL; \
         type var; \
         var = py_getter(args); \
         if (PyErr_Occurred()) { \
-            python_log_error(sLogger, "object: during set " #var ":"); \
+            python_log_error(sLogger, "during object set " #var " (%s, line %d)\n", \
+                __FILE__, __LINE__); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -51,7 +53,8 @@ static PyMemberDef PyObject_members[] = {
         Py_RETURN_NONE; \
     }
 
-#define OBJECT_GET( var, addr, type, c_getter, as_union ) \
+/* This one is a special getter, since some fields of this union have no name. */
+#define OBJECT_GET_ADDR( var, addr, type, c_getter, as_union ) \
     static PyObject * \
     PyObjects_get_ ## var(PyObjectClass *self) { \
         struct Object *obj = NULL; \
@@ -59,7 +62,8 @@ static PyMemberDef PyObject_members[] = {
         obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE); \
         var = c_getter(obj->rawData.as_union[addr]); \
         if (PyErr_Occurred()) { \
-            python_log_error(sLogger, "object: during set " #var ":"); \
+            python_log_error(sLogger, "during object get " #var " (%s, line %d)\n", \
+                __FILE__, __LINE__); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -220,32 +224,32 @@ PyObject* PyObjects_is_valid(PyObjectClass *self) {
     Py_RETURN_FALSE;
 }
 
-OBJECT_SET( oForwardVel,            0x0C, f32, PyFloat_AsDouble, asF32 );
-OBJECT_SET( oVelY,                  0x0A, f32, PyFloat_AsDouble, asF32 );
-OBJECT_SET( oMoveAngleYaw,          0x10, u32, PyLong_AsUnsignedLong, asU32 );
-OBJECT_SET( oMarioWalkingPitch,     0x10, u32, PyLong_AsUnsignedLong, asU32 );
-OBJECT_SET( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oDamageOrCoinValue,     0x3e, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oInteractStatus,        0x2b, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oInteractionSubtype,    0x42, u32, PyLong_AsUnsignedLong, asU32 );
-OBJECT_SET( oBehParams,             0x40, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oMarioTornadoYawVel,    0x21, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oMarioTornadoPosY,      0x22, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oMarioBurnTimer,        0x22, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oMarioPoleUnk108,       0x20, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oMarioPoleYawVel,       0x21, s32, PyLong_AsLong, asS32 );
-OBJECT_SET( oMarioPolePos,          0x22, f32, PyFloat_AsDouble, asF32 );
-OBJECT_SET( oMarioWhirlpoolPosY,    0x22, f32, PyFloat_AsDouble, asF32 );
+OBJECT_SET_ADDR( oForwardVel,            0x0C, f32, PyFloat_AsDouble, asF32 );
+OBJECT_SET_ADDR( oVelY,                  0x0A, f32, PyFloat_AsDouble, asF32 );
+OBJECT_SET_ADDR( oMoveAngleYaw,          0x10, u32, PyLong_AsUnsignedLong, asU32 );
+OBJECT_SET_ADDR( oMarioWalkingPitch,     0x10, u32, PyLong_AsUnsignedLong, asU32 );
+OBJECT_SET_ADDR( oMarioLongJumpIsSlow,   0x22, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oDamageOrCoinValue,     0x3e, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oInteractStatus,        0x2b, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oInteractionSubtype,    0x42, u32, PyLong_AsUnsignedLong, asU32 );
+OBJECT_SET_ADDR( oBehParams,             0x40, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oMarioTornadoYawVel,    0x21, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oMarioTornadoPosY,      0x22, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oMarioBurnTimer,        0x22, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oMarioPoleUnk108,       0x20, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oMarioPoleYawVel,       0x21, s32, PyLong_AsLong, asS32 );
+OBJECT_SET_ADDR( oMarioPolePos,          0x22, f32, PyFloat_AsDouble, asF32 );
+OBJECT_SET_ADDR( oMarioWhirlpoolPosY,    0x22, f32, PyFloat_AsDouble, asF32 );
 
-OBJECT_GET( oPosX,                  0x06, f32, PyFloat_FromDouble, asF32 );
-OBJECT_GET( oPosY,                  0x07, f32, PyFloat_FromDouble, asF32 );
-OBJECT_GET( oPosZ,                  0x08, f32, PyFloat_FromDouble, asF32 );
-OBJECT_GET( oDamageOrCoinValue,     0x3e, s32, PyLong_FromLong, asS32 );
-OBJECT_GET( oInteractionSubtype,    0x42, u32, PyLong_FromUnsignedLong, asU32 );
-OBJECT_GET( oInteractStatus,        0x2b, s32, PyLong_FromLong, asS32 );
-OBJECT_GET( oBehParams,             0x40, s32, PyLong_FromLong, asS32 );
-OBJECT_GET( oMoveAngleYaw,          0x10, u32, PyLong_FromUnsignedLong, asU32 );
-OBJECT_GET( oMarioBurnTimer,        0x22, s32, PyLong_FromLong, asS32 );
+OBJECT_GET_ADDR( oPosX,                  0x06, f32, PyFloat_FromDouble, asF32 );
+OBJECT_GET_ADDR( oPosY,                  0x07, f32, PyFloat_FromDouble, asF32 );
+OBJECT_GET_ADDR( oPosZ,                  0x08, f32, PyFloat_FromDouble, asF32 );
+OBJECT_GET_ADDR( oDamageOrCoinValue,     0x3e, s32, PyLong_FromLong, asS32 );
+OBJECT_GET_ADDR( oInteractionSubtype,    0x42, u32, PyLong_FromUnsignedLong, asU32 );
+OBJECT_GET_ADDR( oInteractStatus,        0x2b, s32, PyLong_FromLong, asS32 );
+OBJECT_GET_ADDR( oBehParams,             0x40, s32, PyLong_FromLong, asS32 );
+OBJECT_GET_ADDR( oMoveAngleYaw,          0x10, u32, PyLong_FromUnsignedLong, asU32 );
+OBJECT_GET_ADDR( oMarioBurnTimer,        0x22, s32, PyLong_FromLong, asS32 );
 
 static PyMethodDef PyObject_methods[] = {
     {"set_forward_vel",             (PyCFunction)PyObjects_set_oForwardVel,             METH_O, NULL},
@@ -448,7 +452,7 @@ PyObject* python_wrap_object(struct Object *obj) {
 
     Py_DECREF(pObjectOut->behavior);
     pBehaviorArgs = PyTuple_New(1);
-    pBehaviorCapsule = PYTHON_ENCAPSULE(obj->behavior, "objects.Behavior._native_behavior", ;);
+    pBehaviorCapsule = PYTHON_ENCAPSULE(obj->behavior, "objects.Behavior._native_behavior", gLoggerBehavior, ;);
     PyTuple_SetItem(pBehaviorArgs, 0, pBehaviorCapsule);
     pObjectOut->behavior = (struct _PyObjectBehaviorClass *)PyObject_CallObject((PyObject *)&PyObjectBehaviorType, pBehaviorArgs);
     Py_DECREF(pBehaviorArgs);

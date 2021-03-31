@@ -38,7 +38,11 @@ PyCameraObj_set_camera_mode_fixed(PyCameraClass* self, PyObject *args) {
         Py_RETURN_NONE;
     }
 
-    native_camera = PYTHON_DECAPSULE(self->native_camera, "cameras.Camera._native_camera", struct Camera, Py_RETURN_NONE);
+    native_camera = PYTHON_DECAPSULE(
+        self->native_camera,
+        PYCAPSULE_TYPE_CAMERA,
+        struct Camera, sLogger,
+        Py_RETURN_NONE);
 
     set_camera_mode_fixed(native_camera, x, y, z);
 
@@ -153,7 +157,7 @@ void python_camera_wrap(struct Camera *cam_in) {
         *pArgs = NULL,
         *pCamera = NULL;
         
-    pNativeCameraCap = PYTHON_ENCAPSULE(cam_in, "cameras.Camera._native_camera", ;);
+    pNativeCameraCap = PYTHON_ENCAPSULE(cam_in, PYCAPSULE_TYPE_CAMERA, sLogger, ;);
     
     pArgs = PyTuple_New(1);
     PyTuple_SetItem(pArgs, 0, pNativeCameraCap);
@@ -191,7 +195,7 @@ void python_camera_test_and_remove_state(struct GraphNode *g_node) {
 
     camera = camera_native->pyCameraState;
         
-    if (PyCapsule_IsValid(camera->native_camera, "cameras.Camera._native_camera")) {
+    if (PyCapsule_IsValid(camera->native_camera, PYCAPSULE_TYPE_CAMERA)) {
         fprintf(stdout, "removing camera\n");
         Py_DECREF(camera);
     }

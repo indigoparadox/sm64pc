@@ -13,10 +13,10 @@
 #define PYCAPSULE_TYPE_BEHAVIOR "objects.Behavior._native_behavior"
 
 #define PYTHON_ENCAPSULE_BEHAVIOR(bhv, ret_on_fail) \
-    PYTHON_ENCAPSULE(bhv, PYCAPSULE_TYPE_BEHAVIOR, ret_on_fail)
+    PYTHON_ENCAPSULE(bhv, PYCAPSULE_TYPE_BEHAVIOR, gLoggerBehavior, ret_on_fail)
 
 #define PYTHON_DECAPSULE_BEHAVIOR(cap, ret_on_fail) \
-    PYTHON_DECAPSULE(cap, PYCAPSULE_TYPE_BEHAVIOR, BehaviorScript, ret_on_fail)
+    PYTHON_DECAPSULE(cap, PYCAPSULE_TYPE_BEHAVIOR, BehaviorScript, gLoggerBehavior, ret_on_fail)
 
 #define PYTHON_CALL_BEHAVIOR(args) \
     (struct _PyObjectBehaviorClass *)PyObject_CallObject( \
@@ -27,8 +27,8 @@
     Py_INCREF(pBhvNative); \
     pBhvArgs = PyTuple_New(1); \
     PyTuple_SetItem(pBhvArgs, 0, pBhvNative); \
-    /*pBhvName = PyUnicode_FromString(#bhv); \
-    PyTuple_SetItem(pBhvArgs, 1, pBhvName); */ \
+    /*pBhvName = PyUnicode_FromString(#bhv); */ \
+    /* PyTuple_SetItem(pBhvArgs, 1, pBhvName); */ \
     pBhv = PYTHON_CALL_BEHAVIOR(pBhvArgs); \
     if (0 > PyModule_AddObject(module, #bhv, (PyObject *)pBhv)) { \
         Py_XDECREF(pBhv); \

@@ -42,35 +42,10 @@ static PyMemberDef PyMarioState_members[] = {
 };
 
 #define MARIO_SET(var, type, py_getter) \
-    static PyObject * \
-    PyMario_set_ ## var(PyMarioStateClass *self, PyObject *args) { \
-        struct MarioState *mario_state = NULL; \
-        type var; \
-        var = (type)py_getter(args); \
-        if (PyErr_Occurred()) { \
-            python_log_error(gLoggerMario, "mario: during set " #var ":"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
-        mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
-        mario_state->var = (type)var; \
-        Py_RETURN_NONE; \
-    }
+    PYTHON_SET(var, type, PYCAPSULE_TYPE_MARIO, struct MarioState, py_getter, PyMario, native_state, gLoggerMario)
 
 #define MARIO_GET(var, type, c_getter) \
-    static PyObject * \
-    PyMario_get_ ## var(const PyMarioStateClass *self) { \
-        struct MarioState *mario_state = NULL; \
-        PyObject *var; \
-        mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
-        var = c_getter(mario_state->var); \
-        if (PyErr_Occurred()) { \
-            python_log_error(gLoggerMario, "during get " #var ":"); \
-            PyErr_Print(); \
-            Py_RETURN_NONE; \
-        } \
-        return var; \
-    }
+    PYTHON_GET(var, PYCAPSULE_TYPE_MARIO, struct MarioState, c_getter, PyMario, native_state, gLoggerMario)
 
 #define MARIO_SET_VEC(var, type, py_fmt) \
     static PyObject * \
@@ -138,7 +113,7 @@ static PyMemberDef PyMarioState_members[] = {
     }
 
 #define MARIO_WRAP_NOARGS(fnc) \
-    PYTHON_WRAP_NOARGS(PyMarioStateClass, PYCAPSULE_TYPE_MARIO, struct MarioState, fnc)
+    PYTHON_WRAP_NOARGS(PyMarioStateClass, PYCAPSULE_TYPE_MARIO, struct MarioState, fnc, gLoggerMario)
 
 #define MARIO_WRAP_OBJ_ARG(fnc, return_type, return_getter) \
     static PyObject * \
