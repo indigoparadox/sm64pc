@@ -71,41 +71,25 @@ void render_dialog_string_color(s8);
 #define DIAG_VAL2 240 // JP & US
 #endif
 
-enum DialogBoxState {
-    DIALOG_STATE_OPENING,
-    DIALOG_STATE_VERTICAL,
-    DIALOG_STATE_HORIZONTAL,
-    DIALOG_STATE_CLOSING
-};
-
-enum DialogBoxPageState {
-    DIALOG_PAGE_STATE_NONE,
-    DIALOG_PAGE_STATE_SCROLL,
-    DIALOG_PAGE_STATE_END
-};
-
-enum DialogBoxType {
-    DIALOG_TYPE_ROTATE, // used in NPCs and level messages
-    DIALOG_TYPE_ZOOM    // used in signposts and wall signs and etc
-};
-
 /* Dialog Object */
 
 typedef struct _PyDialogClass {
     PyObject_HEAD
     PyObject *dialog_entry;
+    int dialog_type;
 } PyDialogClass;
 
 static PyMemberDef PyDialogClass_members[] = {
     {"_dialog_entry", T_OBJECT_EX, offsetof(PyDialogClass, dialog_entry), READONLY, NULL},
+    {"dialog_type", T_INT, offsetof(PyDialogClass, dialog_type), 0, NULL},
     {NULL}
 };
 
-// TODO
 static PyObject *
 PyDialog_show(PyDialogClass *self) {
     /* Ref decreased when it closes in render func below. */
     gPyDialogPtr = (PyObject *)self;
+    gDialogBoxType = (s8)self->dialog_type;
     Py_INCREF(self);
     Py_RETURN_NONE;
 }
@@ -118,7 +102,8 @@ static PyMethodDef PyDialogClass_methods[] = {
 static int
 PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
     const char *text = NULL;
-    u8 *buf = NULL;
+    u8 *buf = NULL,
+        dbl_quote_open = 0;
     struct DialogEntry *dialog_entry = NULL;
     int res = 0,
         text_len = 0,
@@ -152,15 +137,49 @@ PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
         } else if ('\n' == text[i]) {
             buf[i] = DIALOG_CHAR_NEWLINE;
         } else if ('.' == text[i]) {
-            buf[i] = DIALOG_CHAR_PERIOD_OR_HANDAKUTEN;
+            //buf[i] = DIALOG_CHAR_PERIOD;
+            //buf[i] = ASCII_TO_DIALOG('z') + 2;
+            buf[i] = 63;
         } else if (',' == text[i]) {
             buf[i] = DIALOG_CHAR_COMMA;
         } else if ('\'' == text[i]) {
-            buf[i] = DIALOG_CHAR_DAKUTEN;
+            //buf[i] = DIALOG_CHAR_DAKUTEN;
+            //buf[i] = ASCII_TO_DIALOG('z') + 1;
+            buf[i] = 62;
         } else if ('/' == text[i]) {
             buf[i] = DIALOG_CHAR_SLASH;
+        } else if ('(' == text[i]) {
+            buf[i] = 225;
+        } else if (')' == text[i]) {
+            buf[i] = 227;
+        } else if ('&' == text[i]) {
+            buf[i] = 229;
+        } else if ('!' == text[i]) {
+            buf[i] = 242;
+        } else if ('%' == text[i]) {
+            buf[i] = 243;
+        } else if ('?' == text[i]) {
+            buf[i] = 244;
+        } else if ('"' == text[i]) {
+            if (dbl_quote_open) {
+                buf[i] = 246;
+                dbl_quote_open = 0;
+            } else {
+                buf[i] = 245;
+                dbl_quote_open = 1;
+            }
+        } else if ('~' == text[i]) {
+            buf[i] = 247;
+        } else if ('=' == text[i]) {
+            buf[i] = DIALOG_CHAR_STAR_FILLED;
+        } else if ('-' == text[i]) {
+            buf[i] = DIALOG_CHAR_STAR_OPEN;
+        } else if ('+' == text[i]) {
+            buf[i] = 249;
         } else if ('\0' == text[i]) {
             buf[i] = DIALOG_CHAR_TERMINATOR;
+        } else if ('*' == text[i]) {
+            buf[i] = 251;
         } else {
             buf[i] = ASCII_TO_DIALOG(text[i]);
         }
@@ -169,6 +188,8 @@ PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
     dialog_entry->str = buf;
 
     self->dialog_entry = PYTHON_ENCAPSULE(dialog_entry, PYCAPSULE_TYPE_DIALOG, sLogger, ;);
+
+    self->dialog_type = (int)DIALOG_TYPE_ROTATE;
 
     return 0;
 }
@@ -256,6 +277,8 @@ PyObject* PyInit_dialog(void) {
         Py_DECREF(pDialog);
         return NULL;
     }
+
+    PYTHON_DIALOG_ADD_CONSTANTS(pDialog);
 
     python_log_debug(sLogger, "dialog module initialized");
 

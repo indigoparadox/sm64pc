@@ -114,6 +114,7 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
         elif 'send_text' == form.getvalue( 'action' ):
             dlg_text = form.getvalue( 'send_text' )
             dlg = dialog.Dialog( dlg_text )
+            dlg.dialog_type = dialog.DIALOG_TYPE_ZOOM
             dlg.show()
 
         elif 'normal' == form.getvalue( 'camera' ):

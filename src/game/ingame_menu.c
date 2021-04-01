@@ -62,6 +62,10 @@ extern PyObject *gPyDialogPtr;
 extern u8 gLastCompletedCourseNum;
 extern u8 gLastCompletedStarNum;
 
+#ifndef USE_PYTHON
+
+/* These have been moved to dialog_python.h. */
+
 enum DialogBoxState {
     DIALOG_STATE_OPENING,
     DIALOG_STATE_VERTICAL,
@@ -79,6 +83,8 @@ enum DialogBoxType {
     DIALOG_TYPE_ROTATE, // used in NPCs and level messages
     DIALOG_TYPE_ZOOM    // used in signposts and wall signs and etc
 };
+ 
+#endif /* USE_PYTHON */
 
 enum DialogMark { DIALOG_MARK_NONE = 0, DIALOG_MARK_DAKUTEN = 1, DIALOG_MARK_HANDAKUTEN = 2 };
 
