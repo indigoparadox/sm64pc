@@ -103,11 +103,15 @@ static int
 PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
     const char *text = NULL;
     u8 *buf = NULL,
-        dbl_quote_open = 0;
+        dbl_quote_open = 0,
+        line_w = 0,
+        max_line_w = 0;
     struct DialogEntry *dialog_entry = NULL;
     int res = 0,
         text_len = 0,
-        i = 0;
+        alloc_len = 0,
+        src_i = 0,
+        dest_i = 0;
     //char *bhv_name = NULL;
 
     res = PyArg_ParseTuple(args, "s", &text);
@@ -120,69 +124,85 @@ PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
     /* +1 for the dialog text terminator. */
     text_len = strlen(text) + 1;
 
-    dialog_entry = calloc(1, sizeof(struct DialogEntry) + 1); /* +1 for the NULL. */
+    dialog_entry = calloc(1, sizeof(struct DialogEntry)); 
     dialog_entry->linesPerBox = 4;
     dialog_entry->leftOffset = 30;
     dialog_entry->width = 200;
+
+    max_line_w = dialog_entry->width / 6; /* Avg one-char width (est). */
     
-    buf = calloc(text_len, 1);
+    alloc_len = text_len + 1; /* +1 for the NULL. */
+    alloc_len += (int)(text_len / max_line_w) + max_line_w; /* For extra newlines. */
+
+    buf = calloc(alloc_len, 1);
     //memcpy(buf, text, text_len);
 
     /* Copy the parsed text to the struct buffer, and while doing so,
      * translate it into the weird encoding Mario 64 uses.
      */
-    for (i = 0;text_len > i;i++) {
-        if (' ' == text[i]) {
-            buf[i] = DIALOG_CHAR_SPACE;
-        } else if ('\n' == text[i]) {
-            buf[i] = DIALOG_CHAR_NEWLINE;
-        } else if ('.' == text[i]) {
-            //buf[i] = DIALOG_CHAR_PERIOD;
-            //buf[i] = ASCII_TO_DIALOG('z') + 2;
-            buf[i] = 63;
-        } else if (',' == text[i]) {
-            buf[i] = DIALOG_CHAR_COMMA;
-        } else if ('\'' == text[i]) {
-            //buf[i] = DIALOG_CHAR_DAKUTEN;
-            //buf[i] = ASCII_TO_DIALOG('z') + 1;
-            buf[i] = 62;
-        } else if ('/' == text[i]) {
-            buf[i] = DIALOG_CHAR_SLASH;
-        } else if ('(' == text[i]) {
-            buf[i] = 225;
-        } else if (')' == text[i]) {
-            buf[i] = 227;
-        } else if ('&' == text[i]) {
-            buf[i] = 229;
-        } else if ('!' == text[i]) {
-            buf[i] = 242;
-        } else if ('%' == text[i]) {
-            buf[i] = 243;
-        } else if ('?' == text[i]) {
-            buf[i] = 244;
-        } else if ('"' == text[i]) {
+    for (src_i = 0;text_len > src_i;src_i++) {
+
+        if (' ' == text[src_i]) {
+            buf[dest_i] = DIALOG_CHAR_SPACE;
+        } else if ('\n' == text[src_i]) {
+            buf[dest_i] = DIALOG_CHAR_NEWLINE;
+        } else if ('.' == text[src_i]) {
+            buf[dest_i] = 63;
+        } else if (',' == text[src_i]) {
+            buf[dest_i] = DIALOG_CHAR_COMMA;
+        } else if ('\'' == text[src_i]) {
+            buf[dest_i] = 62;
+        } else if ('/' == text[src_i]) {
+            buf[dest_i] = DIALOG_CHAR_SLASH;
+        } else if ('(' == text[src_i]) {
+            buf[dest_i] = 225;
+        } else if (')' == text[src_i]) {
+            buf[dest_i] = 227;
+        } else if ('&' == text[src_i]) {
+            buf[dest_i] = 229;
+        } else if ('!' == text[src_i]) {
+            buf[dest_i] = 242;
+        } else if ('%' == text[src_i]) {
+            buf[dest_i] = 243;
+        } else if ('?' == text[src_i]) {
+            buf[dest_i] = 244;
+        } else if ('"' == text[src_i]) {
             if (dbl_quote_open) {
-                buf[i] = 246;
+                buf[dest_i] = 246;
                 dbl_quote_open = 0;
             } else {
-                buf[i] = 245;
+                buf[dest_i] = 245;
                 dbl_quote_open = 1;
             }
-        } else if ('~' == text[i]) {
-            buf[i] = 247;
-        } else if ('=' == text[i]) {
-            buf[i] = DIALOG_CHAR_STAR_FILLED;
-        } else if ('-' == text[i]) {
-            buf[i] = DIALOG_CHAR_STAR_OPEN;
-        } else if ('+' == text[i]) {
-            buf[i] = 249;
-        } else if ('\0' == text[i]) {
-            buf[i] = DIALOG_CHAR_TERMINATOR;
-        } else if ('*' == text[i]) {
-            buf[i] = 251;
+        } else if ('~' == text[src_i]) {
+            buf[dest_i] = 247;
+        } else if ('=' == text[src_i]) {
+            buf[dest_i] = DIALOG_CHAR_STAR_FILLED;
+        } else if ('-' == text[src_i]) {
+            buf[dest_i] = DIALOG_CHAR_STAR_OPEN;
+        } else if ('+' == text[src_i]) {
+            buf[dest_i] = 249;
+        } else if ('\0' == text[src_i]) {
+            buf[dest_i] = DIALOG_CHAR_TERMINATOR;
+        } else if ('*' == text[src_i]) {
+            buf[dest_i] = 251;
         } else {
-            buf[i] = ASCII_TO_DIALOG(text[i]);
+            buf[dest_i] = ASCII_TO_DIALOG(text[src_i]);
         }
+
+        if (text[src_i] >= 'A' || text[src_i] <= 'Z' ) {
+            line_w += 2;
+        } else {
+            line_w += 1;
+        }
+
+        if (max_line_w - 1 == (line_w % max_line_w)) {
+            dest_i += 1;
+            buf[dest_i] = DIALOG_CHAR_NEWLINE;
+            line_w = 0;
+        }
+
+        dest_i++;
     }
 
     dialog_entry->str = buf;
