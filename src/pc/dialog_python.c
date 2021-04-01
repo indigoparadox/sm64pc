@@ -44,6 +44,7 @@ extern u8 gMenuHoldKeyTimer;
 extern s32 gDialogResponse;
 extern f32 gDefaultSoundArgs[];
 extern struct Controller *gPlayer3Controller;
+extern u8 gDialogCharWidths[];
 
 PyObject *gPyDialogPtr = NULL;
 
@@ -104,8 +105,7 @@ PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
     const char *text = NULL;
     u8 *buf = NULL,
         dbl_quote_open = 0,
-        line_w = 0,
-        max_line_w = 0;
+        line_w = 0;
     struct DialogEntry *dialog_entry = NULL;
     int res = 0,
         text_len = 0,
@@ -129,10 +129,9 @@ PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
     dialog_entry->leftOffset = 30;
     dialog_entry->width = 200;
 
-    max_line_w = dialog_entry->width / 6; /* Avg one-char width (est). */
-    
     alloc_len = text_len + 1; /* +1 for the NULL. */
-    alloc_len += (int)(text_len / max_line_w) + max_line_w; /* For extra newlines. */
+    alloc_len *= 2;
+    //(int)(text_len / (dialog_entry->width / 3)); /* Narrowest char is 3 wide. */
 
     buf = calloc(alloc_len, 1);
     //memcpy(buf, text, text_len);
@@ -190,13 +189,11 @@ PyDialog_init(PyDialogClass *self, PyObject *args, PyObject *kwds) {
             buf[dest_i] = ASCII_TO_DIALOG(text[src_i]);
         }
 
-        if (text[src_i] >= 'A' || text[src_i] <= 'Z' ) {
-            line_w += 2;
-        } else {
-            line_w += 1;
-        }
-
-        if (max_line_w - 1 == (line_w % max_line_w)) {
+        /* Wrap at dialog edge. Good enough for now. */
+        // TODO: Break at spaces.
+        assert(buf[dest_i] < 256);
+        line_w += (int)(gDialogCharWidths[buf[dest_i]] * 1.9);
+        if (line_w >= dialog_entry->width) {
             dest_i += 1;
             buf[dest_i] = DIALOG_CHAR_NEWLINE;
             line_w = 0;
@@ -321,22 +318,13 @@ void dialog_python_render_frame() {
 }
 
 void dialog_python_render_dialog() {
-    //void **dialogTable;
     struct DialogEntry *dialog;
     s8 lowerBound;
-    //dialogTable = segmented_to_virtual(seg2_dialog_table);
-    //dialog = segmented_to_virtual(dialogTable[gDialogID]);
     gDialogID = -1;
     dialog = PYTHON_DECAPSULE(
         ((PyDialogClass *)gPyDialogPtr)->dialog_entry,
         PYCAPSULE_TYPE_DIALOG,
         struct DialogEntry, sLogger, return);
-
-    // if the dialog entry is invalid, set the ID to -1.
-    //if (segmented_to_virtual(NULL) == dialog) {
-    //    gDialogID = -1;
-    //    return;
-    //}
 
     switch (gDialogBoxState) {
         case DIALOG_STATE_OPENING:
@@ -389,9 +377,11 @@ void dialog_python_render_dialog() {
                 //level_set_transition(0, 0);
                 play_sound(SOUND_MENU_MESSAGE_DISAPPEAR, gDefaultSoundArgs);
 
-                //if (gDialogBoxType == DIALOG_TYPE_ZOOM) {
-                //    trigger_cutscene_dialog(2);
-                //}
+                #if 0
+                if (gDialogBoxType == DIALOG_TYPE_ZOOM) {
+                    trigger_cutscene_dialog(2);
+                }
+                #endif
 
                 gDialogResponse = gDialogLineNum;
             }
