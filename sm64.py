@@ -6,7 +6,6 @@ import collections
 
 import http.server
 import socketserver
-import multiprocessing
 import threading
 import cgi
 
@@ -16,7 +15,7 @@ import levels # pylint: disable=import-error
 import dialog # pylint: disable=import-error
 import save_file # pylint: disable=import-error
 import cameras # pylint: disable=import-error
-import sounds
+import sounds # pylint: disable=import-error
 
 InteractionHandler = collections.namedtuple('InteractionHandler', ['interact_type', 'handler'])
 
@@ -79,6 +78,10 @@ MARIO_PAGE = '''<!doctype HTML>
 <button name="camera" value="pause">Pause Camera</button>
 </div>
 <div>
+<button name="play_sound" value="yahoo">Yahoo!</button>
+<button name="play_sound" value="okey">Okey Dokey!</button>
+<button name="play_sound" value="waaaooow">Waaaooow!</button>
+<div>
 <textarea name="send_text"></textarea>
 <button name="action" value="send_text">Send Text</button>
 </form>
@@ -104,13 +107,26 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
         mario_state = mario.get_mario_state()
         if 'Coins' == form.getvalue( 'spawn' ):
             spawn_yellow_coins( mario_state.mario_object, 6 )
-        
+
         elif 'bob' == form.getvalue( 'warp' ):
             levels.initiate_warp( levels.LEVEL_BOB, 0x01, 0x0a, 0 )
         elif 'bbh' == form.getvalue( 'warp' ):
             levels.initiate_warp( levels.LEVEL_BBH, 0x01, 0x0a, 0 )
         elif 'ddd' == form.getvalue( 'warp' ):
             levels.initiate_warp( levels.LEVEL_DDD, 0x01, 0x0a, 0 )
+
+        elif 'yahoo' == form.getvalue( 'play_sound' ):
+            sounds.play_sound(
+                sounds.SOUND_MARIO_YAHOO,
+                mario_state.mario_object.get_camera_to_object() )
+        elif 'okey' == form.getvalue( 'play_sound' ):
+            sounds.play_sound(
+                    sounds.SOUND_MARIO_OKEY_DOKEY,
+                    mario_state.mario_object.get_camera_to_object() )
+        elif 'waaaooow' == form.getvalue( 'play_sound' ):
+            sounds.play_sound(
+                    sounds.SOUND_MARIO_WAAAOOOW,
+                    mario_state.mario_object.get_camera_to_object() )
 
         elif 'send_text' == form.getvalue( 'action' ):
             dlg_text = form.getvalue( 'send_text' )
