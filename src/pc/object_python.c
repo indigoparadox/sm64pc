@@ -123,7 +123,7 @@ PyObject* PyObjects_scale(PyObjectClass *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "fff", &scale_x, &scale_y, &scale_z);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "object: during scale:");
+        python_log_error(sLogger, "during scale:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -151,7 +151,7 @@ PyObject* PyObjects_set_angle(PyObjectClass *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "hhh", &pitch, &yaw, &roll);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "object: during set angle:");
+        python_log_error(sLogger, "during set angle:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -172,7 +172,7 @@ PyObjects_get_mario_cap_flag(PyObjectClass *self) {
 
     var = PyLong_FromUnsignedLong(cap_flag);
     if (PyErr_Occurred()) {
-        python_log_error(sLogger, "object: during get cap flag:");
+        python_log_error(sLogger, "during get cap flag:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -186,6 +186,33 @@ PyObject* PyObjects_is_valid(PyObjectClass *self) {
         Py_RETURN_TRUE;
     }
     Py_RETURN_FALSE;
+}
+
+static PyObject *
+PyObjects_get_camera_to_object(PyObjectClass *self) {
+    struct Object *obj = NULL;
+    float *camera_to_object = NULL;
+    PyObject *pNumber = NULL,
+        *pPosTupleOut = NULL;
+    int i = 0;
+
+    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+    camera_to_object = obj->header.gfx.cameraToObject;
+
+    pPosTupleOut = PyTuple_New(3);
+
+    for (i = 0;3 > i;i++) {
+        pNumber = PyFloat_FromDouble( camera_to_object[i] );
+        if (PyErr_Occurred()) {
+            python_log_error(sLogger, "during get camera to object:");
+            PyErr_Print();
+            Py_RETURN_NONE;
+        }
+
+        PyTuple_SetItem(pPosTupleOut, i, pNumber);
+    }
+
+    return pPosTupleOut;
 }
 
 OBJECT_GET(hitboxRadius, f32, PyFloat_FromDouble);
@@ -251,6 +278,7 @@ static PyMethodDef PyObject_methods[] = {
     {"get_mario_burn_timer",        (PyCFunction)PyObjects_get_oMarioBurnTimer,         METH_NOARGS, NULL},
     {"get_mario_cap_flag",          (PyCFunction)PyObjects_get_mario_cap_flag,          METH_NOARGS, NULL},
     {"get_collided_obj_interact_types", (PyCFunction)PyObjects_get_collidedObjInteractTypes, METH_NOARGS, NULL},
+    {"get_camera_to_object",        (PyCFunction)PyObjects_get_camera_to_object,                     METH_NOARGS, NULL},
 
     {"init_animation",              (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
     {"scale",                       (PyCFunction)PyObjects_scale,                       METH_VARARGS, NULL},

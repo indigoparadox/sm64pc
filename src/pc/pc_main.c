@@ -70,6 +70,7 @@ void game_loop_one_iteration(void);
 #include "save_file_python.h"
 #include "logging_python.h"
 #include "camera_python.h"
+#include "sounds_python.h"
 
 #ifdef PYTHON_MEM_DEBUG
 PyObject *gLoggerMemory = NULL;
@@ -107,6 +108,10 @@ void python_init() {
     }
     if (0 > PyImport_AppendInittab("cameras", &PyInit_cameras)) {
         fprintf(stderr, "could not add cameras to inittab\n");
+        return;
+    }
+    if (0 > PyImport_AppendInittab("sounds", &PyInit_sounds)) {
+        fprintf(stderr, "could not add sounds to inittab\n");
         return;
     }
     Py_Initialize();

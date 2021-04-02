@@ -16,6 +16,7 @@ import levels # pylint: disable=import-error
 import dialog # pylint: disable=import-error
 import save_file # pylint: disable=import-error
 import cameras # pylint: disable=import-error
+import sounds
 
 InteractionHandler = collections.namedtuple('InteractionHandler', ['interact_type', 'handler'])
 
@@ -198,9 +199,10 @@ def bounce_back_from_attack( mario_state, interaction ):
         cameras.set_shake_from_hit( cameras.SHAKE_ATTACK )
         mario_state.set_particle_flag( mario.PARTICLE_TRIANGLE )
 
-    # TODO: Sound stuff.
-    #if (interaction & (INT_PUNCH | INT_KICK | INT_TRIP | INT_FAST_ATTACK_OR_SHELL)) {
-    #    play_sound(SOUND_ACTION_HIT_2, m->marioObj->header.gfx.cameraToObject);
+    if interaction & (mario.INT_PUNCH | mario.INT_KICK | mario.INT_TRIP | mario.INT_FAST_ATTACK_OR_SHELL):
+        sounds.play_sound(
+            sounds.SOUND_ACTION_HIT_2,
+            mario_state.mario_object.get_camera_to_object() )
 
 def get_door_save_file_flag( door ):
 
@@ -253,8 +255,10 @@ def check_object_grab_mario( mario_state, interact_type, obj ):
             mario_state.set_used_obj( obj )
 
             mario_state.update_sound_and_camera()
-            # TODO: Sound stuff.
-            #play_sound(SOUND_MARIO_OOOF, mario_state.marioObj->header.gfx.cameraToObject);
+            sounds.play_sound(
+                sounds.SOUND_MARIO_OOOF,
+                mario_state.mario_object.get_camera_to_object() )
+            
             # TODO: Rumble stuff.
             # queue_rumble_data\(5, 80\);
             return set_mario_action( mario_state, mario.ACT_GRABBED, 0 )
@@ -340,8 +344,9 @@ def take_damage_and_knock_back( mario_state,  obj ):
 
         if obj.get_damage_or_coin_value() > 0:
             pass
-            # TODO: Sound stuff.
-            # play_sound(SOUND_MARIO_ATTACKED, m->marioObj->header.gfx.cameraToObject);
+            sounds.play_sound(
+                sounds.SOUND_MARIO_ATTACKED,
+                mario_state.mario_object.get_camera_to_object() )
 
         mario_state.update_sound_and_camera()
         return drop_and_set_mario_action(
@@ -356,8 +361,9 @@ def bounce_off_object( mario_state, obj, vel_y ):
 
     mario_state.unset_flag( mario.MARIO_UNKNOWN_08 )
 
-    # TODO: Sound stuff.
-    #play_sound(SOUND_ACTION_BOUNCE_OFF_OBJECT, m->marioObj->header.gfx.cameraToObject)
+    sounds.play_sound(
+        sounds.SOUND_ACTION_BOUNCE_OFF_OBJECT,
+        mario_state.mario_object.get_camera_to_object() )
 
 def hit_object_from_below( mario_state, obj ):
     mario_state.set_vel( 1, 0.0 )
@@ -541,7 +547,9 @@ def interact_star_or_key( mario_state, interact_type, obj ):
         #    drop_queued_background_music();
         #    fadeout_level_music(126);
         #
-        #play_sound(SOUND_MENU_STAR_SOUND, mario_state.marioObj->header.gfx.cameraToObject);
+        sounds.play_sound(
+            sounds.SOUND_MENU_STAR_SOUND,
+            mario_state.mario_object.get_camera_to_object() )
         mario_state.update_sound_and_camera()
 
         if grand_star:
@@ -598,15 +606,15 @@ def interact_warp( mario_state, interact_type, obj ):
             mario_state.set_used_obj( obj )
 
             if obj.collisionData == segmented_to_virtual(warp_pipe_seg3_collision_03009AC8):
-                pass
-                # TODO: Sound stuff.
-                #play_sound(SOUND_MENU_ENTER_PIPE, mario_state.marioObj->header.gfx.cameraToObject);
+                sounds.play_sound(
+                    sounds.SOUND_MENU_ENTER_PIPE,
+                    mario_state.mario_object.get_camera_to_object() )
                 # TODO: Rumble stuff.
                 # queue_rumble_data\(15, 80\);
             else:
-                pass
-                # TODO: Sound stuff.
-                #play_sound(SOUND_MENU_ENTER_HOLE, mario_state.marioObj->header.gfx.cameraToObject);
+                sounds.play_sound(
+                    sounds.SOUND_MENU_ENTER_HOLE,
+                    mario_state.mario_object.get_camera_to_object() )
                 # TODO: Rumble stuff.
                 # queue_rumble_data\(12, 80\);
 
@@ -793,8 +801,9 @@ def interact_tornado( mario_state, interact_type, obj ):
         mario_obj.set_mario_tornado_yaw_vel( 0x400 )
         mario_obj.set_mario_tornado_pos_y( mario_state.get_pos( 1 ) - obj.get_pos_y() )
 
-        # TODO: Sound stuff.
-        #play_sound(SOUND_MARIO_WAAAOOOW, mario_state.marioObj->header.gfx.cameraToObject);
+        sounds.play_sound(
+            sounds.SOUND_MARIO_WAAAOOOW,
+            mario_state.mario_object.get_camera_to_object() )
         # TODO: Rumble stuff.
         # queue_rumble_data\(30, 60\);
 
@@ -818,8 +827,10 @@ def interact_whirlpool( mario_state, interact_type, obj ):
 
         mario_obj.set_mario_whirlpool_pos_y( mario_state.get_pos( 1 ) - obj.get_pos_y() )
 
-        # TODO: Sound stuff.
-        #play_sound(SOUND_MARIO_WAAAOOOW, mario_state.marioObj->header.gfx.cameraToObject);
+        sounds.play_sound(
+            sounds.SOUND_MARIO_WAAAOOOW,
+            mario_state.mario_object.get_camera_to_object() )
+        
         # TODO: Rumble stuff.
         # queue_rumble_data\(30, 60\);
 
@@ -842,9 +853,11 @@ def interact_strong_wind( mario_state, interact_type, obj ):
         mario_state.set_unkC4( 0.4 )
         mario_state.set_forward_vel( -24.0 )
         mario_state.set_vel( 1, 12.0 )
-
-        # TODO: Sound stuff.
-        #play_sound(SOUND_MARIO_WAAAOOOW, mario_state.marioObj->header.gfx.cameraToObject);
+        
+        sounds.play_sound(
+            sounds.SOUND_MARIO_WAAAOOOW,
+            mario_state.mario_object.get_camera_to_object() )
+        
         mario_state.update_sound_and_camera()
         return set_mario_action( mario_state, mario.ACT_GETTING_BLOWN, 0 )
 
@@ -870,13 +883,15 @@ def interact_flame( mario_state, interact_type, obj ):
         (mario.ACT_FLAG_SWIMMING | mario.ACT_FLAG_METAL_WATER) or \
         mario_state.get_water_level() - mario_state.get_pos( 1 ) > 50.0:
             pass
-            # TODO: Sound stuff.
-            #play_sound(SOUND_GENERAL_FLAME_OUT, mario_state.marioObj->header.gfx.cameraToObject);
+            sounds.play_sound(
+                sounds.SOUND_GENERAL_FLAME_OUT,
+                mario_state.mario_object.get_camera_to_object() )
         else:
             mario_state.mario_object.set_mario_burn_timer( 0 )
             mario_state.update_sound_and_camera()
-            # TODO: Sound stuff.
-            #play_sound(SOUND_MARIO_ON_FIRE, mario_state.marioObj->header.gfx.cameraToObject);
+            sounds.play_sound(
+                sounds.SOUND_MARIO_ON_FIRE,
+                mario_state.mario_object.get_camera_to_object() )
 
             if mario_state.get_action() & mario.ACT_FLAG_AIR and \
             mario_state.get_vel( 1 ) <= 0.0:
@@ -896,8 +911,9 @@ def interact_snufit_bullet( mario_state, interact_type, obj ):
         if mario_state.get_flags() & mario.MARIO_METAL_CAP:
             obj.set_interact_status(
                 mario.INT_STATUS_INTERACTED | mario.INT_STATUS_WAS_ATTACKED )
-            # TODO: Sound stuff
-            #play_sound(SOUND_ACTION_UNKNOWN458, mario_state.marioObj->header.gfx.cameraToObject);
+            sounds.play_sound(
+                sounds.SOUND_ACTION_UNKNOWN458,
+                mario_state.mario_object.get_camera_to_object() )
 
         else:
             obj.set_interact_status(
@@ -905,8 +921,9 @@ def interact_snufit_bullet( mario_state, interact_type, obj ):
             mario_state.set_interact_obj( obj )
             take_damage_from_interact_object( mario_state )
 
-            # TODO: Sound stuff.
-            #play_sound(SOUND_MARIO_ATTACKED, mario_state.marioObj->header.gfx.cameraToObject);
+            sounds.play_sound(
+                sounds.SOUND_MARIO_ATTACKED,
+                mario_state.mario_object.get_camera_to_object() )
             mario_state.update_sound_and_camera()
 
             return drop_and_set_mario_action(
@@ -972,13 +989,17 @@ def interact_bully( mario_state, interact_type, obj ):
         mario_state.set_invinc_timer( 2 )
 
         mario_state.update_sound_and_camera()
-        # TODO: Sound stuff.
-        #play_sound(SOUND_MARIO_EEUH, mario_state.marioObj->header.gfx.cameraToObject);
-        #play_sound(SOUND_OBJ_BULLY_METAL, mario_state.marioObj->header.gfx.cameraToObject);
+        sounds.play_sound(
+            sounds.SOUND_MARIO_EEUH,
+            mario_state.mario_object.get_camera_to_object() )
+        sounds.play_sound(
+            sounds.SOUND_OBJ_BULLY_METAL,
+            mario_state.mario_object.get_camera_to_object() )
 
         mario_state.push_out_of_object( obj, 5.0 )
         drop_and_set_mario_action(
             mario_state, mario_state.bully_knock_back(), 0 )
+
         # TODO: Rumble stuff.
         # queue_rumble_data\(5, 80\);
 
@@ -1004,8 +1025,10 @@ def interact_shock( mario_state, interact_type, obj ):
 
         take_damage_from_interact_object( mario_state )
 
-        # TODO: Sound stuff.
-        #play_sound(SOUND_MARIO_ATTACKED, mario_state.marioObj->header.gfx.cameraToObject);
+        sounds.play_sound(
+            sounds.SOUND_MARIO_ATTACKED,
+            mario_state.mario_object.get_camera_to_object() )
+        
         # TODO: Rumble stuff.
         # queue_rumble_data\(70, 60\);
 
@@ -1061,8 +1084,11 @@ def interact_hit_from_below( mario_state, interact_type, obj ):
             if obj.get_interaction_subtype() & mario.INT_SUBTYPE_TWIRL_BOUNCE:
                 bounce_off_object( mario_state, obj, 80.0 )
                 mario_state.reset_pitch()
-                # TODO: Sound stuff.
-                #play_sound(SOUND_MARIO_TWIRL_BOUNCE, mario_state.marioObj->header.gfx.cameraToObject);
+
+                sounds.play_sound(
+                    sounds.SOUND_MARIO_TWIRL_BOUNCE,
+                    mario_state.mario_object.get_camera_to_object() )
+                
                 return drop_and_set_mario_action(
                     mario_state, mario.ACT_TWIRLING, 0 )
             else:
@@ -1098,8 +1124,9 @@ def interact_bounce_top( mario_state, interact_type, obj ):
             if obj.get_interaction_subtype() & mario.INT_SUBTYPE_TWIRL_BOUNCE:
                 bounce_off_object( mario_state, obj, 80.0 )
                 mario_state.reset_pitch()
-                # TODO: Sound stuff.
-                #play_sound(SOUND_MARIO_TWIRL_BOUNCE, mario_state.marioObj->header.gfx.cameraToObject);
+                sounds.play_sound(
+                    sounds.SOUND_MARIO_TWIRL_BOUNCE,
+                    mario_state.mario_object.get_camera_to_object() )
                 return drop_and_set_mario_action(
                     mario_state, mario.ACT_TWIRLING, 0 )
 
@@ -1271,8 +1298,12 @@ def interact_cap( mario_state, interact_type, obj ):
             mario_state.set_flag( mario.MARIO_CAP_ON_HEAD )
 
         # TODO: Sound stuff.
-        #play_sound(SOUND_MENU_STAR_SOUND, mario_state.marioObj->header.gfx.cameraToObject);
-        #play_sound(SOUND_MARIO_HERE_WE_GO, mario_state.marioObj->header.gfx.cameraToObject);
+        sounds.play_sound(
+            sounds.SOUND_MENU_STAR_SOUND,
+            mario_state.mario_object.get_camera_to_object() )
+        sounds.play_sound(
+            sounds.SOUND_MARIO_HERE_WE_GO,
+            mario_state.mario_object.get_camera_to_object() )
         #
         #if capMusic != 0:
         #    play_cap_music(capMusic);
