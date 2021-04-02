@@ -54,9 +54,9 @@ def delay_frames( frames, callback ):
 def show_osd_line( line_x, line_y, text, ttl ):
     osd_lines.append( (line_x, line_y, text, ttl) )
 
-server_proc = None
-mario_server = None
-can_warp = False
+server_proc = None # pylint: disable=invalid-name
+mario_server = None # pylint: disable=invalid-name
+can_warp = False # pylint: disable=invalid-name
 
 MARIO_PAGE = '''<!doctype HTML>
 <html>
@@ -91,7 +91,7 @@ MARIO_PAGE = '''<!doctype HTML>
 
 class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
 
-    def do_POST( self ):
+    def do_POST( self ): # pylint: disable=invalid-name
         # pylint: disable=no-member
 
         form_env = {
@@ -144,7 +144,7 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
         self.send_header( 'Location', 'http://127.0.0.1:8064/' )
         self.end_headers()
 
-    def do_GET( self ):
+    def do_GET( self ): # pylint: disable=invalid-name
 
         #logger.debug( 'web request...' )
 
@@ -186,8 +186,8 @@ def mario_init():
     #print( bhv_test.script )
     bhv_test.compile()
 
-    global server_proc
-    global mario_server
+    global server_proc # pylint: disable=invalid-name
+    global mario_server # pylint: disable=invalid-name
     mario_server = MarioHTTPServer( ('127.0.0.1', 8064) )
     #server_proc = multiprocessing.Process( target=mario_server.serve_forever )
     server_proc = threading.Thread( target=mario_server.serve_forever )
@@ -215,7 +215,9 @@ def bounce_back_from_attack( mario_state, interaction ):
         cameras.set_shake_from_hit( cameras.SHAKE_ATTACK )
         mario_state.set_particle_flag( mario.PARTICLE_TRIANGLE )
 
-    if interaction & (mario.INT_PUNCH | mario.INT_KICK | mario.INT_TRIP | mario.INT_FAST_ATTACK_OR_SHELL):
+    if interaction & (
+    mario.INT_PUNCH | mario.INT_KICK | mario.INT_TRIP | \
+    mario.INT_FAST_ATTACK_OR_SHELL):
         sounds.play_sound(
             sounds.SOUND_ACTION_HIT_2,
             mario_state.mario_object.get_camera_to_object() )
@@ -274,9 +276,10 @@ def check_object_grab_mario( mario_state, interact_type, obj ):
             sounds.play_sound(
                 sounds.SOUND_MARIO_OOOF,
                 mario_state.mario_object.get_camera_to_object() )
-            
+
             # TODO: Rumble stuff.
             # queue_rumble_data\(5, 80\);
+
             return set_mario_action( mario_state, mario.ACT_GRABBED, 0 )
 
     mario_state.push_out_of_object( obj, -5.0 )
@@ -313,7 +316,7 @@ def object_facing_mario( mario_state, obj, angle_range ):
 
     return False
 
-def take_damage_from_interact_object( mario_state ):
+def take_damage_from_interact_object( mario_state ): # pylint: disable=invalid-name
 
     shake = 0
     damage = mario_state.get_interact_obj().get_damage_or_coin_value()
@@ -335,8 +338,8 @@ def take_damage_from_interact_object( mario_state ):
 
     # TODO: Rumble stuff.
     #queue_rumble_data(5, 80);
-    
-    cameras.set_shake_from_hit(shake);
+
+    cameras.set_shake_from_hit( shake )
 
     return damage
 
@@ -359,7 +362,6 @@ def take_damage_and_knock_back( mario_state,  obj ):
             mario_state.set_forward_vel( 40.0 )
 
         if obj.get_damage_or_coin_value() > 0:
-            pass
             sounds.play_sound(
                 sounds.SOUND_MARIO_ATTACKED,
                 mario_state.mario_object.get_camera_to_object() )
@@ -846,7 +848,7 @@ def interact_whirlpool( mario_state, interact_type, obj ):
         sounds.play_sound(
             sounds.SOUND_MARIO_WAAAOOOW,
             mario_state.mario_object.get_camera_to_object() )
-        
+
         # TODO: Rumble stuff.
         # queue_rumble_data\(30, 60\);
 
@@ -869,11 +871,11 @@ def interact_strong_wind( mario_state, interact_type, obj ):
         mario_state.set_unkC4( 0.4 )
         mario_state.set_forward_vel( -24.0 )
         mario_state.set_vel( 1, 12.0 )
-        
+
         sounds.play_sound(
             sounds.SOUND_MARIO_WAAAOOOW,
             mario_state.mario_object.get_camera_to_object() )
-        
+
         mario_state.update_sound_and_camera()
         return set_mario_action( mario_state, mario.ACT_GETTING_BLOWN, 0 )
 
@@ -898,7 +900,6 @@ def interact_flame( mario_state, interact_type, obj ):
         if mario_state.get_action() & \
         (mario.ACT_FLAG_SWIMMING | mario.ACT_FLAG_METAL_WATER) or \
         mario_state.get_water_level() - mario_state.get_pos( 1 ) > 50.0:
-            pass
             sounds.play_sound(
                 sounds.SOUND_GENERAL_FLAME_OUT,
                 mario_state.mario_object.get_camera_to_object() )
@@ -1044,7 +1045,7 @@ def interact_shock( mario_state, interact_type, obj ):
         sounds.play_sound(
             sounds.SOUND_MARIO_ATTACKED,
             mario_state.mario_object.get_camera_to_object() )
-        
+
         # TODO: Rumble stuff.
         # queue_rumble_data\(70, 60\);
 
@@ -1052,10 +1053,10 @@ def interact_shock( mario_state, interact_type, obj ):
         (mario.ACT_FLAG_SWIMMING | mario.ACT_FLAG_METAL_WATER):
             return drop_and_set_mario_action(
                 mario_state, mario.ACT_WATER_SHOCKED, 0 )
-        else:
-            mario_state.update_sound_and_camera()
-            return drop_and_set_mario_action(
-                mario_state, mario.ACT_SHOCKED, action_arg )
+
+        mario_state.update_sound_and_camera()
+        return drop_and_set_mario_action(
+            mario_state, mario.ACT_SHOCKED, action_arg )
 
     if not obj.get_interaction_subtype() & \
     mario.INT_SUBTYPE_DELAY_INVINCIBILITY:
@@ -1104,7 +1105,7 @@ def interact_hit_from_below( mario_state, interact_type, obj ):
                 sounds.play_sound(
                     sounds.SOUND_MARIO_TWIRL_BOUNCE,
                     mario_state.mario_object.get_camera_to_object() )
-                
+
                 return drop_and_set_mario_action(
                     mario_state, mario.ACT_TWIRLING, 0 )
             else:
@@ -1241,8 +1242,8 @@ def interact_pole( mario_state, interact_type, obj ):
                 return set_mario_action(
                     mario_state, mario.ACT_GRAB_POLE_SLOW, 0 )
 
-            # @bug Using mario_state.forwardVel here is assumed to be 0.0f due to the set from earlier.
-            #       This is fixed in the Shindou version.
+            # @bug Using mario_state.forwardVel here is assumed to be 0.0f
+            # due to the set from earlier. This is fixed in the Shindou version.
             mario_obj.set_mario_pole_yaw_vel(
                 mario_state.get_forward_vel() * 0x100 + 0x1000 )
             mario_state.reset_pitch()
@@ -1460,10 +1461,12 @@ def determine_interaction( mario_state, obj ):
 
         elif action == mario.ACT_GROUND_POUND_LAND or \
         action == mario.ACT_TWIRL_LAND:
-            # Neither ground pounding nor twirling change Mario's vertical speed on landing.,
-            # so the speed check is nearly always true (perhaps not if you land while going upwards?)
-            # Additionally, actionState it set on each first thing in their action, so this is
-            # only true prior to the very first frame (i.e. active 1 frame prior to it run).
+            # Neither ground pounding nor twirling change Mario's vertical
+            # speed on landing., so the speed check is nearly always true
+            # (perhaps not if you land while going upwards?) Additionally,
+            # actionState it set on each first thing in their action, so
+            # this is only true prior to the very first frame (i.e. active
+            # 1 frame prior to it run).
             if mario_state.get_vel( 1 ) < 0.0 and \
             mario_state.get_action_state() == 0:
                 interaction = mario.INT_GROUND_POUND_OR_TWIRL
