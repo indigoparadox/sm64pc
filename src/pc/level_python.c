@@ -3,6 +3,7 @@
 
 #include "game/level_update.h"
 #include "course_table.h"
+#include "game/behavior_actions.h"
 
 u8 gSafeToWarp = 0;
 
@@ -48,12 +49,29 @@ PyLevel_get_curr_course_num(PyObject *self) {
     return pCurrCourseNum;
 }
 
+static PyObject *
+PyLevel_spawn_star_no_level_exit(PyObject *self, PyObject *arg) {
+    u32 star_idx = 0; /* I think that's what the number param is? */
+
+    star_idx = PyLong_AsLong(arg);
+    if (PyErr_Occurred()) {
+        fprintf(stderr, "during spawn star no level exit:\n");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    bhv_spawn_star_no_level_exit(star_idx);
+
+    Py_RETURN_NONE;
+}
+
 #endif /* CHECK_PYTHON */
 
 static PyMethodDef PyLevels_methods[] = {
     #ifndef CHECK_PYTHON
     {"initiate_warp",   (PyCFunction)PyLevel_initiate_warp,   METH_VARARGS, NULL},
     {"get_curr_course_num",   (PyCFunction)PyLevel_get_curr_course_num,   METH_NOARGS, NULL},
+    {"spawn_star_no_level_exit",   (PyCFunction)PyLevel_spawn_star_no_level_exit,   METH_O, NULL},
     #endif /* CHECK_PYTHON */
     {NULL, NULL, 0, NULL}
 };

@@ -7,6 +7,7 @@
 #include "game/object_helpers.h"
 #include "game/mario.h"
 #include "engine/graph_node.h"
+#include "actors/common1.h"
 
 #include "object_python_behavior.h"
 #include "object_python_models.h"
@@ -215,6 +216,21 @@ PyObjects_get_camera_to_object(PyObjectClass *self) {
     return pPosTupleOut;
 }
 
+static PyObject *
+PyObjects_get_collision_data(PyObjectClass *self) {
+    struct Object *obj = NULL;
+    PyObject *pCollisionDataOut = NULL;
+    
+    obj = PYTHON_DECAPSULE_OBJECT(self->native_object, Py_RETURN_NONE);
+    
+    pCollisionDataOut = PYTHON_ENCAPSULE(
+        obj->collisionData,
+        "objects.Object._collision_data",
+        sLogger, Py_RETURN_NONE);
+
+    return pCollisionDataOut;
+}
+
 OBJECT_GET(hitboxRadius, f32, PyFloat_FromDouble);
 OBJECT_GET(hitboxHeight, f32, PyFloat_FromDouble);
 OBJECT_GET(collidedObjInteractTypes, u32, PyLong_FromUnsignedLong);
@@ -265,25 +281,26 @@ static PyMethodDef PyObject_methods[] = {
     {"set_mario_pole_pos",          (PyCFunction)PyObjects_set_oMarioPolePos,           METH_O, NULL},
     {"set_mario_whirlpool_pos_y",   (PyCFunction)PyObjects_set_oMarioWhirlpoolPosY,     METH_O, NULL},
 
-    {"get_pos_x",                   (PyCFunction)PyObjects_get_oPosX,                   METH_NOARGS, NULL},
-    {"get_pos_y",                   (PyCFunction)PyObjects_get_oPosY,                   METH_NOARGS, NULL},
-    {"get_pos_z",                   (PyCFunction)PyObjects_get_oPosZ,                   METH_NOARGS, NULL},
-    {"get_damage_or_coin_value",    (PyCFunction)PyObjects_get_oDamageOrCoinValue,      METH_NOARGS, NULL},
-    {"get_interaction_subtype",     (PyCFunction)PyObjects_get_oInteractionSubtype,     METH_NOARGS, NULL},
-    {"get_interact_status",         (PyCFunction)PyObjects_get_oInteractStatus,         METH_NOARGS, NULL},
-    {"get_beh_params",              (PyCFunction)PyObjects_get_oBehParams,              METH_NOARGS, NULL},
-    {"get_move_angle_yaw",          (PyCFunction)PyObjects_get_oMoveAngleYaw,           METH_NOARGS, NULL},
-    {"get_hitbox_radius",           (PyCFunction)PyObjects_get_hitboxRadius,           METH_NOARGS, NULL},
-    {"get_hitbox_height",           (PyCFunction)PyObjects_get_hitboxHeight,           METH_NOARGS, NULL},
-    {"get_mario_burn_timer",        (PyCFunction)PyObjects_get_oMarioBurnTimer,         METH_NOARGS, NULL},
-    {"get_mario_cap_flag",          (PyCFunction)PyObjects_get_mario_cap_flag,          METH_NOARGS, NULL},
-    {"get_collided_obj_interact_types", (PyCFunction)PyObjects_get_collidedObjInteractTypes, METH_NOARGS, NULL},
-    {"get_camera_to_object",        (PyCFunction)PyObjects_get_camera_to_object,                     METH_NOARGS, NULL},
+    {"get_pos_x",                       (PyCFunction)PyObjects_get_oPosX,                       METH_NOARGS, NULL},
+    {"get_pos_y",                       (PyCFunction)PyObjects_get_oPosY,                       METH_NOARGS, NULL},
+    {"get_pos_z",                       (PyCFunction)PyObjects_get_oPosZ,                       METH_NOARGS, NULL},
+    {"get_damage_or_coin_value",        (PyCFunction)PyObjects_get_oDamageOrCoinValue,          METH_NOARGS, NULL},
+    {"get_interaction_subtype",         (PyCFunction)PyObjects_get_oInteractionSubtype,         METH_NOARGS, NULL},
+    {"get_interact_status",             (PyCFunction)PyObjects_get_oInteractStatus,             METH_NOARGS, NULL},
+    {"get_beh_params",                  (PyCFunction)PyObjects_get_oBehParams,                  METH_NOARGS, NULL},
+    {"get_move_angle_yaw",              (PyCFunction)PyObjects_get_oMoveAngleYaw,               METH_NOARGS, NULL},
+    {"get_hitbox_radius",               (PyCFunction)PyObjects_get_hitboxRadius,                METH_NOARGS, NULL},
+    {"get_hitbox_height",               (PyCFunction)PyObjects_get_hitboxHeight,                METH_NOARGS, NULL},
+    {"get_mario_burn_timer",            (PyCFunction)PyObjects_get_oMarioBurnTimer,             METH_NOARGS, NULL},
+    {"get_mario_cap_flag",              (PyCFunction)PyObjects_get_mario_cap_flag,              METH_NOARGS, NULL},
+    {"get_collided_obj_interact_types", (PyCFunction)PyObjects_get_collidedObjInteractTypes,    METH_NOARGS, NULL},
+    {"get_camera_to_object",            (PyCFunction)PyObjects_get_camera_to_object,            METH_NOARGS, NULL},
+    {"get_collision_data",              (PyCFunction)PyObjects_get_collision_data,              METH_NOARGS, NULL},
 
-    {"init_animation",              (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
-    {"scale",                       (PyCFunction)PyObjects_scale,                       METH_VARARGS, NULL},
-    {"copy_pos_and_angle",          (PyCFunction)PyObjects_copy_pos_and_angle,          METH_O, NULL},
-    {"is_valid",                    (PyCFunction)PyObjects_is_valid,                    METH_NOARGS, NULL},
+    {"init_animation",                  (PyCFunction)PyObjects_init_animation,              METH_O, NULL},
+    {"scale",                           (PyCFunction)PyObjects_scale,                       METH_VARARGS, NULL},
+    {"copy_pos_and_angle",              (PyCFunction)PyObjects_copy_pos_and_angle,          METH_O, NULL},
+    {"is_valid",                        (PyCFunction)PyObjects_is_valid,                    METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
@@ -365,9 +382,9 @@ static PyModuleDef ObjectsModule = {
 PyObject* PyInit_objects(void) {
     PyObject *pObjects = NULL,
         *pBhvNative = NULL,
-        *pBhvArgs = NULL;
+        *pBhvArgs = NULL,
+        *pConstant = NULL;
     struct _PyObjectBehaviorClass *pBhv = NULL;
-    //PyMarioStateClass *pMarioState;
 
     if (NULL == sLogger) {
         sLogger = python_get_logger("objects");
@@ -376,18 +393,18 @@ PyObject* PyInit_objects(void) {
         gLoggerBehavior = python_get_logger("objects.behavior");
     }
 
-    if(0 > PyType_Ready( &PyObjectType)) {
+    if (0 > PyType_Ready( &PyObjectType)) {
         python_log_error(sLogger, "type not ready?" );
         return NULL;
     }
 
-    if(0 > PyType_Ready( &PyObjectBehaviorType)) {
+    if (0 > PyType_Ready( &PyObjectBehaviorType)) {
         python_log_error(sLogger, "type not ready?" );
         return NULL;
     }
 
     pObjects = PyModule_Create(&ObjectsModule);
-    if(NULL == pObjects) {
+    if (NULL == pObjects) {
         python_log_error(sLogger, "could not allocate objects module" );
         return NULL;
     }
@@ -396,10 +413,23 @@ PyObject* PyInit_objects(void) {
     OBJECTS_ADD_BEHAVIORS(pObjects);
     OBJECTS_ADD_MODELS(pObjects);
     ADD_OBJLIST_CONSTANTS(pObjects);
-    #endif
+
+    pConstant = PYTHON_ENCAPSULE(
+        segmented_to_virtual(warp_pipe_seg3_collision_03009AC8),
+        "objects.Object._collision_data",
+        sLogger, Py_RETURN_NONE);
+    
+    Py_INCREF(pConstant);
+    if (0 > PyModule_AddObject(pObjects, "warp_pipe_seg3_collision_03009AC8", pConstant)) {
+        python_log_error(sLogger, "unable to add warp_pipe_seg3_collision_03009AC8 to objects module");
+        Py_DECREF(&pConstant);
+        Py_DECREF(pObjects);
+        return NULL;
+    }
+    #endif /*CHECK_PYTHON */
 
     Py_INCREF(&PyObjectType);
-    if( 0 > PyModule_AddObject(pObjects, "Object", (PyObject *)&PyObjectType)) {
+    if (0 > PyModule_AddObject(pObjects, "Object", (PyObject *)&PyObjectType)) {
         python_log_error(sLogger, "unable to add Object to objects module");
         Py_DECREF(&PyObjectType);
         Py_DECREF(pObjects);
@@ -407,7 +437,7 @@ PyObject* PyInit_objects(void) {
     }
 
     Py_INCREF(&PyObjectBehaviorType);
-    if( 0 > PyModule_AddObject(pObjects, "Behavior", (PyObject *)&PyObjectBehaviorType)) {
+    if (0 > PyModule_AddObject(pObjects, "Behavior", (PyObject *)&PyObjectBehaviorType)) {
         python_log_error(sLogger, "unable to add Behavior to objects module");
         Py_DECREF(&PyObjectBehaviorType);
         Py_DECREF(pObjects);

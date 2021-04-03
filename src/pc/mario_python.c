@@ -12,6 +12,7 @@
 #include "object_python.h"
 #include "game/interaction.h"
 #include "logging_python.h"
+#include "game/thread6.h"
 
 PyObject *gLoggerMario = NULL;
 PyObject *gMarioModule;
@@ -73,14 +74,14 @@ static PyMemberDef PyMarioState_members[] = {
         PyObject *var = 0; \
         idx = PyLong_AsLong(arg); \
         if (PyErr_Occurred()) { \
-            python_log_error(gLoggerMario, "mario: during get " #var ":"); \
+            python_log_error(gLoggerMario, "during get " #var ":"); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
         mario_state = PYTHON_DECAPSULE_MARIO(self->native_state, Py_RETURN_NONE); \
         var = c_getter(mario_state->var[idx]); \
         if (PyErr_Occurred()) { \
-            python_log_error(gLoggerMario, "mario: during get " #var ":" ); \
+            python_log_error(gLoggerMario, "during get " #var ":" ); \
             PyErr_Print(); \
             Py_RETURN_NONE; \
         } \
@@ -213,7 +214,7 @@ PyMario_set_forwardVel_all(PyMarioStateClass *self, PyObject *arg) {
     
     forwardVel = PyFloat_AsDouble(arg);
     if (PyErr_Occurred()) {
-        python_log_error(gLoggerMario, "mario: during set forwardVel_all:");
+        python_log_error(gLoggerMario, "during set forwardVel_all:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -238,7 +239,7 @@ PyMario_set_animID(PyMarioStateClass *self, PyObject *args) {
 
     var = PyLong_AsLong(args);
     if (PyErr_Occurred()) {
-        python_log_error(gLoggerMario, "mario: during set animID:");
+        python_log_error(gLoggerMario, "during set animID:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -259,7 +260,7 @@ PyMario_push_out_of_object(PyMarioStateClass *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "Of", &pObjIn, &padding);
     if (PyErr_Occurred()) {
-        python_log_error(gLoggerMario, "mario: during push out of object:");
+        python_log_error(gLoggerMario, "during push out of object:");
         PyErr_Print();
         Py_RETURN_NONE;
     }
@@ -542,12 +543,30 @@ PyMario_get_mario_state(PyMarioStateClass *self) {
     return state_out;
 }
 
+static PyObject *
+PyMario_queue_rumble_data(PyMarioStateClass *self, PyObject *args) {
+    s16 a0 = 0,
+        a1 = 0;
+
+    PyArg_ParseTuple(args, "hh", &a0, &a1);
+    if (PyErr_Occurred()) {
+        python_log_error(gLoggerMario, "during queue rumble data:");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    queue_rumble_data(a0, a1);
+
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef PyMarioMethods[] = {
     {"random_float",    (PyCFunction)PyMario_random_float,      METH_NOARGS, NULL},
     {"random_ushort",   (PyCFunction)PyMario_random_ushort,     METH_NOARGS, NULL},
     {"get_global_timer",(PyCFunction)PyMario_random_ushort,     METH_NOARGS, NULL},
     {"get_mario_state", (PyCFunction)PyMario_get_mario_state,   METH_NOARGS, NULL},
     {"atan2s",          (PyCFunction)PyMario_atan2s,            METH_VARARGS, NULL},
+    {"queue_rumble_data",           (PyCFunction)PyMario_queue_rumble_data,                 METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 

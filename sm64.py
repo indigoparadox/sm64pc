@@ -78,9 +78,21 @@ MARIO_PAGE = '''<!doctype HTML>
 <button name="camera" value="pause">Pause Camera</button>
 </div>
 <div>
+<button name="music" value="stop">Stop Music</button>
+<button name="music" value="shell">Shell Music</button>
+<button name="music" value="metal_cap">Metal Cap Music</button>
+<button name="music" value="wing_cap">Wing Cap Music</button>
+</div>
+<div>
 <button name="play_sound" value="yahoo">Yahoo!</button>
 <button name="play_sound" value="okey">Okey Dokey!</button>
 <button name="play_sound" value="waaaooow">Waaaooow!</button>
+</div>
+<div>
+<button name="rumble" value="small">Small Rumble</button>
+<button name="rumble" value="medium">Medium Rumble</button>
+<button name="rumble" value="large">Large Rumble</button>
+</div>
 <div>
 <textarea name="send_text"></textarea>
 <button name="action" value="send_text">Send Text</button>
@@ -127,6 +139,23 @@ class MarioHTTPHandler( http.server.BaseHTTPRequestHandler ):
             sounds.play_sound(
                     sounds.SOUND_MARIO_WAAAOOOW,
                     mario_state.mario_object.get_camera_to_object() )
+
+        elif 'small' == form.getvalue( 'rumble' ):
+            mario.queue_rumble_data( 5, 80 )
+        elif 'med' == form.getvalue( 'rumble' ):
+            mario.queue_rumble_data( 15, 80 )
+        elif 'large' == form.getvalue( 'rumble' ):
+            mario.queue_rumble_data( 30, 60 )
+
+        elif 'stop' == form.getvalue( 'music' ):
+            sounds.drop_queued_background_music()
+            sounds.fadeout_level_music( 126 )
+        elif 'shell' == form.getvalue( 'music' ):
+            sounds.play_shell_music()
+        elif 'wing_cap' == form.getvalue( 'music' ):
+            sounds.play_cap_music( 4, sounds.SEQ_EVENT_POWERUP )
+        elif 'metal_cap' == form.getvalue( 'music' ):
+            sounds.play_cap_music( 4, sounds.SEQ_EVENT_METAL_CAP )
 
         elif 'send_text' == form.getvalue( 'action' ):
             dlg_text = form.getvalue( 'send_text' )
@@ -277,8 +306,7 @@ def check_object_grab_mario( mario_state, interact_type, obj ):
                 sounds.SOUND_MARIO_OOOF,
                 mario_state.mario_object.get_camera_to_object() )
 
-            # TODO: Rumble stuff.
-            # queue_rumble_data\(5, 80\);
+            mario.queue_rumble_data( 5, 80 )
 
             return set_mario_action( mario_state, mario.ACT_GRABBED, 0 )
 
@@ -336,8 +364,7 @@ def take_damage_from_interact_object( mario_state ): # pylint: disable=invalid-n
 
     mario_state.set_hurt_counter( mario_state.get_hurt_counter() + 4 * damage )
 
-    # TODO: Rumble stuff.
-    #queue_rumble_data(5, 80);
+    mario.queue_rumble_data( 5, 80 )
 
     cameras.set_shake_from_hit( shake )
 
@@ -495,16 +522,15 @@ def interact_coin( mario_state, interact_type, obj ):
     curr_course <= levels.COURSE_STAGES_MAX and \
     num_coins - coin_val < 100 and \
     num_coins >= 100:
-        # bhv_spawn_star_no_level_exit(6):
+        levels.spawn_star_no_level_exit( 6 )
         coin_star = spawn_object( obj, objects.MODEL_STAR,
             objects.bhvSpawnedStarNoLevelExit )
         coin_star.set_beh_params( 6 << 24 )
         coin_star.set_interaction_subtype( mario.INT_SUBTYPE_NO_EXIT )
         obj.set_angle( 0, 0, 0 )
 
-    # TODO: Rumble stuff.
-    #if obj.oDamageOrCoinValue >= 2:
-    # queue_rumble_data\(5, 80\);
+    if obj.get_damage_or_coin_value() >= 2:
+        mario.queue_rumble_data( 5, 80 )
 
     return False
 
@@ -524,8 +550,8 @@ def interact_star_or_key( mario_state, interact_type, obj ):
 
     if mario_state.get_health() >= 0x100:
         mario_state.stop_riding_and_holding()
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(5, 80\);
+
+        mario.queue_rumble_data( 5, 80 )
 
         if not no_exit:
             mario_state.set_hurt_counter( 0 )
@@ -560,11 +586,10 @@ def interact_star_or_key( mario_state, interact_type, obj ):
                 levels.COURSE_MIN - 1,
                 levels.COURSE_MAX - 1 ) )
 
-        # TODO: Sound stuff.
-        #if not no_exit:
-        #    drop_queued_background_music();
-        #    fadeout_level_music(126);
-        #
+        if not no_exit:
+            sounds.drop_queued_background_music()
+            sounds.fadeout_level_music( 126 )
+
         sounds.play_sound(
             sounds.SOUND_MENU_STAR_SOUND,
             mario_state.mario_object.get_camera_to_object() )
@@ -623,18 +648,19 @@ def interact_warp( mario_state, interact_type, obj ):
             mario_state.set_interact_obj( obj )
             mario_state.set_used_obj( obj )
 
-            if obj.collisionData == segmented_to_virtual(warp_pipe_seg3_collision_03009AC8):
+            if obj.get_collision_data == objects.warp_pipe_seg3_collision_03009AC8:
                 sounds.play_sound(
                     sounds.SOUND_MENU_ENTER_PIPE,
                     mario_state.mario_object.get_camera_to_object() )
-                # TODO: Rumble stuff.
-                # queue_rumble_data\(15, 80\);
+
+                mario.queue_rumble_data( 15, 80 )
+
             else:
                 sounds.play_sound(
                     sounds.SOUND_MENU_ENTER_HOLE,
                     mario_state.mario_object.get_camera_to_object() )
-                # TODO: Rumble stuff.
-                # queue_rumble_data\(12, 80\);
+
+                mario.queue_rumble_data( 12, 80 )
 
             mario_state.stop_riding_object()
             return set_mario_action(
@@ -822,8 +848,7 @@ def interact_tornado( mario_state, interact_type, obj ):
         sounds.play_sound(
             sounds.SOUND_MARIO_WAAAOOOW,
             mario_state.mario_object.get_camera_to_object() )
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(30, 60\);
+        mario.queue_rumble_data( 30, 60 )
 
         return set_mario_action(
             mario_state,
@@ -849,8 +874,7 @@ def interact_whirlpool( mario_state, interact_type, obj ):
             sounds.SOUND_MARIO_WAAAOOOW,
             mario_state.mario_object.get_camera_to_object() )
 
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(30, 60\);
+        mario.queue_rumble_data( 30, 60 )
 
         return set_mario_action(
             mario_state,
@@ -891,8 +915,8 @@ def interact_flame( mario_state, interact_type, obj ):
     not mario_state.get_flags() & mario.MARIO_METAL_CAP and \
     not mario_state.get_flags() & mario.MARIO_VANISH_CAP and \
     not obj.get_interaction_subtype() & mario.INT_SUBTYPE_DELAY_INVINCIBILITY:
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(5, 80\);
+
+        mario.queue_rumble_data( 5, 80 )
 
         obj.set_interact_status( mario.INT_STATUS_INTERACTED )
         mario_state.set_interact_obj( obj )
@@ -986,8 +1010,7 @@ def interact_bully( mario_state, interact_type, obj ):
     mario_state.set_interact_obj( obj )
 
     if interaction & mario.INT_ATTACK_NOT_FROM_BELOW:
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(5, 80\);
+        mario.queue_rumble_data( 5, 80 )
         mario_state.push_out_of_object( obj, 5.0 )
 
         mario_state.set_forward_vel( -16.0 )
@@ -1017,8 +1040,7 @@ def interact_bully( mario_state, interact_type, obj ):
         drop_and_set_mario_action(
             mario_state, mario_state.bully_knock_back(), 0 )
 
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(5, 80\);
+        mario.queue_rumble_data( 5, 80 )
 
         return True
 
@@ -1046,8 +1068,7 @@ def interact_shock( mario_state, interact_type, obj ):
             sounds.SOUND_MARIO_ATTACKED,
             mario_state.mario_object.get_camera_to_object() )
 
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(70, 60\);
+        mario.queue_rumble_data( 70, 60 )
 
         if mario_state.get_action() & \
         (mario.ACT_FLAG_SWIMMING | mario.ACT_FLAG_METAL_WATER):
@@ -1089,8 +1110,9 @@ def interact_hit_from_below( mario_state, interact_type, obj ):
         interaction = determine_interaction( mario_state, obj )
 
     if interaction & mario.INT_ANY_ATTACK:
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(5, 80\);
+
+        mario.queue_rumble_data( 5, 80 )
+
         attack_object( obj, interaction )
         bounce_back_from_attack( mario_state, interaction )
 
@@ -1132,8 +1154,9 @@ def interact_bounce_top( mario_state, interact_type, obj ):
         interaction = determine_interaction( mario_state, obj )
 
     if interaction & mario.INT_ATTACK_NOT_FROM_BELOW:
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(5, 80\);
+
+        mario.queue_rumble_data( 5, 80 )
+
         attack_object( obj, interaction )
         bounce_back_from_attack( mario_state, interaction )
 
@@ -1206,8 +1229,7 @@ def interact_koopa_shell( mario_state, interact_type, obj ):
 
             attack_object( obj, interaction )
             mario_state.update_sound_and_camera()
-            # TODO: Sound stuff.
-            #play_shell_music();
+            sounds.play_shell_music()
             mario_state.drop_held_object()
 
             # Puts mario in ground action even when in air, making it easy to
@@ -1247,8 +1269,9 @@ def interact_pole( mario_state, interact_type, obj ):
             mario_obj.set_mario_pole_yaw_vel(
                 mario_state.get_forward_vel() * 0x100 + 0x1000 )
             mario_state.reset_pitch()
-            # TODO: Rumble stuff.
-            # queue_rumble_data\(5, 80\);
+
+            mario.queue_rumble_data( 5, 80 )
+
             return set_mario_action(
                 mario_state, mario.ACT_GRAB_POLE_FAST, 0 )
 
@@ -1268,8 +1291,8 @@ def interact_hoot( mario_state, interact_type, obj ):
         mario_state.set_interact_obj( obj )
         mario_state.set_used_obj( obj )
 
-        # TODO: Rumble stuff.
-        # queue_rumble_data\(5, 80\);
+        mario.queue_rumble_data( 5, 80 )
+
         mario_state.update_sound_and_camera()
         return set_mario_action( mario_state, mario.ACT_RIDING_HOOT, 0 )
 
@@ -1277,7 +1300,7 @@ def interact_hoot( mario_state, interact_type, obj ):
 
 def interact_cap( mario_state, interact_type, obj ):
     cap_flag = obj.get_mario_cap_flag()
-    cap_music = 0
+    cap_music = None
     cap_time = 0
 
     if mario_state.get_action() != mario.ACT_GETTING_BLOWN and \
@@ -1291,18 +1314,15 @@ def interact_cap( mario_state, interact_type, obj ):
 
         if mario.MARIO_VANISH_CAP == cap_flag:
             cap_time = 600
-            # TODO: Sound stuff.
-            #cap_music = SEQUENCE_ARGS(4, SEQ_EVENT_POWERUP);
+            cap_music = (4, sounds.SEQ_EVENT_POWERUP) # Priority, Sequence
 
         elif mario.MARIO_METAL_CAP == cap_flag:
             cap_time = 600
-            # TODO: Sound stuff.
-            #cap_music = SEQUENCE_ARGS(4, SEQ_EVENT_METAL_CAP);
+            cap_music = (4, sounds.SEQ_EVENT_METAL_CAP) # Priority, Sequence
 
         elif mario.MARIO_WING_CAP == cap_flag:
             cap_time = 1800
-            # TODO: Sound stuff.
-            #cap_music = SEQUENCE_ARGS(4, SEQ_EVENT_POWERUP);
+            cap_music = (4, sounds.SEQ_EVENT_POWERUP) # Priority, Sequence
 
         if cap_time > mario_state.capTimer:
             mario_state.set_cap_timer( cap_time )
@@ -1314,17 +1334,15 @@ def interact_cap( mario_state, interact_type, obj ):
         else:
             mario_state.set_flag( mario.MARIO_CAP_ON_HEAD )
 
-        # TODO: Sound stuff.
         sounds.play_sound(
             sounds.SOUND_MENU_STAR_SOUND,
             mario_state.mario_object.get_camera_to_object() )
         sounds.play_sound(
             sounds.SOUND_MARIO_HERE_WE_GO,
             mario_state.mario_object.get_camera_to_object() )
-        #
-        #if capMusic != 0:
-        #    play_cap_music(capMusic);
-        #}
+
+        if cap_music:
+            sounds.play_cap_music( *cap_music )
 
         return True
 

@@ -4,6 +4,7 @@
 #include "logging_python.h"
 
 #include "audio/external.h"
+#include "game/sound_init.h"
 
 PyObject *sLogger = NULL;
 
@@ -46,8 +47,63 @@ PySounds_play_sound(PyObject *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+static PyObject *
+PySounds_play_cap_music(PyObject *self, PyObject *args) {
+    u8 priority = 0;
+    s16 cap_music = 0;
+    int res = 0;
+
+    res = PyArg_ParseTuple(args, "bh", &priority, &cap_music);
+    if (!res || PyErr_Occurred()) {
+        python_log_error(sLogger, "during play cap music:");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    play_cap_music(SEQUENCE_ARGS(priority, cap_music));
+
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+PySounds_play_shell_music(PyObject *self) {
+
+    play_shell_music();
+
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+PySounds_drop_queued_background_music(PyObject *self) {
+
+    drop_queued_background_music();
+
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+PySounds_fadeout_level_music(PyObject *self, PyObject *args) {
+    s16 fade_timer = 0;
+    int res = 0;
+
+    res = PyArg_ParseTuple(args, "h", &fade_timer);
+    if (!res || PyErr_Occurred()) {
+        python_log_error(sLogger, "during play cap music:");
+        PyErr_Print();
+        Py_RETURN_NONE;
+    }
+
+    fadeout_level_music(fade_timer);
+
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef PySounds_methods[] = {
     {"play_sound",     (PyCFunction)PySounds_play_sound,    METH_VARARGS, NULL},
+    {"play_cap_music",     (PyCFunction)PySounds_play_cap_music,    METH_VARARGS, NULL},
+    {"play_shell_music",     (PyCFunction)PySounds_play_shell_music,    METH_NOARGS, NULL},
+    {"drop_queued_background_music", (PyCFunction)PySounds_drop_queued_background_music, METH_NOARGS, NULL},
+    {"fadeout_level_music",     (PyCFunction)PySounds_fadeout_level_music,    METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
