@@ -27,9 +27,6 @@ TARGET_RPI ?= 0
 # Build with python support.
 USE_PYTHON ?= 1
 
-# Version of python to use.
-PYTHON_VER := python3.6m
-
 # Compile unit tests for python stuff (broken).
 CHECK_PYTHON ?= 0
 
@@ -224,7 +221,7 @@ VERSION_ASFLAGS := --defsym AVOID_UB=1
 COMPARE := 0
 
 ifeq ($(USE_PYTHON),1)
-  VERSION_CFLAGS := $(VERSION_CFLAGS) -DUSE_PYTHON -DPYTHON_MEM_DEBUG
+  VERSION_CFLAGS := $(VERSION_CFLAGS) -DUSE_PYTHON
 endif
 
 ifeq ($(CHECK_PYTHON),1)
@@ -531,7 +528,7 @@ INCLUDE_CFLAGS := -I include -I $(BUILD_DIR) -I $(BUILD_DIR)/include -I src -I .
 ENDIAN_BITWIDTH := $(BUILD_DIR)/endian-and-bitwidth
 
 ifeq ($(USE_PYTHON),1)
-  INCLUDE_CFLAGS := $(INCLUDE_CFLAGS) -I/usr/include/$(PYTHON_VER)
+  INCLUDE_CFLAGS := $(INCLUDE_CFLAGS) `pkg-config python3 --cflags`
 endif
 
 ifeq ($(CHECK_PYTHON),1)
@@ -744,7 +741,7 @@ else
 endif # End of LDFLAGS
 
 ifeq ($(USE_PYTHON),1)
-   LDFLAGS += -l$(PYTHON_VER)
+   LDFLAGS += `pkg-config python3 --libs`
 endif
 
 # Prevent a crash with -sopt
