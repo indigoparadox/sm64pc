@@ -82,3 +82,4 @@ sm64config.txt
 __pycache__
 *.pyc
 sm64pc.layout
+build.cmake

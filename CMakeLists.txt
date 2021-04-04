@@ -63,8 +63,10 @@ set(BASEPACK base.zip)
 # Automatic settings for PC port(s)
 
 set(TARGET)
-Set(IncludeCFlags
-    "-I ${CMAKE_CURRENT_SOURCE_DIR} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -I ${CMAKE_CURRENT_SOURCE_DIR}/src")
+Set(INCLUDE_DIRS
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(VersionCFlags "")
 
 if("${Version}" EQUAL "us")
@@ -103,23 +105,24 @@ if("${USE_PYTHON}" EQUAL 1)
     set(Python_ADDITIONAL_VERSIONS 3.6)
     find_package(PythonLibs 3)
     set(VersionCFlags "${VersionCFlags} -DUSE_PYTHON")
-    set(IncludeCFlags "${IncludeCFlags} -I${PYTHON_INCLUDE_DIRS}")
+    set(INCLUDE_DIRS "${INCLUDE_DIRS}" "${PYTHON_INCLUDE_DIRS}")
 endif()
 
-# Assets
+# Assets Extraction
+
+find_package(PythonInterp 3)
 
 # Make sure assets exist
 set(NOEXTRACT 0)
 if(NOEXTRACT EQUAL 0)
     execute_process(
-        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/extract_assets.py ${VERSION}"
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        RESULT_VARIABLE EXTRACT_RESULT)
-    if(NOT EXTRACT_RESULT)
-        message(FATAL_ERROR "Failed to extract assets.")
-    else()
-        message(STATUS "Assets extracted.")
-    endif()
+        COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/extract_assets.py" "${VERSION}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    #if(NOT EXTRACT_RESULT)
+    #    message(FATAL_ERROR "Failed to extract assets.")
+    #else()
+    message(STATUS "Assets extracted.")
+    #endif()
 endif()
 
 # TODO
@@ -128,6 +131,63 @@ endif()
 #ifeq ($(DUMMY),FAIL)
 #  $(error Failed to build tools)
 #endif
+
+# Localized Headers
+
+set(LOCALIZE_HEADERS 
+"text_strings.h"
+"text_menu_strings.h"
+"text_options_strings.h")
+
+file(MAKE_DIRECTORY "${CMAKE_CACHEFILE_DIR}/include")
+foreach(HEADER ${LOCALIZE_HEADERS})
+add_custom_target(
+    ${HEADER}
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/textconv" "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt" "${CMAKE_CURRENT_SOURCE_DIR}/include/${HEADER}.in" "${CMAKE_CACHEFILE_DIR}/include/${HEADER}"
+    BYPRODUCTS "${CMAKE_CACHEFILE_DIR}/include/${HEADER}"
+    RESULT_VARIABLE TEXTCONV_RESULT)
+#if(NOT TEXTCONV_RESULT)
+#    message(FATAL_ERROR "Failed to convert header ${HEADER}.")
+#else()
+#    message(STATUS "Header ${HEADER} converted.")
+#endif()
+endforeach()
+
+# Texture Generation
+
+file(GLOB SKYBOX_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/textures/skyboxes/*.png")
+
+file(MAKE_DIRECTORY "${CMAKE_CACHEFILE_DIR}/bin")
+foreach(SKYBOX ${SKYBOX_PNGS})
+    get_filename_component(SKYBOX_BASENAME "${SKYBOX}" NAME_WE)
+    set(SKYBOX_DEST "${CMAKE_CACHEFILE_DIR}/bin/${SKYBOX_BASENAME}_skybox.o")
+    #string(REPLACE "")
+    message(STATUS ${SKYBOX})
+    if(EXTERNAL_DATA EQUAL 1)
+        add_custom_target(
+            "${SKYBOX_BASENAME}_skybox.o"
+            COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py" "${SKYBOX}"
+        )
+    else()
+        add_custom_target(
+            "${SKYBOX_BASENAME}_skybox.o"
+            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/n64graphics" "-i" "${SKYBOX_DEST}" "-g" "${SKYBOX}"
+        )
+    endif()
+endforeach()
+
+#GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c $(BUILD_DIR)/assets/demo_data.c \
+#  $(addprefix $(BUILD_DIR)/bin/,$(addsuffix _skybox.c,$(notdir $(basename $(wildcard textures/skyboxes/*.png)))))
+
+
+# RGBA32, RGBA16, IA16, IA8, IA4, IA1, I8, I4
+#if(EXTERNAL_DATA 1)
+#$(BUILD_DIR)/%: %.png
+#	$(ZEROTERM) "$(patsubst %.png,%,$^)" > $@
+#else()
+#$(BUILD_DIR)/%: %.png
+#	$(N64GRAPHICS) -i $@ -g $< -f $(lastword $(subst ., ,$@))
+#endif()
 
 # Sources
 
@@ -251,13 +311,23 @@ list(REMOVE_ITEM ULTRA_C_FILES
 
 list(REMOVE_ITEM C_FILES src/game/main.c)
 
-
-
-
-
-Set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${IncludeCFlags} ${VersionCFlags}")
+Set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VersionCFlags}")
 
 add_executable("${TARGET}" "${C_FILES};${CXX_FILES};${LEVEL_C_FILES}")
+
+# Add localized text headers.
+foreach(HEADER ${LOCALIZE_HEADERS})
+    add_dependencies("${TARGET}" ${HEADER})
+endforeach()
+target_include_directories("${TARGET}" PUBLIC "${CMAKE_CACHEFILE_DIR}/include")
+foreach(INCLUDE_DIR in ${INCLUDE_DIRS})
+    target_include_directories("${TARGET}" PUBLIC "${INCLUDE_DIR}")
+endforeach()
+
+foreach(SKYBOX ${SKYBOX_PNGS})
+    get_filename_component(SKYBOX_BASENAME "${SKYBOX}" NAME_WE)
+    add_dependencies("${TARGET}" "${SKYBOX_BASENAME}_skybox.o")
+endforeach()
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
