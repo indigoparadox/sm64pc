@@ -49,7 +49,7 @@
 
 # General project-specific ignores
 doxygen/doxygen/*
-build/*
+build*
 *.dump
 *.mio0
 *.z64
