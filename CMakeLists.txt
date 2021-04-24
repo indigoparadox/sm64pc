@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(sm64pc VERSION 0.1.0)
+enable_language(C ASM)
 
 # Be quiet!
 #function(message)
@@ -92,7 +93,7 @@ set(SOUND_BIN_DIR "${BUILD_TMP_DIR}/sound")
 
 if("${VERSION}" MATCHES "us")
     set(VERSION_CFLAGS "${VERSION_CFLAGS} -DVERSION_US")
-    set(VERSION_AS_FLAGS "--defsym VERSION_US=1")
+    #set(VERSION_AS_FLAGS "--defsym VERSION_US=1")
     set(GRUCODE_CFLAGS "-DF3D_OLD")
     set(GRUCODE_ASFLAGS "--defsym F3D_OLD=1")
     set(TARGET "sm64.us")
@@ -115,6 +116,13 @@ if(NOT TARGET_BITS EQUAL 0)
   set(BITS "-m${TARGET_BITS}")
 endif()
 
+# TODO: Figure out how to make this smarter.
+set(CMAKE_ASM_COMPILER "as")
+
+set(VERSION_ASFLAGS "--defsym AVOID_UB=1")
+set(CMAKE_ASFLAGS "${CMAKE_ASFLAGS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -I ${BUILD_TMP_DIR} ${VERSION_ASFLAGS}")
+separate_arguments(CMAKE_ASFLAGS)
+
 # TODO
 # Stuff for showing the git hash in the intro on nightly builds
 # From https://stackoverflow.com/questions/44038428/include-git-commit-hash-and-or-branch-name-in-c-c-source
@@ -133,7 +141,7 @@ endif()
 
 set(SKYTILE_DIR "${BUILD_TMP_DIR}/textures/skybox_tiles")
 
-set(ENDIAN_BITWIDTH "${BUILD_TMP_DIR}/endian-and-bitwidth")
+#set(ENDIAN_BITWIDTH "${BUILD_TMP_DIR}/endian-and-bitwidth")
 
 set(TEXTCONV_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/textconv")
 set(N64GRAPHICS_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/n64graphics")
@@ -142,34 +150,44 @@ set(SKYCONV_ARGS "--store-names --write-tiles \"${SKYTILE_DIR}\"")
 
 # -= Endian and Bitwidth Tests =-
 
-add_custom_command(
-    OUTPUT "${ENDIAN_BITWIDTH}.dummy1"
-    COMMAND "${CMAKE_C_COMPILER}" "-c" ${CMAKE_C_FLAGS} "-I" "${CMAKE_CURRENT_SOURCE_DIR}/include" "-o" "${ENDIAN_BITWIDTH}.dummy2" "${CMAKE_CURRENT_SOURCE_DIR}/tools/determine-endian-bitwidth.c" 2> "${ENDIAN_BITWIDTH}.dummy1" || "true"
-    MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/tools/determine-endian-bitwidth.c"
-    COMMENT "Compiling endian and bitwidth test"
-    VERBATIM
+execute_process(
+    COMMAND "${CMAKE_C_COMPILER}" "-c" ${CMAKE_C_FLAGS} "-I" "${CMAKE_CURRENT_SOURCE_DIR}/include" "-o" "${ENDIAN_BITWIDTH}.dummy2" "${CMAKE_CURRENT_SOURCE_DIR}/tools/determine-endian-bitwidth.c"
+    ERROR_VARIABLE BITWIDTH_ENDIAN_ARGS
+    ERROR_STRIP_TRAILING_WHITESPACE
 )
-add_custom_target("endian_and_bitwidth_dummy1" ALL DEPENDS "${ENDIAN_BITWIDTH}.dummy1")
+string(REGEX REPLACE ".*msgbegin[ ]*(.*)[ ]*msgend.*" "\\1" BITWIDTH_ENDIAN_ARGS "${BITWIDTH_ENDIAN_ARGS}")
+separate_arguments(BITWIDTH_ENDIAN_ARGS)
 
-add_custom_command(
-    OUTPUT "${ENDIAN_BITWIDTH}.dummy2"
-    COMMAND "grep" "-o" "msgbegin --endian .* --bitwidth .* msgend" "${ENDIAN_BITWIDTH}.dummy1" > "${ENDIAN_BITWIDTH}.dummy2"
-    MAIN_DEPENDENCY "${ENDIAN_BITWIDTH}.dummy1"
-    COMMENT "Formatting result from endian and bitwidth test (part 1)"
-    VERBATIM
-)
-add_custom_target("endian_and_bitwidth_dummy2" ALL DEPENDS "${ENDIAN_BITWIDTH}.dummy2")
-add_dependencies("endian_and_bitwidth_dummy2" "endian_and_bitwidth_dummy1")
+message(STATUS "${BITWIDTH_ENDIAN_ARGS}")
 
-add_custom_command(
-    OUTPUT "${ENDIAN_BITWIDTH}"
-    COMMAND "head" "-n1" < "${ENDIAN_BITWIDTH}.dummy2" | "cut" -d " " "-f2-5" > "${ENDIAN_BITWIDTH}"
-    MAIN_DEPENDENCY "${ENDIAN_BITWIDTH}.dummy2"
-    COMMENT "Formatting result from endian and bitwidth test (part 2)"
-    VERBATIM
-)
-add_custom_target("endian_and_bitwidth" ALL DEPENDS "${ENDIAN_BITWIDTH}")
-add_dependencies("endian_and_bitwidth" "endian_and_bitwidth_dummy2")
+# add_custom_command(
+#     OUTPUT "${ENDIAN_BITWIDTH}.dummy1"
+#     COMMAND "${CMAKE_C_COMPILER}" "-c" ${CMAKE_C_FLAGS} "-I" "${CMAKE_CURRENT_SOURCE_DIR}/include" "-o" "${ENDIAN_BITWIDTH}.dummy2" "${CMAKE_CURRENT_SOURCE_DIR}/tools/determine-endian-bitwidth.c" 2> "${ENDIAN_BITWIDTH}.dummy1" || "true"
+#     MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/tools/determine-endian-bitwidth.c"
+#     COMMENT "Compiling endian and bitwidth test"
+#     VERBATIM
+# )
+# add_custom_target("endian_and_bitwidth_dummy1" ALL DEPENDS "${ENDIAN_BITWIDTH}.dummy1")
+
+# add_custom_command(
+#     OUTPUT "${ENDIAN_BITWIDTH}.dummy2"
+#     COMMAND "grep" "-o" "msgbegin --endian .* --bitwidth .* msgend" "${ENDIAN_BITWIDTH}.dummy1" > "${ENDIAN_BITWIDTH}.dummy2"
+#     MAIN_DEPENDENCY "${ENDIAN_BITWIDTH}.dummy1"
+#     COMMENT "Formatting result from endian and bitwidth test (part 1)"
+#     VERBATIM
+# )
+# add_custom_target("endian_and_bitwidth_dummy2" ALL DEPENDS "${ENDIAN_BITWIDTH}.dummy2")
+# add_dependencies("endian_and_bitwidth_dummy2" "endian_and_bitwidth_dummy1")
+
+# add_custom_command(
+#     OUTPUT "${ENDIAN_BITWIDTH}"
+#     COMMAND "head" "-n1" < "${ENDIAN_BITWIDTH}.dummy2" | "cut" -d " " "-f2-5" > "${ENDIAN_BITWIDTH}"
+#     MAIN_DEPENDENCY "${ENDIAN_BITWIDTH}.dummy2"
+#     COMMENT "Formatting result from endian and bitwidth test (part 2)"
+#     VERBATIM
+# )
+# add_custom_target("endian_and_bitwidth" ALL DEPENDS "${ENDIAN_BITWIDTH}")
+# add_dependencies("endian_and_bitwidth" "endian_and_bitwidth_dummy2")
 
 # -= Backend CFLAGS =-
 
@@ -328,13 +346,34 @@ list(REMOVE_ITEM ULTRA_C_FILES
 
 list(REMOVE_ITEM C_FILES src/game/main.c)
 
+file(GLOB SOUND_BANK_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/*.json")
+if(${VERSION} MATCHES "sh")
+#    file(GLOB SOUND_SEQUENCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/jp/*.s"
+#        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/*.s"
+#        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/jp/*.m64"
+#        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/*.m64")
+else()
+    file(GLOB SOUND_SEQUENCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/${VERSION}/*.m64"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/*.m64")
+    file(GLOB SOUND_SEQUENCE_S_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/${VERSION}/*.s"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/*.s")
+endif()
+#string(REGEX REPLACE "[.]s" ".m64" SOUND_SEQUENCE_S_FILES_M64 "${SOUND_SEQUENCE_S_FILES}")
+#string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" SOUND_SEQUENCE_S_FILES_M64 "${SOUND_SEQUENCE_S_FILES_M64}")
+#string(REGEX REPLACE "[.]s" ".m64" SOUND_SEQUENCE_FILES "${SOUND_SEQUENCE_FILES}")
+#string(REGEX REPLACE "[.]s" ".m64" SOUND_SEQUENCE_FILES_S "${SOUND_SEQUENCE_FILES_S}")
+#set(SOUND_SEQUENCE_FILES "${SOUND_SEQUENCE_FILES};${SOUND_SEQUENCE_S_FILES_M64}")
+#message(STATUS ${SOUND_SEQUENCE_S_FILES})
+
+# -= Executable Target =-
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${BACKEND_CFLAGS} ${VERSION_CFLAGS}")
 separate_arguments(VERSION_CFLAGS)
 
 add_executable("${TARGET}" "${C_FILES};${CXX_FILES};${LEVEL_C_FILES};${ULTRA_C_FILES}")
 
 # TODO: Remove this when proper deps implemented.
-add_dependencies("${TARGET}" "endian_and_bitwidth")
+#add_dependencies("${TARGET}" "endian_and_bitwidth")
 
 if(${USE_PYTHON})
     set(Python_ADDITIONAL_VERSIONS 3.6)
@@ -359,7 +398,9 @@ target_include_directories("${TARGET}" PUBLIC ${INCLUDE_DIRS})
 # -= Build Directory Creation =-
 
 set(BUILD_TMP_DIR_CHILDREN
-    "${SOUND_BIN_DIR}"
+    "${BUILD_TMP_DIR}/sound"
+    "${BUILD_TMP_DIR}/sound/samples"
+    "${BUILD_TMP_DIR}/sound/sequences"
     "${BUILD_TMP_DIR}/include"
     "${BUILD_TMP_DIR}/text"
     "${BUILD_TMP_DIR}/levels"
@@ -395,64 +436,96 @@ endif()
 #  $(error Failed to build tools)
 #endif
 
-#add_custom_command(
-#    OUTPUT "${SOUND_BIN_DIR}/sound_data.ctl"
-#    COMMAND #"${SKYCONV_COMMAND}" "${SKYCONV_ARGS}" "--type" "cake" "--split" "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png" "${BUILD_TMP_DIR}/levels/ending"
-#    MAIN_DEPENDENCY #"${TEXTURE_PNG}"
-#    COMMENT "Preprocessing sound_data.ctl"
-#    VERBATIM
-#)
-#add_custom_target("cake_inc_c" ALL DEPENDS "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
-#add_dependencies("${TARGET}" "cake_inc_c")
+add_custom_command(
+    OUTPUT "${BUILD_TMP_DIR}/sound/sound_data.ctl"
+    COMMAND "${PYTHON_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
+        "${BUILD_TMP_DIR}/sound/samples/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/"
+        "${BUILD_TMP_DIR}/sound/sound_data.ctl"
+        "${BUILD_TMP_DIR}/sound/sound_data.tbl"
+        ${VERSION_CFLAGS}
+        ${BITWIDTH_ENDIAN_ARGS}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Preprocessing sound_data.ctl"
+    VERBATIM
+)
+add_custom_target("sound_data.ctl" ALL DEPENDS "${SOUND_BIN_DIR}/sound_data.ctl")
+add_dependencies("${TARGET}" "sound_data.ctl")
 
-# $(SOUND_BIN_DIR)/sound_data.ctl: sound/sound_banks/ $(SOUND_BANK_FILES) $(SOUND_SAMPLE_AIFCS) $(ENDIAN_BITWIDTH)
-# 	$(PYTHON) tools/assemble_sound.py $(BUILD_DIR)/sound/samples/ sound/sound_banks/ $(SOUND_BIN_DIR)/sound_data.ctl $(SOUND_BIN_DIR)/sound_data.tbl $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
+foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
+    string(REGEX REPLACE "[.]s$" ".m64" S_M64_FILE "${S_FILE}")
+    string(REGEX REPLACE "[.]s$" ".o" S_O_FILE "${S_FILE}")
+    string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" S_M64_FILE "${S_M64_FILE}")
+    set(SOUND_SEQUENCE_FILES "${SOUND_SEQUENCE_FILES};${S_M64_FILE}")
+    add_custom_command(
+        OUTPUT "${S_O_FILE}"
+        COMMAND "${CMAKE_ASM_COMPILER}" ${CMAKE_ASFLAGS} "-o" "${S_O_FILE}" "${S_FILE}"
+        MAIN_DEPENDENCY "${S_FILE}"
+        COMMENT "Assembling ${S_FILE}"
+        VERBATIM
+    )
+    add_custom_command(
+        OUTPUT "${S_M64_FILE}"
+        COMMAND "${CMAKE_OBJCOPY}" "-j" ".rodata" "${S_O_FILE}" "-O" "binary" "${S_M64_FILE}"
+        MAIN_DEPENDENCY "${S_O_FILE}"
+        COMMENT "Translating ${S_O_FILE}"
+        VERBATIM
+    )
+endforeach()
+message(STATUS ${SOUND_SEQUENCE_FILES})
 
-# $(SOUND_BIN_DIR)/sound_data.tbl: $(SOUND_BIN_DIR)/sound_data.ctl
-# 	@true
 
-# ifeq ($(VERSION),sh)
-# $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/jp/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
-# 	$(PYTHON) tools/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
-# else
-# $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/$(VERSION)/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
-# 	$(PYTHON) tools/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
-# endif
+if(${EXTERNAL_DATA} EQUAL 1)
 
-# $(SOUND_BIN_DIR)/bank_sets: $(SOUND_BIN_DIR)/sequences.bin
-# 	@true
+else()
 
-# $(SOUND_BIN_DIR)/%.m64: $(SOUND_BIN_DIR)/%.o
-# 	$(OBJCOPY) -j .rodata $< -O binary $@
+    if(${VERSION} MATCHES "sh")
+        # $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/jp/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
+        # 	$(PYTHON) tools/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
+    else()
+        add_custom_command(
+            OUTPUT "${BUILD_TMP_DIR}/sound/sequences.bin"
+            COMMAND "${PYTHON_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
+                "--sequences"
+                "${BUILD_TMP_DIR}/sound/sequences.bin"
+                "${BUILD_TMP_DIR}/sound/bank_sets"
+                "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/"
+                "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences.json"
+                ${SOUND_SEQUENCE_FILES}
+                ${VERSION_CFLAGS}
+                ${BITWIDTH_ENDIAN_ARGS}
+            MAIN_DEPENDENCY ${SOUND_SEQUENCE_FILES}
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            COMMENT "Preprocessing sound_data.ctl"
+            VERBATIM
+        )
+    endif()
+    add_custom_target("sequences.bin" ALL DEPENDS "${BUILD_TMP_DIR}/sound/sequences.bin")
+    add_dependencies("${TARGET}" "sequences.bin")
 
-# $(SOUND_BIN_DIR)/%.o: $(SOUND_BIN_DIR)/%.s
-# 	$(AS) $(ASFLAGS) -o $@ $<
+    # $(SOUND_BIN_DIR)/sound_data.ctl.c: $(SOUND_BIN_DIR)/sound_data.ctl
+    # 	echo "unsigned char gSoundDataADSR[] = {" > $@
+    # 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
+    # 	echo "};" >> $@
 
-# if(${EXTERNAL_DATA} EQUAL 1)
+    # $(SOUND_BIN_DIR)/sound_data.tbl.c: $(SOUND_BIN_DIR)/sound_data.tbl
+    # 	echo "unsigned char gSoundDataRaw[] = {" > $@
+    # 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
+    # 	echo "};" >> $@
 
-# else()
+    # $(SOUND_BIN_DIR)/sequences.bin.c: $(SOUND_BIN_DIR)/sequences.bin
+    # 	echo "unsigned char gMusicData[] = {" > $@
+    # 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
+    # 	echo "};" >> $@
 
-# $(SOUND_BIN_DIR)/sound_data.ctl.c: $(SOUND_BIN_DIR)/sound_data.ctl
-# 	echo "unsigned char gSoundDataADSR[] = {" > $@
-# 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
-# 	echo "};" >> $@
+    # $(SOUND_BIN_DIR)/bank_sets.c: $(SOUND_BIN_DIR)/bank_sets
+    # 	echo "unsigned char gBankSetsData[0x100] = {" > $@
+    # 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
+    # 	echo "};" >> $@
 
-# $(SOUND_BIN_DIR)/sound_data.tbl.c: $(SOUND_BIN_DIR)/sound_data.tbl
-# 	echo "unsigned char gSoundDataRaw[] = {" > $@
-# 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
-# 	echo "};" >> $@
-
-# $(SOUND_BIN_DIR)/sequences.bin.c: $(SOUND_BIN_DIR)/sequences.bin
-# 	echo "unsigned char gMusicData[] = {" > $@
-# 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
-# 	echo "};" >> $@
-
-# $(SOUND_BIN_DIR)/bank_sets.c: $(SOUND_BIN_DIR)/bank_sets
-# 	echo "unsigned char gBankSetsData[0x100] = {" > $@
-# 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
-# 	echo "};" >> $@
-
-# endif()
+endif()
 
 # $(BUILD_DIR)/levels/scripts.o: $(BUILD_DIR)/include/level_headers.h
 
