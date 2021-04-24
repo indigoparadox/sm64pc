@@ -80,6 +80,17 @@ endif()
 set(BUILD_TMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
 message(STATUS "Using ${BUILD_TMP_DIR} for intermediate build files.")
 
+set(BUILD_TMP_DIR_CHILDREN
+    "${BUILD_TMP_DIR}/sound"
+    "${BUILD_TMP_DIR}/sound/samples"
+    "${BUILD_TMP_DIR}/sound/sequences"
+    "${BUILD_TMP_DIR}/include"
+    "${BUILD_TMP_DIR}/text"
+    "${BUILD_TMP_DIR}/levels"
+    "${BUILD_TMP_DIR}/levels/ending"
+    "${BUILD_TMP_DIR}/text/us"
+    "${BUILD_TMP_DIR}/bin")
+
 set(TARGET)
 Set(INCLUDE_DIRS
     "${BUILD_TMP_DIR}"
@@ -147,6 +158,8 @@ set(TEXTCONV_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/textconv")
 set(N64GRAPHICS_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/n64graphics")
 set(SKYCONV_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/skyconv")
 set(SKYCONV_ARGS "--store-names --write-tiles \"${SKYTILE_DIR}\"")
+set(AIFF_EXTRACT_CODEBOOK "${CMAKE_CURRENT_SOURCE_DIR}/tools/aiff_extract_codebook")
+set(VADPCM_ENC_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/vadpcm_enc")
 
 # -= Endian and Bitwidth Tests =-
 
@@ -346,7 +359,10 @@ list(REMOVE_ITEM ULTRA_C_FILES
 
 list(REMOVE_ITEM C_FILES src/game/main.c)
 
+# -= Data File Lists =-
+
 file(GLOB SOUND_BANK_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/*.json")
+
 if(${VERSION} MATCHES "sh")
 #    file(GLOB SOUND_SEQUENCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/jp/*.s"
 #        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/*.s"
@@ -358,12 +374,37 @@ else()
     file(GLOB SOUND_SEQUENCE_S_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/${VERSION}/*.s"
         "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/*.s")
 endif()
-#string(REGEX REPLACE "[.]s" ".m64" SOUND_SEQUENCE_S_FILES_M64 "${SOUND_SEQUENCE_S_FILES}")
-#string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" SOUND_SEQUENCE_S_FILES_M64 "${SOUND_SEQUENCE_S_FILES_M64}")
-#string(REGEX REPLACE "[.]s" ".m64" SOUND_SEQUENCE_FILES "${SOUND_SEQUENCE_FILES}")
-#string(REGEX REPLACE "[.]s" ".m64" SOUND_SEQUENCE_FILES_S "${SOUND_SEQUENCE_FILES_S}")
-#set(SOUND_SEQUENCE_FILES "${SOUND_SEQUENCE_FILES};${SOUND_SEQUENCE_S_FILES_M64}")
-#message(STATUS ${SOUND_SEQUENCE_S_FILES})
+
+file(GLOB SOUND_SAMPLE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/sound/samples/*")
+#set(SOUND_SAMPLE_AIFFS)
+set(SOUND_SAMPLE_AIFCS)
+set(SOUND_SAMPLE_TABLES)
+foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
+
+    string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" SAMPLE_BUILD_DIR "${SAMPLE_DIR}")
+    list(APPEND BUILD_TMP_DIR_CHILDREN ${SAMPLE_BUILD_DIR})
+
+    file(GLOB DIR_AIFFS "${SAMPLE_DIR}/*.aiff")
+    #string(REGEX REPLACE "[.]aiff" ".aifc" DIR_AIFCS "${DIR_AIFFS}")
+    #string(REGEX REPLACE "[.]aiff" ".table" DIR_TABLES "${DIR_AIFFS}")
+    #set(SOUND_SAMPLE_AIFFS ${SOUND_SAMPLE_AIFFS} ${DIR_AIFFS})
+
+    foreach(AIFF ${DIR_AIFFS})
+        string(REGEX REPLACE "[.]aiff$" ".aifc$" AIFC "${AIFF}")
+        string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" AIFC "${AIFC}")
+
+        list(APPEND SOUND_SAMPLE_AIFCS ${AIFC})
+        
+        add_custom_command(
+            OUTPUT "${AIFC}"
+            COMMAND "${VADPCM_ENC}" -c "${AIFF}" "${AIFC}"
+            DEPENDS "${VADPCM_ENC}" "${AIFF}"
+            COMMENT "Encoding ${AIFF}"
+            VERBATIM
+        )
+    endforeach()
+endforeach()
+#string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" SOUND_SAMPLE_AIFCS "${SOUND_SAMPLE_AIFCS}")
 
 # -= Executable Target =-
 
@@ -397,16 +438,6 @@ target_include_directories("${TARGET}" PUBLIC ${INCLUDE_DIRS})
 
 # -= Build Directory Creation =-
 
-set(BUILD_TMP_DIR_CHILDREN
-    "${BUILD_TMP_DIR}/sound"
-    "${BUILD_TMP_DIR}/sound/samples"
-    "${BUILD_TMP_DIR}/sound/sequences"
-    "${BUILD_TMP_DIR}/include"
-    "${BUILD_TMP_DIR}/text"
-    "${BUILD_TMP_DIR}/levels"
-    "${BUILD_TMP_DIR}/levels/ending"
-    "${BUILD_TMP_DIR}/text/us"
-    "${BUILD_TMP_DIR}/bin")
 foreach(CHILD in ${BUILD_TMP_DIR_CHILDREN})
     message(STATUS "Creating subdirectory ${CHILD}...")
     file(MAKE_DIRECTORY "${CHILD}")
@@ -436,6 +467,23 @@ endif()
 #  $(error Failed to build tools)
 #endif
 
+#foreach(AIFC ${SOUND_SAMPLE_AIFCS})
+#    string(REGEX REPLACE "[.]aifc$" ".aiff" AIFF "${AIFC}")
+#    add_custom_command(
+#        OUTPUT "${AIFC}"
+#        COMMAND "${VADPCM_ENC}" -c "${AIFF}" "${AIFC}"
+#        DEPENDS "${VADPCM_ENC}" "${AIFF}"
+#        COMMENT "Encoding ${AIFF}"
+#        VERBATIM
+#    )
+#endforeach()
+
+#$(BUILD_DIR)/%.table: %.aiff
+#	$(AIFF_EXTRACT_CODEBOOK) $< >$@
+
+#$(BUILD_DIR)/%.aifc: $(BUILD_DIR)/%.table %.aiff
+#	$(VADPCM_ENC) -c $^ $@
+
 add_custom_command(
     OUTPUT "${BUILD_TMP_DIR}/sound/sound_data.ctl"
     COMMAND "${PYTHON_EXECUTABLE}"
@@ -447,6 +495,7 @@ add_custom_command(
         ${VERSION_CFLAGS}
         ${BITWIDTH_ENDIAN_ARGS}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    DEPENDS ${SOUND_BANK_FILES} ${SOUND_SAMPLE_AIFCS}
     COMMENT "Preprocessing sound_data.ctl"
     VERBATIM
 )
@@ -457,7 +506,7 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     string(REGEX REPLACE "[.]s$" ".m64" S_M64_FILE "${S_FILE}")
     string(REGEX REPLACE "[.]s$" ".o" S_O_FILE "${S_FILE}")
     string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" S_M64_FILE "${S_M64_FILE}")
-    set(SOUND_SEQUENCE_FILES "${SOUND_SEQUENCE_FILES};${S_M64_FILE}")
+    list(APPEND SOUND_SEQUENCE_FILES "${S_M64_FILE}")
     add_custom_command(
         OUTPUT "${S_O_FILE}"
         COMMAND "${CMAKE_ASM_COMPILER}" ${CMAKE_ASFLAGS} "-o" "${S_O_FILE}" "${S_FILE}"
@@ -474,7 +523,6 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     )
 endforeach()
 message(STATUS ${SOUND_SEQUENCE_FILES})
-
 
 if(${EXTERNAL_DATA} EQUAL 1)
 
@@ -496,7 +544,7 @@ else()
                 ${SOUND_SEQUENCE_FILES}
                 ${VERSION_CFLAGS}
                 ${BITWIDTH_ENDIAN_ARGS}
-            MAIN_DEPENDENCY ${SOUND_SEQUENCE_FILES}
+            DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py" ${SOUND_SEQUENCE_FILES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             COMMENT "Preprocessing sound_data.ctl"
             VERBATIM
@@ -574,6 +622,9 @@ if(${BUILD_TEXTURES})
     list(REMOVE_ITEM TEXTURE_PNGS ${SKYBOX_PNGS}
         "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png")
 
+    string(REGEX REPLACE "[.]png" ".inc.c" TEXTURE_INC_CS "${TEXTURE_PNGS}")
+    string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" TEXTURE_INC_CS "${TEXTURE_INC_CS}")
+
     foreach(TEXTURE_PNG ${TEXTURE_PNGS})
         # Get the useful parts of the texture name/path.
         string(REGEX REPLACE "[.]png$" "" TEXTURE_BASE_PATH_FULL "${TEXTURE_PNG}")
@@ -590,9 +641,6 @@ if(${BUILD_TEXTURES})
             #$(BUILD_DIR)/%: %.png
             #	$(ZEROTERM) "$(patsubst %.png,%,$^)" > $@
         else()
-            #tools/n64graphics -i build_old/us_pc/actors/peach/peach_eye_closed.rgba16 -g actors/peach/peach_eye_closed.rgba16.png -f rgba16
-            #hexdump -v -e '1/1 "0x%X,"' build_old/us_pc/actors/peach/peach_eye_closed.rgba16 > build_old/us_pc/actors/peach/peach_eye_closed.rgba16.inc.c
-            #echo >> build_old/us_pc/actors/peach/peach_eye_closed.rgba16.inc.c
        
             # Convert the PNG into correct format.
             add_custom_command(
@@ -602,23 +650,22 @@ if(${BUILD_TEXTURES})
                 COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.png"
                 VERBATIM
             )
-            add_custom_target("${TEXTURE_TARGET_BASE}" ALL DEPENDS "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}")
             
             # Convert the converted PNG into a hex dump in C.
             add_custom_command(
                 OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
                 COMMAND "hexdump" "-v" "-e" "1/1 \"0x%X,\"" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" > "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
                 MAIN_DEPENDENCY "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
-                COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.inc.c"
+                COMMENT "Translating ${TEXTURE_BASE_PATH}"
                 VERBATIM
             )
-            add_custom_target("${TEXTURE_TARGET_BASE}_inc_c" ALL DEPENDS "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c")
-            add_dependencies("${TEXTURE_TARGET_BASE}_inc_c" "${TEXTURE_TARGET_BASE}")
-
-            # Add the converted texture to target deps.
-            add_dependencies("${TARGET}" "${TEXTURE_TARGET_BASE}_inc_c")
         endif()
     endforeach()
+
+    add_custom_target("texture_inc_cs" ALL DEPENDS "${TEXTURE_INC_CS}")
+    
+    # Add the converted texture to target deps.
+    add_dependencies("${TARGET}" "texture_inc_cs")
 endif()
 
 # Ending cake textures are generated in a special way
@@ -657,7 +704,7 @@ foreach(DATA_VERSION us)
 
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
-        MAIN_DEPENDENCY  "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h" "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/dialogs.h"
+        DEPENDS  "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h" "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/dialogs.h"
 	    COMMAND cpp -P ${VERSION_CFLAGS} "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c" -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" && "${TEXTCONV_COMMAND}" "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
         COMMENT "Preprocessing define_text.inc.c"
         VERBATIM)
