@@ -194,7 +194,7 @@ macro(hexdump_binary_assets bin_file c_file array_name array_sz)
             "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${bin_file}" >> 
                 "${c_file}" &&
             "echo" "};" >> "${c_file}"
-        MAIN_DEPENDENCY "${bin_file}"
+        DEPENDS "${bin_file}"
         COMMENT "Generating ${c_file} from ${bin_file}"
         VERBATIM
     )
@@ -473,14 +473,14 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     add_custom_command(
         OUTPUT "${S_O_FILE}"
         COMMAND "${CMAKE_ASM_COMPILER}" ${CMAKE_ASFLAGS} "-o" "${S_O_FILE}" "${S_FILE}"
-        MAIN_DEPENDENCY "${S_FILE}"
+        DEPENDS "${S_FILE}"
         COMMENT "Assembling ${S_FILE}"
         VERBATIM
     )
     add_custom_command(
         OUTPUT "${S_M64_FILE}"
         COMMAND "${CMAKE_OBJCOPY}" "-j" ".rodata" "${S_O_FILE}" "-O" "binary" "${S_M64_FILE}"
-        MAIN_DEPENDENCY "${S_O_FILE}"
+        DEPENDS "${S_O_FILE}"
         COMMENT "Translating ${S_O_FILE}"
         VERBATIM
     )
@@ -513,75 +513,31 @@ endforeach()
         )
     endif()
 
-    #hexdump_binary_assets(
-    #    "${SOUND_DATA_CTL_PATH}"
-    #    "${SOUND_DATA_CTL_PATH}.c"
-    #    "gSoundDataADSR" ""
-    #)
-    add_custom_command(
-        OUTPUT "${c_file}"
-        COMMAND 
-            "echo" "unsigned char ${array_name}[${array_sz}] = {" > "${c_file}" &&
-            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${bin_file}" >> 
-                "${c_file}" &&
-            "echo" "};" >> "${c_file}"
-        DEPENDS "${bin_file}"
-        COMMENT "Generating ${c_file} from ${bin_file}"
-        VERBATIM
+    hexdump_binary_assets(
+        "${SOUND_DATA_CTL_PATH}"
+        "${SOUND_DATA_CTL_PATH}.c"
+        "gSoundDataADSR" ""
     )
     list(APPEND DATA_C_FILES "${SOUND_DATA_CTL_PATH}.c")
 
-    #hexdump_binary_assets(
-    #    "${SOUND_DATA_TBL_PATH}"
-    #    "${SOUND_DATA_TBL_PATH}.c"
-    #    "gSoundDataRaw" ""
-    #)
-    add_custom_command(
-        OUTPUT "${SOUND_DATA_TBL_PATH}.c"
-        COMMAND 
-            "echo" "unsigned char gSoundDataRaw[] = {" > "${SOUND_DATA_TBL_PATH}.c" &&
-            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${SOUND_DATA_TBL_PATH}" >> 
-                "${SOUND_DATA_TBL_PATH}.c" &&
-            "echo" "};" >> "${SOUND_DATA_TBL_PATH}.c"
-        MAIN_DEPENDENCY "${SOUND_DATA_TBL_PATH}"
-        COMMENT "Generating ${SOUND_DATA_TBL_PATH}.c from ${SOUND_DATA_TBL_PATH}"
-        VERBATIM
+    hexdump_binary_assets(
+        "${SOUND_DATA_TBL_PATH}"
+        "${SOUND_DATA_TBL_PATH}.c"
+        "gSoundDataRaw" ""
     )
     list(APPEND DATA_C_FILES "${SOUND_DATA_TBL_PATH}.c")
 
-    #hexdump_binary_assets(
-    #    "${SEQUENCES_BIN_PATH}"
-    #    "${SEQUENCES_BIN_PATH}.c"
-    #    "gMusicData" ""
-    #)
-    add_custom_command(
-        OUTPUT "${SEQUENCES_BIN_PATH}.c"
-        COMMAND 
-            "echo" "unsigned char gMusicData}[] = {" > "${SEQUENCES_BIN_PATH}.c" &&
-            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${SEQUENCES_BIN_PATH}" >> 
-                "${SEQUENCES_BIN_PATH}.c" &&
-            "echo" "};" >> "${SEQUENCES_BIN_PATH}.c"
-        MAIN_DEPENDENCY "${SEQUENCES_BIN_PATH}"
-        COMMENT "Generating ${SEQUENCES_BIN_PATH}.c from ${SEQUENCES_BIN_PATH}"
-        VERBATIM
+    hexdump_binary_assets(
+        "${SEQUENCES_BIN_PATH}"
+        "${SEQUENCES_BIN_PATH}.c"
+        "gMusicData" ""
     )
     list(APPEND DATA_C_FILES "${SEQUENCES_BIN_PATH}.c")
 
-    #hexdump_binary_assets(
-    #    "${BANK_SETS_PATH}"
-    #    "${BANK_SETS_PATH}.c"
-    #    "gBankSetsData" "0x100"
-    #)
-    add_custom_command(
-        OUTPUT "${BANK_SETS_PATH}.c"
-        COMMAND 
-            "echo" "unsigned char gBankSetsData[0x100] = {" > "${BANK_SETS_PATH}.c" &&
-            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${BANK_SETS_PATH}" >> 
-                "${BANK_SETS_PATH}.c" &&
-            "echo" "};" >> "${BANK_SETS_PATH}.c"
-        MAIN_DEPENDENCY "${BANK_SETS_PATH}"
-        COMMENT "Generating ${BANK_SETS_PATH}.c from ${BANK_SETS_PATH}"
-        VERBATIM
+    hexdump_binary_assets(
+        "${BANK_SETS_PATH}"
+        "${BANK_SETS_PATH}.c"
+        "gBankSetsData" "0x100"
     )
     list(APPEND DATA_C_FILES "${BANK_SETS_PATH}.c")
 
@@ -702,7 +658,7 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
         add_custom_command(
             OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
             COMMAND "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" > "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
-            MAIN_DEPENDENCY "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
+            DEPENDS "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
             COMMENT "Translating ${TEXTURE_BASE_PATH}"
             VERBATIM
         )
@@ -801,8 +757,6 @@ endforeach()
 add_custom_target("localize_text" ALL DEPENDS ${TEXT_DATA_INC_C_FILES} ${LOCALIZE_HEADERS_OUT})
 
 # -= Executable Target =-
-
-message(STATUS "data c : ${DATA_C_FILES}")
 
 foreach(FLAG ${VERSION_CFLAGS} ${BACKEND_CFLAGS})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
