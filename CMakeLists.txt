@@ -70,6 +70,8 @@ set(CONTROLLER_API SDL2)
 set(BASEDIR res)
 set(BASEPACK base.zip)
 
+set(NOEXTRACT False)
+
 if(NOT DEFINED BUILD_TEXTURES)
     set(BUILD_TEXTURES True)
 endif()
@@ -165,7 +167,7 @@ set(AIFF_EXTRACT_CODEBOOK "${CMAKE_CURRENT_SOURCE_DIR}/tools/aiff_extract_codebo
 set(VADPCM_ENC_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/vadpcm_enc")
 set(HEXDUMP_COMMAND "hexdump")
 set(HEXDUMP_ARGS "-v" "-e" "1/1 \"0x%X,\"")
-set(ZEROTERM_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py")
+set(ZEROTERM_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py")
 set(MARIO_ANIMS_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/mario_anims_converter.py")
 set(DEMO_DATA_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/demo_data_converter.py")
 
@@ -422,8 +424,7 @@ endforeach()
 find_package(PythonInterp 3)
 
 # Make sure assets exist
-set(NOEXTRACT 0)
-if(NOEXTRACT EQUAL 0)
+if(NOT ${NOEXTRACT})
     execute_process(
         COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/extract_assets.py" "${VERSION}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -474,9 +475,9 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     )
 endforeach()
 
-if(${EXTERNAL_DATA})
+#if(${EXTERNAL_DATA})
 
-else()
+#else()
 
     if(${VERSION} MATCHES "sh")
         # $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/jp/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
@@ -531,7 +532,7 @@ else()
         "gBankSetsData" "0x100"
     )
 
-endif()
+#endif()
 
 file(GLOB MARIO_ANIM_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/anims/*.inc.c")
 add_custom_command(
@@ -731,7 +732,7 @@ endif()
 target_include_directories("${TARGET}" PUBLIC ${INCLUDE_DIRS})
 
 add_dependencies("${TARGET}" "texture_inc_cs")
-add_dependencies("${TARGET}" "level_headers")
+add_dependencies("${TARGET}" "level_headers.h")
 add_dependencies("${TARGET}" "text_data_inc_cs")
 
 # Add localized text headers.
