@@ -176,8 +176,8 @@ set(AIFF_EXTRACT_CODEBOOK_COMMAND "${BUILD_TMP_DIR}/tools/aiff_extract_codebook"
 set(AIFF_EXTRACT_CODEBOOK_TARGET "aiff_extract_codebook")
 set(VADPCM_ENC_COMMAND "${BUILD_TMP_DIR}/tools/vadpcm_enc")
 set(VADPCM_ENC_TARGET "vadpcm_enc")
-set(HEXDUMP_COMMAND "hexdump")
-set(HEXDUMP_ARGS "-v" "-e" "1/1 \"0x%X,\"")
+set(MKHEADER_COMMAND "${BUILD_TMP_DIR}/tools/mkheader")
+set(MKHEADER_TARGET "mkheader")
 set(ZEROTERM_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py")
 set(MARIO_ANIMS_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/mario_anims_converter.py")
 set(DEMO_DATA_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/demo_data_converter.py")
@@ -190,14 +190,12 @@ macro(hexdump_binary_assets bin_file c_file array_name array_sz)
     add_custom_command(
         OUTPUT "${c_file}"
         COMMAND 
-            "echo" "unsigned char ${array_name}[${array_sz}] = {" > "${c_file}" &&
-            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${bin_file}" >> 
-                "${c_file}" &&
-            "echo" "};" >> "${c_file}"
-        DEPENDS "${bin_file}"
+            "${MKHEADER_COMMAND}" "${bin_file}" "${c_file}" "${array_name}" "${array_sz}"
+        DEPENDS "${bin_file}" "${MKHEADER_TARGET}"
         COMMENT "Generating ${c_file} from ${bin_file}"
         VERBATIM
     )
+    list(APPEND DATA_C_FILES "${c_file}")
 endmacro()
 
 # -= Endian and Bitwidth Tests =-
@@ -518,28 +516,28 @@ endforeach()
         "${SOUND_DATA_CTL_PATH}.c"
         "gSoundDataADSR" ""
     )
-    list(APPEND DATA_C_FILES "${SOUND_DATA_CTL_PATH}.c")
+    #list(APPEND DATA_C_FILES "${SOUND_DATA_CTL_PATH}.c")
 
     hexdump_binary_assets(
         "${SOUND_DATA_TBL_PATH}"
         "${SOUND_DATA_TBL_PATH}.c"
         "gSoundDataRaw" ""
     )
-    list(APPEND DATA_C_FILES "${SOUND_DATA_TBL_PATH}.c")
+    #list(APPEND DATA_C_FILES "${SOUND_DATA_TBL_PATH}.c")
 
     hexdump_binary_assets(
         "${SEQUENCES_BIN_PATH}"
         "${SEQUENCES_BIN_PATH}.c"
         "gMusicData" ""
     )
-    list(APPEND DATA_C_FILES "${SEQUENCES_BIN_PATH}.c")
+    #list(APPEND DATA_C_FILES "${SEQUENCES_BIN_PATH}.c")
 
     hexdump_binary_assets(
         "${BANK_SETS_PATH}"
         "${BANK_SETS_PATH}.c"
         "gBankSetsData" "0x100"
     )
-    list(APPEND DATA_C_FILES "${BANK_SETS_PATH}.c")
+    #list(APPEND DATA_C_FILES "${BANK_SETS_PATH}.c")
 
 #endif()
 
@@ -657,8 +655,8 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
         # Convert the converted PNG into a hex dump in C.
         add_custom_command(
             OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
-            COMMAND "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" > "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
-            DEPENDS "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
+            COMMAND "${MKHEADER_COMMAND}" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
+            DEPENDS "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" "${MKHEADER_TARGET}"
             COMMENT "Translating ${TEXTURE_BASE_PATH}"
             VERBATIM
         )

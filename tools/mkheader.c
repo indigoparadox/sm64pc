@@ -4,57 +4,68 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define BUFFER_INITIAL_SZ 3
+#define BUFFER_SZ 3
 
 int main(int argc, char* argv[]) {
-   FILE* header_file = NULL;
-   char* header_contents = NULL,
-      * header_contents_new = NULL;
-   size_t
-      read_sz = 0,
-      total_sz = 0,
-      copied_sz = 0,
-      header_contents_sz = 0,
-      buffer_sz = BUFFER_INITIAL_SZ;
-   char buffer[BUFFER_INITIAL_SZ];
+   FILE* header_file = NULL,
+      * input_file = NULL;
+   char* header_filename = NULL,
+      * input_filename = NULL,
+      * array_name = NULL,
+      * array_sz_txt = NULL;
+   size_t read_sz = 0;
+   unsigned char buffer[BUFFER_SZ];
+   int i = 0;
 
-   if( 4 != argc ) {
-      printf( "%s [filename] [array_name] [array_sz]", argv[0] );
+   if( 3 > argc ) {
+      printf( "%s [input_filename] [header_filename] {array_name} {array_sz}", argv[0] );
       return 1;
    }
 
-   header_contents_sz = BUFFER_INITIAL_SZ;
-   header_contents = calloc( BUFFER_INITIAL_SZ + 1, 1 );
-
-   while( 0 < (read_sz = read( 0, buffer, buffer_sz )) ) {
-      if( header_contents_sz < total_sz + read_sz ) {
-         header_contents_new = realloc( 
-            header_contents,
-            total_sz + read_sz + 1 );
-         if( NULL == header_contents_new ) {
-            fprintf( stderr, "reallocation failure\n" );
-            free( header_contents );
-            return 2;
-         }
-         header_contents = header_contents_new;
-         header_contents_sz = total_sz + read_sz;
+   for( i = 1 ; argc > i ; i++ ) {
+      if( NULL == input_filename ) {
+         input_filename = argv[i];
+      } else if( NULL == header_filename ) {
+         header_filename = argv[i];
+      } else if( NULL == array_name ) {
+         array_name = argv[i];
+      } else if( NULL == array_sz_txt ) {
+         array_sz_txt = argv[i];
       }
-
-      strncpy(
-         &(header_contents[total_sz]),
-         buffer,
-         BUFFER_INITIAL_SZ );
-
-      total_sz += read_sz;
    }
-   header_contents[total_sz] = '\0';
 
-   header_file = fopen( argv[1], "w" );
+   /* If no size specified, hard-code it to empty. */
+   if( NULL == array_sz_txt ) {
+      array_sz_txt = "";
+   }
+
+   input_file = fopen( input_filename, "rb" );
+   header_file = fopen( header_filename, "w" );
+
+   if( NULL == input_file ) {
+      fprintf( stderr, "unable to open %s; aborting\n", input_filename );
+   }
+
    if( NULL == header_file ) {
-      fprintf( stderr, "unable to open %s; aborting\n", argv[1] );
+      fprintf( stderr, "unable to open %s; aborting\n", header_filename );
    }
-   fprintf( header_file, "unsigned char %s[%s] = {\n%s\n};",
-      argv[2], argv[3], header_contents );
+   
+   if( NULL != array_name ) {
+      fprintf( header_file, "unsigned char %s[%s] = {\n",
+         array_name, array_sz_txt );
+   }
+
+   /* Read the input file, converting it into hex. */
+   while( 0 < (read_sz = fread( buffer, 1, BUFFER_SZ, input_file )) ) {
+      for( i = 0 ; read_sz > i ; i++ ) {
+         fprintf( header_file, "0x%X,", buffer[i] );
+      }
+   }
+
+   if( NULL != array_name ) {
+      fprintf( header_file, "};\n" );
+   }
+   
    fclose( header_file );
 
    return 0;
