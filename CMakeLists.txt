@@ -2,27 +2,25 @@ cmake_minimum_required(VERSION 3.0.0)
 project(sm64pc VERSION 0.1.0)
 enable_language(C ASM)
 
-# Be quiet!
-#function(message)
-#  list(GET ARGV 0 MessageType)
-#  if(MessageType STREQUAL FATAL_ERROR OR
-#     MessageType STREQUAL SEND_ERROR OR
-#     MessageType STREQUAL WARNING OR
-#     MessageType STREQUAL AUTHOR_WARNING)
-#    list(REMOVE_AT ARGV 0)
-#    _message(${MessageType} "${ARGV}")
-#  endif()
-#endfunction()
+set(QUIET_CMAKE True)
 
-set(CMAKE_VERBOSE_MAKEFILE True)
-
-# This is NOT YET FUNCTIONAL!
-
-#include(CTest)
-#enable_testing()
+if(${QUIET_CMAKE})
+    function(message)
+        list(GET ARGV 0 MessageType)
+        if(MessageType STREQUAL FATAL_ERROR OR
+            MessageType STREQUAL SEND_ERROR OR
+            MessageType STREQUAL WARNING OR
+            MessageType STREQUAL AUTHOR_WARNING)
+            list(REMOVE_AT ARGV 0)
+            _message(${MessageType} "${ARGV}")
+        endif()
+    endfunction()
+else()
+    set(CMAKE_VERBOSE_MAKEFILE True)
+endif()
 
 # Build debug version (default)
-set(DEBUG 1)
+#set(DEBUG 1)
 # Version of the game to build
 set(VERSION "us")
 # Graphics microcode used
@@ -43,22 +41,22 @@ set(USE_PYTHON True)
 #TARGET_ARCH ?= native
 #TARGET_BITS ?= 0
 # Disable better camera by default
-set(BETTERCAMERA 0)
+set(BETTERCAMERA False)
 # Disable no drawing distance by default
-set(NODRAWINGDISTANCE 0)
+set(NODRAWINGDISTANCE False)
 # Disable texture fixes by default (helps with them purists)
-set(TEXTURE_FIX 0)
+set(TEXTURE_FIX False)
 # Enable extended options menu by default
 set(EXT_OPTIONS_MENU 1)
 # Disable text-based save-files by default
-set(TEXTSAVES 0)
+set(TEXTSAVES False)
 # Load resources from external files
-set(EXTERNAL_DATA 0)
+set(EXTERNAL_DATA False)
 # Enable Discord Rich Presence
-set(DISCORDRPC 0)
+set(DISCORDRPC False)
 # Various workarounds for weird toolchains
-set(NO_BZERO_BCOPY 0)
-set(NO_LDIV 0)
+#set(NO_BZERO_BCOPY 0)
+#set(NO_LDIV 0)
 # Backend selection
 # Renderers: GL, GL_LEGACY, D3D11, D3D12
 set(RENDER_API GL)
@@ -71,7 +69,6 @@ set(CONTROLLER_API SDL2)
 # Misc settings for EXTERNAL_DATA
 set(BASEDIR res)
 set(BASEPACK base.zip)
-# Automatic settings for PC port(s)
 
 if(NOT DEFINED BUILD_TEXTURES)
     set(BUILD_TEXTURES True)
@@ -81,6 +78,7 @@ set(BUILD_TMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
 message(STATUS "Using ${BUILD_TMP_DIR} for intermediate build files.")
 
 set(BUILD_TMP_DIR_CHILDREN
+    "${BUILD_TMP_DIR}/assets"
     "${BUILD_TMP_DIR}/sound"
     "${BUILD_TMP_DIR}/sound/samples"
     "${BUILD_TMP_DIR}/sound/sequences"
@@ -121,9 +119,9 @@ if(${NON_MATCHING})
     list(APPEND VERSION_CFLAGS "-DNON_MATCHING")
 endif()
 
-if(NOT TARGET_BITS EQUAL 0)
-  set(BITS "-m${TARGET_BITS}")
-endif()
+#if(NOT ${TARGET_BITS} EQUAL 0)
+#  set(BITS "-m${TARGET_BITS}")
+#endif()
 
 # TODO: Figure out how to make this smarter.
 set(CMAKE_ASM_COMPILER "as")
@@ -154,6 +152,8 @@ set(SOUND_DATA_CTL_PATH "${BUILD_TMP_DIR}/sound/sound_data.ctl")
 set(SOUND_DATA_TBL_PATH "${BUILD_TMP_DIR}/sound/sound_data.tbl")
 set(SEQUENCES_BIN_PATH "${BUILD_TMP_DIR}/sound/sequences.bin")
 set(BANK_SETS_PATH "${BUILD_TMP_DIR}/sound/bank_sets")
+set(MARIO_ANIM_DATA_C_PATH "${BUILD_TMP_DIR}/assets/mario_anim_data.c")
+set(DEMO_DATA_C_PATH "${BUILD_TMP_DIR}/assets/demo_data.c")
 
 #set(ENDIAN_BITWIDTH "${BUILD_TMP_DIR}/endian-and-bitwidth")
 
@@ -166,6 +166,8 @@ set(VADPCM_ENC_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/vadpcm_enc")
 set(HEXDUMP_COMMAND "hexdump")
 set(HEXDUMP_ARGS "-v" "-e" "1/1 \"0x%X,\"")
 set(ZEROTERM_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py")
+set(MARIO_ANIMS_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/mario_anims_converter.py")
+set(DEMO_DATA_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/demo_data_converter.py")
 
 set(DATA_C_FILES)
 set(DATA_O_FILES)
@@ -183,7 +185,6 @@ macro(hexdump_binary_assets bin_file c_file array_name array_sz)
         VERBATIM
     )
     list(APPEND DATA_C_FILES "${c_file}")
-    message(STATUS "DATA ${DATA_C_FILES}")
 endmacro()
 
 # -= Endian and Bitwidth Tests =-
@@ -202,10 +203,12 @@ set(BACKEND_CFLAGS
     "-DRAPI_${RENDER_API}=1"
     "-DWAPI_${WINDOW_API}=1"
     "-DAAPI_${AUDIO_API}=1")
+
 # Can have multiple controller APIs.
 foreach(CAPI ${CONTROLLER_API})
     list(APPEND BACKEND_CFLAGS "-DCAPI_${CAPI}=1")
 endforeach()
+
 set(BACKEND_LDFLAGS)
 set(SDL2_USED 0)
 
@@ -267,25 +270,27 @@ file(GLOB LEVEL_C_FILES
 set(C_FILES)
 foreach(SRC_DIR ${SRC_DIRS})
     file(GLOB DIR_C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.c")
-    set(C_FILES ${C_FILES} ${DIR_C_FILES})
+    list(APPEND C_FILES ${DIR_C_FILES})
 endforeach()
+list(REMOVE_DUPLICATES C_FILES)
+list(REMOVE_ITEM C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/game/main.c")
 
 set(GODDARD_C_FILES)
 foreach(SRC_DIR ${GODDARD_SRC_DIRS})
     file(GLOB DIR_C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.c")
-    set(GODDARD_C_FILES ${GODDARD_C_FILES} ${DIR_C_FILES})
+    list(APPEND GODDARD_C_FILES ${DIR_C_FILES})
 endforeach()
 
 set(CXX_FILES)
 foreach(SRC_DIR ${SRC_DIRS})
     file(GLOB DIR_CXX_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cpp")
-    set(CXX_FILES ${CXX_FILES} ${DIR_CXX_FILES})
+    list(APPEND CXX_FILES ${DIR_CXX_FILES})
 endforeach()
 
 set(ULTRA_C_FILES)
 foreach(SRC_DIR ${ULTRA_SRC_DIRS})
     file(GLOB DIR_C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.c")
-    set(ULTRA_C_FILES ${ULTRA_C_FILES} ${DIR_C_FILES})
+    list(APPEND ULTRA_C_FILES ${DIR_C_FILES})
 endforeach()
 
 #set(AsmSources)
@@ -295,8 +300,6 @@ endforeach()
 #endforeach()
 
 #S_FILES := $(foreach dir,$(ASM_DIRS),$(wildcard $(dir)/*.s))
-#ULTRA_C_FILES := $(foreach dir,$(ULTRA_SRC_DIRS),$(wildcard $(dir)/*.c))
-#GODDARD_C_FILES := $(foreach dir,$(GODDARD_SRC_DIRS),$(wildcard $(dir)/*.c))
 
 list(REMOVE_ITEM ULTRA_C_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/sqrtf.c
@@ -354,8 +357,6 @@ list(REMOVE_ITEM ULTRA_C_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/__osViGetCurrentContext.c
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/__osDevMgrMain)
 
-list(REMOVE_ITEM C_FILES src/game/main.c)
-
 # -= Data File Lists =-
 
 file(GLOB SOUND_BANK_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/*.json")
@@ -410,6 +411,7 @@ endforeach()
 
 # -= Build Directory Creation =-
 
+# TODO: Make these into targets.
 foreach(CHILD in ${BUILD_TMP_DIR_CHILDREN})
     message(STATUS "Creating subdirectory ${CHILD}...")
     file(MAKE_DIRECTORY "${CHILD}")
@@ -425,11 +427,7 @@ if(NOEXTRACT EQUAL 0)
     execute_process(
         COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/extract_assets.py" "${VERSION}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-    #if(NOT EXTRACT_RESULT)
-    #    message(FATAL_ERROR "Failed to extract assets.")
-    #else()
     message(STATUS "Assets extracted.")
-    #endif()
 endif()
 
 # TODO
@@ -438,23 +436,6 @@ endif()
 #ifeq ($(DUMMY),FAIL)
 #  $(error Failed to build tools)
 #endif
-
-#foreach(AIFC ${SOUND_SAMPLE_AIFCS})
-#    string(REGEX REPLACE "[.]aifc$" ".aiff" AIFF "${AIFC}")
-#    add_custom_command(
-#        OUTPUT "${AIFC}"
-#        COMMAND "${VADPCM_ENC}" -c "${AIFF}" "${AIFC}"
-#        DEPENDS "${VADPCM_ENC}" "${AIFF}"
-#        COMMENT "Encoding ${AIFF}"
-#        VERBATIM
-#    )
-#endforeach()
-
-#$(BUILD_DIR)/%.table: %.aiff
-#	$(AIFF_EXTRACT_CODEBOOK) $< >$@
-
-#$(BUILD_DIR)/%.aifc: $(BUILD_DIR)/%.table %.aiff
-#	$(VADPCM_ENC) -c $^ $@
 
 add_custom_command(
     OUTPUT "${SOUND_DATA_CTL_PATH}"
@@ -471,8 +452,6 @@ add_custom_command(
     COMMENT "Preprocessing sound_data.ctl"
     VERBATIM
 )
-#add_custom_target("sound_data.ctl" ALL DEPENDS "${SOUND_DATA_CTL_PATH}")
-#add_dependencies("${TARGET}" "sound_data.ctl")
 
 foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     string(REGEX REPLACE "[.]s$" ".m64" S_M64_FILE "${S_FILE}")
@@ -494,9 +473,8 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
         VERBATIM
     )
 endforeach()
-message(STATUS ${SOUND_SEQUENCE_FILES})
 
-if(${EXTERNAL_DATA} EQUAL 1)
+if(${EXTERNAL_DATA})
 
 else()
 
@@ -555,41 +533,39 @@ else()
 
 endif()
 
+file(GLOB MARIO_ANIM_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/anims/*.inc.c")
+add_custom_command(
+    OUTPUT "${MARIO_ANIM_DATA_C_PATH}"
+    COMMAND "${PYTHON_EXECUTABLE}"
+        "${MARIO_ANIMS_CONVERTER_PY}" >
+        "${MARIO_ANIM_DATA_C_PATH}"
+    DEPENDS ${MARIO_ANIM_DATA_FILES} "${MARIO_ANIMS_CONVERTER_PY}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Converting animations"
+    VERBATIM
+)
+list(APPEND DATA_C_FILES "${MARIO_ANIM_DATA_C_PATH}")
+
 # $(BUILD_DIR)/levels/scripts.o: $(BUILD_DIR)/include/level_headers.h
 
-# $(BUILD_DIR)/include/level_headers.h: levels/level_headers.h.in
-# 	$(CPP) -I . levels/level_headers.h.in | $(PYTHON) tools/output_level_headers.py > $(BUILD_DIR)/include/level_headers.h
-
-# $(BUILD_DIR)/assets/mario_anim_data.c: $(wildcard assets/anims/*.inc.c)
-# 	$(PYTHON) tools/mario_anims_converter.py > $@
-
-# $(BUILD_DIR)/assets/demo_data.c: assets/demo_data.json $(wildcard assets/demos/*.bin)
-# 	$(PYTHON) tools/demo_data_converter.py assets/demo_data.json $(VERSION_CFLAGS) > $@
+file(GLOB MARIO_DEMO_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/demos/*.bin" )
+add_custom_command(
+    OUTPUT "${DEMO_DATA_C_PATH}"
+    COMMAND "${PYTHON_EXECUTABLE}"
+        "${DEMO_DATA_CONVERTER_PY}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/demo_data.json"
+        ${VERSION_CFLAGS} >
+        "${DEMO_DATA_C_PATH}"
+    DEPENDS ${MARIO_DEMO_DATA_FILES} "${CMAKE_CURRENT_SOURCE_DIR}/assets/demo_data.json" "${DEMO_DATA_CONVERTER_PY}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Converting demo data"
+    VERBATIM
+)
+list(APPEND DATA_C_FILES "${DEMO_DATA_C_PATH}")
 
 # -= Texture Generation =-
 
 file(GLOB SKYBOX_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/textures/skyboxes/*.png")
-
-# Build skybox textures.
-#foreach(SKYBOX ${SKYBOX_PNGS})
-#    get_filename_component(SKYBOX_BASENAME "${SKYBOX}" NAME_WE)
-#    set(SKYBOX_DEST "${BUILD_TMP_DIR}/bin/${SKYBOX_BASENAME}_skybox.o")
-#    if(EXTERNAL_DATA EQUAL 1)
-#        add_custom_command(
-#            OUTPUT "${SKYBOX_BASENAME}_skybox.o"
-#            COMMAND "${PYTHON_EXECUTABLE}" "${ZEROTERM_COMMAND}" "${SKYBOX}"
-#            COMMENT "Preprocessing ${SKYBOX}"
-#        )
-#    else()
-#        add_custom_command(
-#            OUTPUT "${SKYBOX_BASENAME}_skybox.o"
-#            COMMAND "${N64GRAPHICS_COMMAND}" "-i" "${SKYBOX_DEST}" "-g" "${SKYBOX}"
-#            COMMENT "Preprocessing ${SKYBOX}"
-#        )
-#        list(APPEND DATA_O_FILES "${SKYBOX_DEST}")
-#    endif()
-#endforeach()
-
 set(SKYBOX_C_FILES)
 foreach(SKYBOX_PNG_PATH ${SKYBOX_PNGS})
     get_filename_component(SKYBOX_BASENAME "${SKYBOX_PNG_PATH}" NAME_WE)
@@ -603,6 +579,8 @@ foreach(SKYBOX_PNG_PATH ${SKYBOX_PNGS})
         COMMENT "Preprocessing ${SKYBOX_PNG_PATH}"
         VERBATIM
     )
+
+    # These are each their own translation unit, and must be compiled.
     list(APPEND DATA_C_FILES "${SKYBOX_C_PATH}")
 endforeach()
 
@@ -639,8 +617,7 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     file(MAKE_DIRECTORY "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
     string(REGEX REPLACE "/" "_" TEXTURE_TARGET_BASE "${TEXTURE_BASE_PATH}")
     
-    
-    if(EXTERNAL_DATA EQUAL 1)
+    if(${EXTERNAL_DATA})
         #$(BUILD_DIR)/%: %.png
         #	$(ZEROTERM) "$(patsubst %.png,%,$^)" > $@
     else()
@@ -665,7 +642,7 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     endif()
 endforeach()
 
-# Add the converted texture to target deps.
+# These are includes, and will be pulled into other translation units.
 add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS} "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
 
 # -= Levels Header =-
@@ -676,7 +653,7 @@ add_custom_command(
     MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in"
     COMMENT "Preprocessing level_headers.h"
     VERBATIM)
-add_custom_target("level_headers" ALL DEPENDS "${BUILD_TMP_DIR}/include/level_headers.h")
+add_custom_target("level_headers.h" ALL DEPENDS "${BUILD_TMP_DIR}/include/level_headers.h")
 
 # -= Text/Course Data =-
 
@@ -688,10 +665,6 @@ foreach(DATA_VERSION us)
         MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h"
         COMMENT "Preprocessing define_courses.inc.c"
         VERBATIM)
-    #add_custom_target("define_courses.inc.c" ALL DEPENDS "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
-    #add_dependencies("${TARGET}" "define_courses.inc.c")
-    #list(APPEND DATA_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
-
     list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
 
     add_custom_command(
@@ -700,10 +673,6 @@ foreach(DATA_VERSION us)
 	    COMMAND cpp -P ${VERSION_CFLAGS} "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c" -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" && "${TEXTCONV_COMMAND}" "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
         COMMENT "Preprocessing define_text.inc.c"
         VERBATIM)
-    #add_custom_target("define_text.inc.c" ALL DEPENDS "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
-    #add_dependencies("${TARGET}" "define_text.inc.c")
-    #list(APPEND DATA_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
-
     list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
 endforeach()
 
@@ -729,10 +698,8 @@ endforeach()
 foreach(FLAG ${VERSION_CFLAGS} ${BACKEND_CFLAGS})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
 endforeach()
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${BACKEND_CFLAGS} ${VERSION_CFLAGS}")
-#separate_arguments(VERSION_CFLAGS)
 
-add_executable("${TARGET}" "${DATA_O_FILES};${C_FILES};${CXX_FILES};${LEVEL_C_FILES};${ULTRA_C_FILES};${DATA_C_FILES}")
+add_executable("${TARGET}" "${DATA_O_FILES};${C_FILES};${CXX_FILES};${LEVEL_C_FILES};${ULTRA_C_FILES};${GODDARD_C_FILES};${DATA_C_FILES}")
 
 set_source_files_properties(
     ${DATA_O_FILES}
@@ -740,6 +707,8 @@ set_source_files_properties(
     EXTERNAL_OBJECT True
     GENERATED True
 )
+
+# -= Other Dependencies =-
 
 if(${USE_PYTHON})
     set(Python_ADDITIONAL_VERSIONS 3.6)
@@ -765,16 +734,7 @@ add_dependencies("${TARGET}" "texture_inc_cs")
 add_dependencies("${TARGET}" "level_headers")
 add_dependencies("${TARGET}" "text_data_inc_cs")
 
-#GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c $(BUILD_DIR)/assets/demo_data.c \
-#  $(addprefix $(BUILD_DIR)/bin/,$(addsuffix _skybox.c,$(notdir $(basename $(wildcard textures/skyboxes/*.png)))))
-
-#TODO: ifeq ($(EXTERNAL_DATA),1)
-
 # Add localized text headers.
 foreach(HEADER ${LOCALIZE_HEADERS})
     add_dependencies("${TARGET}" ${HEADER})
 endforeach()
-#target_include_directories("${TARGET}" PUBLIC "${BUILD_TMP_DIR}/include")
-#foreach(INCLUDE_DIR in ${INCLUDE_DIRS})
-#    target_include_directories("${TARGET}" PUBLIC "${INCLUDE_DIR}")
-#endforeach()
