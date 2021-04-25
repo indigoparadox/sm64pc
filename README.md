@@ -16,6 +16,37 @@ Just make sure to run the compiled binary from the directory where sm64.py is lo
 
 Currently buggy as heck and, again, incomplete.
 
+## Compiling Under Windows
+
+The simplest way to do this is with mingw32-x86\_64 and cmake.
+
+Install the following packages:
+
+ * pacman -S mingw64/mingw-w64-x86_64-python
+ * pacman -S mingw64/mingw-w64-x86_64-SDL2
+ * pacman -S mingw64/mingw-w64-x86_64-glew
+ * pacman -S mingw64/mingw-w64-x86_64-mesa
+
+Then change to the project directory and:
+
+ * mkdir build
+ * cd build
+
+Initialize cmake and compile by doing:
+
+ * cmake .. -G "MinGW Makefiles"
+ * mingw32-make.exe
+
+The resulting binary should be placed in a directory with some DLLs from mingw in order to function:
+
+ * mkdir sm64
+ * cp ../sm64.py sm64
+ * cp /mingw64/bin/{SDL2.dll,libpython3.8.dll,libwinpthread-1.dll,glew32.dll,zlib1.dll} .
+ * cp -R /mingw64/lib/python3.8 .
+ * cp ../tools/sm64.bat .
+
+The result should be runnable by executing sm64.bat.
+
 ## New features
 
  * Options menu with various settings, including button remapping.
