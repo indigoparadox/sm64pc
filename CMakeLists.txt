@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.0.0)
 project(sm64pc VERSION 0.1.0)
 enable_language(C ASM)
 
-set(QUIET_CMAKE True)
+if(NOT DEFINED QUIET_CMAKE)
+    set(QUIET_CMAKE True)
+endif()
 
 if(${QUIET_CMAKE})
     function(message)
@@ -18,6 +20,8 @@ if(${QUIET_CMAKE})
 else()
     set(CMAKE_VERBOSE_MAKEFILE True)
 endif()
+
+add_subdirectory("tools")
 
 # Build debug version (default)
 #set(DEBUG 1)
@@ -156,20 +160,28 @@ set(SEQUENCES_BIN_PATH "${BUILD_TMP_DIR}/sound/sequences.bin")
 set(BANK_SETS_PATH "${BUILD_TMP_DIR}/sound/bank_sets")
 set(MARIO_ANIM_DATA_C_PATH "${BUILD_TMP_DIR}/assets/mario_anim_data.c")
 set(DEMO_DATA_C_PATH "${BUILD_TMP_DIR}/assets/demo_data.c")
+set(CHARMAP_TXT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt")
 
 #set(ENDIAN_BITWIDTH "${BUILD_TMP_DIR}/endian-and-bitwidth")
 
-set(TEXTCONV_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/textconv")
-set(N64GRAPHICS_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/n64graphics")
-set(SKYCONV_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/skyconv")
+set(CPP_COMMAND "cpp")
+set(TEXTCONV_COMMAND "${BUILD_TMP_DIR}/tools/textconv")
+set(TEXTCONV_TARGET "textconv")
+set(N64GRAPHICS_COMMAND "${BUILD_TMP_DIR}/tools/n64graphics")
+set(N64GRAPHICS_TARGET "n64graphics")
+set(SKYCONV_COMMAND "${BUILD_TMP_DIR}/tools/skyconv")
+set(SKYCONV_TARGET "skyconv")
 set(SKYCONV_ARGS "--store-names --write-tiles \"${SKYTILE_DIR}\"")
-set(AIFF_EXTRACT_CODEBOOK "${CMAKE_CURRENT_SOURCE_DIR}/tools/aiff_extract_codebook")
-set(VADPCM_ENC_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/vadpcm_enc")
+set(AIFF_EXTRACT_CODEBOOK_COMMAND "${BUILD_TMP_DIR}/tools/aiff_extract_codebook")
+set(AIFF_EXTRACT_CODEBOOK_TARGET "aiff_extract_codebook")
+set(VADPCM_ENC_COMMAND "${BUILD_TMP_DIR}/tools/vadpcm_enc")
+set(VADPCM_ENC_TARGET "vadpcm_enc")
 set(HEXDUMP_COMMAND "hexdump")
 set(HEXDUMP_ARGS "-v" "-e" "1/1 \"0x%X,\"")
 set(ZEROTERM_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py")
 set(MARIO_ANIMS_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/mario_anims_converter.py")
 set(DEMO_DATA_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/demo_data_converter.py")
+set(OUTPUT_LEVEL_HEADERS_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/output_level_headers.py")
 
 set(DATA_C_FILES)
 set(DATA_O_FILES)
@@ -395,8 +407,8 @@ foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
         
         add_custom_command(
             OUTPUT "${TABLE}"
-            COMMAND "${AIFF_EXTRACT_CODEBOOK}" "${AIFF}" > "${TABLE}"
-            DEPENDS "${AIFF_EXTRACT_CODEBOOK}" "${AIFF}"
+            COMMAND "${AIFF_EXTRACT_CODEBOOK_COMMAND}" "${AIFF}" > "${TABLE}"
+            DEPENDS "${AIFF_EXTRACT_CODEBOOK_TARGET}" "${AIFF}"
             COMMENT "Encoding ${AIFF}"
             VERBATIM
         )
@@ -404,7 +416,7 @@ foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
         add_custom_command(
             OUTPUT "${AIFC}"
             COMMAND "${VADPCM_ENC_COMMAND}" -c "${TABLE}" "${AIFF}" "${AIFC}"
-            DEPENDS "${VADPCM_ENC_COMMAND}" "${AIFF}" "${TABLE}"
+            DEPENDS "${VADPCM_ENC_TARGET}" "${AIFF}" "${TABLE}"
             COMMENT "Encoding ${AIFF}"
             VERBATIM
         )
@@ -576,7 +588,9 @@ foreach(SKYBOX_PNG_PATH ${SKYBOX_PNGS})
         COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}" "--type" "sky" "--split"
             "${SKYBOX_PNG_PATH}"
             "${BUILD_TMP_DIR}/bin"
-        MAIN_DEPENDENCY "${SKYBOX_PNG_PATH}"
+        DEPENDS
+            "${SKYBOX_PNG_PATH}"
+            "${SKYCONV_TARGET}"
         COMMENT "Preprocessing ${SKYBOX_PNG_PATH}"
         VERBATIM
     )
@@ -588,9 +602,14 @@ endforeach()
 # Ending cake textures are generated in a special way
 add_custom_command(
     OUTPUT "${BUILD_TMP_DIR}/levels/ending/cake.inc.c"
-    COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}" "--type" "cake" "--split" "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png" "${BUILD_TMP_DIR}/levels/ending"
-    MAIN_DEPENDENCY "${TEXTURE_PNG}"
-    COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.png"
+    COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}"
+        "--type" "cake" "--split"
+        "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png"
+        "${BUILD_TMP_DIR}/levels/ending"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png"
+        "${SKYCONV_TARGET}"
+    COMMENT "Preprocessing cake.png"
     VERBATIM
 )
 
@@ -626,8 +645,14 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
         # Convert the PNG into correct format.
         add_custom_command(
             OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
-            COMMAND "${N64GRAPHICS_COMMAND}" "-i" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" "-g" "${TEXTURE_PNG}" "-f" "${TEXTURE_FMT}"
-            MAIN_DEPENDENCY "${TEXTURE_PNG}"
+            COMMAND
+                "${N64GRAPHICS_COMMAND}"
+                    "-i" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
+                    "-g" "${TEXTURE_PNG}"
+                    "-f" "${TEXTURE_FMT}"
+            DEPENDS
+                "${TEXTURE_PNG}"
+                "${N64GRAPHICS_TARGET}"
             COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.png"
             VERBATIM
         )
@@ -650,10 +675,17 @@ add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS} "${BUILD_TMP_DI
 
 add_custom_command(
     OUTPUT "${BUILD_TMP_DIR}/include/level_headers.h"
-    COMMAND cpp -P -I "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in" | "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/output_level_headers.py" > "${BUILD_TMP_DIR}/include/level_headers.h"
-    MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in"
+    COMMAND 
+        "${CPP_COMMAND}" -P -I "${CMAKE_CURRENT_SOURCE_DIR}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in" |
+        "${PYTHON_EXECUTABLE}" "${OUTPUT_LEVEL_HEADERS_PY}" >
+        "${BUILD_TMP_DIR}/include/level_headers.h"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in"
+        "${OUTPUT_LEVEL_HEADERS_PY}"
     COMMENT "Preprocessing level_headers.h"
     VERBATIM)
+
 add_custom_target("level_headers.h" ALL DEPENDS "${BUILD_TMP_DIR}/include/level_headers.h")
 
 # -= Text/Course Data =-
@@ -662,37 +694,70 @@ set(TEXT_DATA_INC_C_FILES)
 foreach(DATA_VERSION us)
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
-        COMMAND cpp -P ${VERSION_CFLAGS} "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c" -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c" -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" && "${TEXTCONV_COMMAND}" "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
-        MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h"
+        COMMAND
+            "${CPP_COMMAND}" -P ${VERSION_CFLAGS}
+                "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c"
+                -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" &&
+            "${TEXTCONV_COMMAND}"
+                "${CHARMAP_TXT_PATH}"
+                "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
+                "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
+        DEPENDS
+            "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c"
+            "${TEXTCONV_TARGET}"
+            "${CHARMAP_TXT_PATH}"
         COMMENT "Preprocessing define_courses.inc.c"
         VERBATIM)
     list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
 
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
-        DEPENDS  "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h" "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/dialogs.h"
-	    COMMAND cpp -P ${VERSION_CFLAGS} "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c" -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" && "${TEXTCONV_COMMAND}" "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
+	    COMMAND
+            "${CPP_COMMAND}" -P ${VERSION_CFLAGS}
+                "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" 
+                -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" &&
+            "${TEXTCONV_COMMAND}"
+                "${CHARMAP_TXT_PATH}"
+                "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
+                "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
+        DEPENDS
+            "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c"
+            "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/dialogs.h"
+            "${CHARMAP_TXT_PATH}"
+            "${TEXTCONV_TARGET}"
         COMMENT "Preprocessing define_text.inc.c"
         VERBATIM)
     list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
 endforeach()
 
-add_custom_target("text_data_inc_cs" ALL DEPENDS ${TEXT_DATA_INC_C_FILES})
-
-# -= Localized Headers =-
-
 set(LOCALIZE_HEADERS 
-"text_strings.h"
-"text_menu_strings.h"
-"text_options_strings.h")
+    "text_strings.h"
+    "text_menu_strings.h"
+    "text_options_strings.h")
+set(LOCALIZE_HEADERS_OUT)
 
 foreach(HEADER ${LOCALIZE_HEADERS})
-    add_custom_target(
-        ${HEADER}
-        COMMAND "${TEXTCONV_COMMAND}" "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt" "${CMAKE_CURRENT_SOURCE_DIR}/include/${HEADER}.in" "${BUILD_TMP_DIR}/include/${HEADER}"
-        BYPRODUCTS "${BUILD_TMP_DIR}/include/${HEADER}"
-        RESULT_VARIABLE TEXTCONV_RESULT)
+    add_custom_command(
+        OUTPUT "${BUILD_TMP_DIR}/include/${HEADER}"
+        COMMAND
+            "${TEXTCONV_COMMAND}"
+                "${CHARMAP_TXT_PATH}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/${HEADER}.in"
+                "${BUILD_TMP_DIR}/include/${HEADER}"
+        DEPENDS
+            "${TEXTCONV_TARGET}"
+            "${CHARMAP_TXT_PATH}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/${HEADER}.in"
+        COMMENT "Preprocessing ${HEADER}"
+        VERBATIM)
+    list(APPEND LOCALIZE_HEADERS_OUT "${BUILD_TMP_DIR}/include/${HEADER}")
 endforeach()
+
+add_custom_target("localize_text" ALL DEPENDS ${TEXT_DATA_INC_C_FILES} ${LOCALIZE_HEADERS_OUT})
 
 # -= Executable Target =-
 
@@ -732,10 +797,5 @@ endif()
 target_include_directories("${TARGET}" PUBLIC ${INCLUDE_DIRS})
 
 add_dependencies("${TARGET}" "texture_inc_cs")
+add_dependencies("${TARGET}" "localize_text")
 add_dependencies("${TARGET}" "level_headers.h")
-add_dependencies("${TARGET}" "text_data_inc_cs")
-
-# Add localized text headers.
-foreach(HEADER ${LOCALIZE_HEADERS})
-    add_dependencies("${TARGET}" ${HEADER})
-endforeach()
