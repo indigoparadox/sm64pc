@@ -581,7 +581,6 @@
     PyModule_AddIntConstant(module, "OBJ_LIST_UNIMPORTANT", OBJ_LIST_UNIMPORTANT); \
     PyModule_AddIntConstant(module, "NUM_OBJ_LISTS", NUM_OBJ_LISTS);
 
-PyTypeObject PyObjectBehaviorType;
 struct _PyObjectBehaviorClass;
 
 BehaviorScript *

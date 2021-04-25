@@ -14,6 +14,8 @@
 
 #include "logging_python.h"
 
+extern PyTypeObject PyObjectBehaviorType;
+
 extern PyObject *gMarioModule;
 
 static PyObject *sLogger = NULL;

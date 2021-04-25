@@ -771,6 +771,8 @@ set_source_files_properties(
 
 # -= Other Dependencies =-
 
+include(FindPkgConfig)
+
 if(${USE_PYTHON})
     set(Python_ADDITIONAL_VERSIONS 3.6)
     find_package(PythonLibs 3.6 REQUIRED)
@@ -780,11 +782,15 @@ endif()
 
 if("${WINDOW_API}" MATCHES "SDL2")
     #set(SDL_USED 2)
-    find_package(OpenGL REQUIRED)
-    target_link_libraries("${TARGET}" OpenGL::GL)
+    #find_package(OpenGL REQUIRED)
+    #target_link_libraries("${TARGET}" OpenGL::GL)
     #target_include_directories("${TARGET}" OpenGL::GL)
+    pkg_check_modules(GLEW REQUIRED glew)
+    target_include_directories("${TARGET}" PUBLIC ${GLEW_INCLUDE_DIRS})
+    target_link_libraries("${TARGET}" ${GLEW_LIBRARIES} "opengl32")
 
-    find_package(SDL2 REQUIRED)
+    #find_package(SDL2 REQUIRED)
+    pkg_check_modules(SDL2 REQUIRED sdl2)
     target_include_directories("${TARGET}" PUBLIC ${SDL2_INCLUDE_DIRS})
     target_link_libraries("${TARGET}" ${SDL2_LIBRARIES})
 endif()
