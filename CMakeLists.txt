@@ -98,12 +98,10 @@ Set(INCLUDE_DIRS
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(VERSION_CFLAGS "")
-
-set(SOUND_BIN_DIR "${BUILD_TMP_DIR}/sound")
+set(VERSION_CFLAGS)
 
 if("${VERSION}" MATCHES "us")
-    set(VERSION_CFLAGS "${VERSION_CFLAGS} -DVERSION_US")
+    list(APPEND VERSION_CFLAGS "-DVERSION_US")
     #set(VERSION_AS_FLAGS "--defsym VERSION_US=1")
     set(GRUCODE_CFLAGS "-DF3D_OLD")
     set(GRUCODE_ASFLAGS "--defsym F3D_OLD=1")
@@ -111,16 +109,16 @@ if("${VERSION}" MATCHES "us")
 endif()
 
 if(${USE_PYTHON})
-    set(VERSION_CFLAGS "${VERSION_CFLAGS} -DUSE_PYTHON")
+    list(APPEND VERSION_CFLAGS "-DUSE_PYTHON")
 endif()
 
 if(WIN32 OR UNIX)
-    set(VERSION_CFLAGS "${VERSION_CFLAGS} -DAVOID_UB")
+    list(APPEND VERSION_CFLAGS "-DAVOID_UB")
     set(NON_MATCHING True)
 endif()
 
 if(${NON_MATCHING})
-    set(VERSION_CFLAGS "${VERSION_CFLAGS} -DNON_MATCHING")
+    list(APPEND VERSION_CFLAGS "-DNON_MATCHING")
 endif()
 
 if(NOT TARGET_BITS EQUAL 0)
@@ -152,6 +150,11 @@ endif()
 
 set(SKYTILE_DIR "${BUILD_TMP_DIR}/textures/skybox_tiles")
 
+set(SOUND_DATA_CTL_PATH "${BUILD_TMP_DIR}/sound/sound_data.ctl")
+set(SOUND_DATA_TBL_PATH "${BUILD_TMP_DIR}/sound/sound_data.tbl")
+set(SEQUENCES_BIN_PATH "${BUILD_TMP_DIR}/sound/sequences.bin")
+set(BANK_SETS_PATH "${BUILD_TMP_DIR}/sound/bank_sets")
+
 #set(ENDIAN_BITWIDTH "${BUILD_TMP_DIR}/endian-and-bitwidth")
 
 set(TEXTCONV_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/textconv")
@@ -160,6 +163,28 @@ set(SKYCONV_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/skyconv")
 set(SKYCONV_ARGS "--store-names --write-tiles \"${SKYTILE_DIR}\"")
 set(AIFF_EXTRACT_CODEBOOK "${CMAKE_CURRENT_SOURCE_DIR}/tools/aiff_extract_codebook")
 set(VADPCM_ENC_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/vadpcm_enc")
+set(HEXDUMP_COMMAND "hexdump")
+set(HEXDUMP_ARGS "-v" "-e" "1/1 \"0x%X,\"")
+set(ZEROTERM_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py")
+
+set(DATA_C_FILES)
+set(DATA_O_FILES)
+
+macro(hexdump_binary_assets bin_file c_file array_name array_sz)
+    add_custom_command(
+        OUTPUT "${c_file}"
+        COMMAND 
+            "echo" "unsigned char ${array_name}[${array_sz}] = {" > "${c_file}" &&
+            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${bin_file}" >> 
+                "${c_file}" &&
+            "echo" "};" >> "${c_file}"
+        MAIN_DEPENDENCY "${bin_file}"
+        COMMENT "Generating ${c_file} from ${bin_file}"
+        VERBATIM
+    )
+    list(APPEND DATA_C_FILES "${c_file}")
+    message(STATUS "DATA ${DATA_C_FILES}")
+endmacro()
 
 # -= Endian and Bitwidth Tests =-
 
@@ -171,45 +196,17 @@ execute_process(
 string(REGEX REPLACE ".*msgbegin[ ]*(.*)[ ]*msgend.*" "\\1" BITWIDTH_ENDIAN_ARGS "${BITWIDTH_ENDIAN_ARGS}")
 separate_arguments(BITWIDTH_ENDIAN_ARGS)
 
-message(STATUS "${BITWIDTH_ENDIAN_ARGS}")
-
-# add_custom_command(
-#     OUTPUT "${ENDIAN_BITWIDTH}.dummy1"
-#     COMMAND "${CMAKE_C_COMPILER}" "-c" ${CMAKE_C_FLAGS} "-I" "${CMAKE_CURRENT_SOURCE_DIR}/include" "-o" "${ENDIAN_BITWIDTH}.dummy2" "${CMAKE_CURRENT_SOURCE_DIR}/tools/determine-endian-bitwidth.c" 2> "${ENDIAN_BITWIDTH}.dummy1" || "true"
-#     MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/tools/determine-endian-bitwidth.c"
-#     COMMENT "Compiling endian and bitwidth test"
-#     VERBATIM
-# )
-# add_custom_target("endian_and_bitwidth_dummy1" ALL DEPENDS "${ENDIAN_BITWIDTH}.dummy1")
-
-# add_custom_command(
-#     OUTPUT "${ENDIAN_BITWIDTH}.dummy2"
-#     COMMAND "grep" "-o" "msgbegin --endian .* --bitwidth .* msgend" "${ENDIAN_BITWIDTH}.dummy1" > "${ENDIAN_BITWIDTH}.dummy2"
-#     MAIN_DEPENDENCY "${ENDIAN_BITWIDTH}.dummy1"
-#     COMMENT "Formatting result from endian and bitwidth test (part 1)"
-#     VERBATIM
-# )
-# add_custom_target("endian_and_bitwidth_dummy2" ALL DEPENDS "${ENDIAN_BITWIDTH}.dummy2")
-# add_dependencies("endian_and_bitwidth_dummy2" "endian_and_bitwidth_dummy1")
-
-# add_custom_command(
-#     OUTPUT "${ENDIAN_BITWIDTH}"
-#     COMMAND "head" "-n1" < "${ENDIAN_BITWIDTH}.dummy2" | "cut" -d " " "-f2-5" > "${ENDIAN_BITWIDTH}"
-#     MAIN_DEPENDENCY "${ENDIAN_BITWIDTH}.dummy2"
-#     COMMENT "Formatting result from endian and bitwidth test (part 2)"
-#     VERBATIM
-# )
-# add_custom_target("endian_and_bitwidth" ALL DEPENDS "${ENDIAN_BITWIDTH}")
-# add_dependencies("endian_and_bitwidth" "endian_and_bitwidth_dummy2")
-
 # -= Backend CFLAGS =-
 
-set(BACKEND_CFLAGS "-DRAPI_${RENDER_API}=1 -DWAPI_${WINDOW_API}=1 -DAAPI_${AUDIO_API}=1")
+set(BACKEND_CFLAGS
+    "-DRAPI_${RENDER_API}=1"
+    "-DWAPI_${WINDOW_API}=1"
+    "-DAAPI_${AUDIO_API}=1")
 # Can have multiple controller APIs.
 foreach(CAPI ${CONTROLLER_API})
-    set(BACKEND_CFLAGS "${BACKEND_CFLAGS} -DCAPI_${CAPI}=1")
+    list(APPEND BACKEND_CFLAGS "-DCAPI_${CAPI}=1")
 endforeach()
-set(BACKEND_LDFLAGS "")
+set(BACKEND_LDFLAGS)
 set(SDL2_USED 0)
 
 # For now, it's either SDL+GL or DXGI+DirectX, so choose based on WAPI.
@@ -376,7 +373,6 @@ else()
 endif()
 
 file(GLOB SOUND_SAMPLE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/sound/samples/*")
-#set(SOUND_SAMPLE_AIFFS)
 set(SOUND_SAMPLE_AIFCS)
 set(SOUND_SAMPLE_TABLES)
 foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
@@ -385,56 +381,32 @@ foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
     list(APPEND BUILD_TMP_DIR_CHILDREN ${SAMPLE_BUILD_DIR})
 
     file(GLOB DIR_AIFFS "${SAMPLE_DIR}/*.aiff")
-    #string(REGEX REPLACE "[.]aiff" ".aifc" DIR_AIFCS "${DIR_AIFFS}")
-    #string(REGEX REPLACE "[.]aiff" ".table" DIR_TABLES "${DIR_AIFFS}")
-    #set(SOUND_SAMPLE_AIFFS ${SOUND_SAMPLE_AIFFS} ${DIR_AIFFS})
 
     foreach(AIFF ${DIR_AIFFS})
-        string(REGEX REPLACE "[.]aiff$" ".aifc$" AIFC "${AIFF}")
+        string(REGEX REPLACE "[.]aiff$" ".aifc" AIFC "${AIFF}")
+        string(REGEX REPLACE "[.]aiff$" ".table" TABLE "${AIFF}")
         string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" AIFC "${AIFC}")
+        string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" TABLE "${TABLE}")
 
         list(APPEND SOUND_SAMPLE_AIFCS ${AIFC})
         
         add_custom_command(
+            OUTPUT "${TABLE}"
+            COMMAND "${AIFF_EXTRACT_CODEBOOK}" "${AIFF}" > "${TABLE}"
+            DEPENDS "${AIFF_EXTRACT_CODEBOOK}" "${AIFF}"
+            COMMENT "Encoding ${AIFF}"
+            VERBATIM
+        )
+    
+        add_custom_command(
             OUTPUT "${AIFC}"
-            COMMAND "${VADPCM_ENC}" -c "${AIFF}" "${AIFC}"
-            DEPENDS "${VADPCM_ENC}" "${AIFF}"
+            COMMAND "${VADPCM_ENC_COMMAND}" -c "${TABLE}" "${AIFF}" "${AIFC}"
+            DEPENDS "${VADPCM_ENC_COMMAND}" "${AIFF}" "${TABLE}"
             COMMENT "Encoding ${AIFF}"
             VERBATIM
         )
     endforeach()
 endforeach()
-#string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" SOUND_SAMPLE_AIFCS "${SOUND_SAMPLE_AIFCS}")
-
-# -= Executable Target =-
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${BACKEND_CFLAGS} ${VERSION_CFLAGS}")
-separate_arguments(VERSION_CFLAGS)
-
-add_executable("${TARGET}" "${C_FILES};${CXX_FILES};${LEVEL_C_FILES};${ULTRA_C_FILES}")
-
-# TODO: Remove this when proper deps implemented.
-#add_dependencies("${TARGET}" "endian_and_bitwidth")
-
-if(${USE_PYTHON})
-    set(Python_ADDITIONAL_VERSIONS 3.6)
-    find_package(PythonLibs 3.6 REQUIRED)
-    target_link_libraries("${TARGET}" ${PYTHON_LIBRARIES})
-    target_include_directories("${TARGET}" PUBLIC ${PYTHON_INCLUDE_DIRS})
-endif()
-
-if("${WINDOW_API}" MATCHES "SDL2")
-    set(SDL_USED 2)
-    find_package(OpenGL REQUIRED)
-    target_link_libraries("${TARGET}" OpenGL::GL)
-    #target_include_directories("${TARGET}" OpenGL::GL)
-
-    find_package(SDL2 REQUIRED)
-    target_include_directories("${TARGET}" PUBLIC ${SDL2_INCLUDE_DIRS})
-    target_link_libraries("${TARGET}" ${SDL2_LIBRARIES})
-endif()
-
-target_include_directories("${TARGET}" PUBLIC ${INCLUDE_DIRS})
 
 # -= Build Directory Creation =-
 
@@ -485,13 +457,13 @@ endif()
 #	$(VADPCM_ENC) -c $^ $@
 
 add_custom_command(
-    OUTPUT "${BUILD_TMP_DIR}/sound/sound_data.ctl"
+    OUTPUT "${SOUND_DATA_CTL_PATH}"
     COMMAND "${PYTHON_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
         "${BUILD_TMP_DIR}/sound/samples/"
         "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/"
-        "${BUILD_TMP_DIR}/sound/sound_data.ctl"
-        "${BUILD_TMP_DIR}/sound/sound_data.tbl"
+        "${SOUND_DATA_CTL_PATH}"
+        "${SOUND_DATA_TBL_PATH}"
         ${VERSION_CFLAGS}
         ${BITWIDTH_ENDIAN_ARGS}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -499,8 +471,8 @@ add_custom_command(
     COMMENT "Preprocessing sound_data.ctl"
     VERBATIM
 )
-add_custom_target("sound_data.ctl" ALL DEPENDS "${SOUND_BIN_DIR}/sound_data.ctl")
-add_dependencies("${TARGET}" "sound_data.ctl")
+#add_custom_target("sound_data.ctl" ALL DEPENDS "${SOUND_DATA_CTL_PATH}")
+#add_dependencies("${TARGET}" "sound_data.ctl")
 
 foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     string(REGEX REPLACE "[.]s$" ".m64" S_M64_FILE "${S_FILE}")
@@ -533,12 +505,12 @@ else()
         # 	$(PYTHON) tools/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
     else()
         add_custom_command(
-            OUTPUT "${BUILD_TMP_DIR}/sound/sequences.bin"
+            OUTPUT "${SEQUENCES_BIN_PATH}"
             COMMAND "${PYTHON_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
                 "--sequences"
-                "${BUILD_TMP_DIR}/sound/sequences.bin"
-                "${BUILD_TMP_DIR}/sound/bank_sets"
+                "${SEQUENCES_BIN_PATH}"
+                "${BANK_SETS_PATH}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/"
                 "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences.json"
                 ${SOUND_SEQUENCE_FILES}
@@ -550,28 +522,36 @@ else()
             VERBATIM
         )
     endif()
-    add_custom_target("sequences.bin" ALL DEPENDS "${BUILD_TMP_DIR}/sound/sequences.bin")
-    add_dependencies("${TARGET}" "sequences.bin")
 
-    # $(SOUND_BIN_DIR)/sound_data.ctl.c: $(SOUND_BIN_DIR)/sound_data.ctl
-    # 	echo "unsigned char gSoundDataADSR[] = {" > $@
-    # 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
-    # 	echo "};" >> $@
+    hexdump_binary_assets(
+        "${SOUND_DATA_CTL_PATH}"
+        "${SOUND_DATA_CTL_PATH}.c"
+        "gSoundDataADSR" ""
+    )
 
-    # $(SOUND_BIN_DIR)/sound_data.tbl.c: $(SOUND_BIN_DIR)/sound_data.tbl
-    # 	echo "unsigned char gSoundDataRaw[] = {" > $@
-    # 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
-    # 	echo "};" >> $@
+    hexdump_binary_assets(
+        "${SOUND_DATA_TBL_PATH}"
+        "${SOUND_DATA_TBL_PATH}.c"
+        "gSoundDataRaw" ""
+    )
 
-    # $(SOUND_BIN_DIR)/sequences.bin.c: $(SOUND_BIN_DIR)/sequences.bin
-    # 	echo "unsigned char gMusicData[] = {" > $@
-    # 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
-    # 	echo "};" >> $@
+    hexdump_binary_assets(
+        "${SOUND_DATA_TBL_PATH}"
+        "${SOUND_DATA_TBL_PATH}.c"
+        "gSoundDataRaw" ""
+    )
 
-    # $(SOUND_BIN_DIR)/bank_sets.c: $(SOUND_BIN_DIR)/bank_sets
-    # 	echo "unsigned char gBankSetsData[0x100] = {" > $@
-    # 	hexdump -v -e '1/1 "0x%X,"' $< >> $@
-    # 	echo "};" >> $@
+    hexdump_binary_assets(
+        "${SEQUENCES_BIN_PATH}"
+        "${SEQUENCES_BIN_PATH}.c"
+        "gMusicData" ""
+    )
+
+    hexdump_binary_assets(
+        "${BANK_SETS_PATH}"
+        "${BANK_SETS_PATH}.c"
+        "gBankSetsData" "0x100"
+    )
 
 endif()
 
@@ -590,83 +570,41 @@ endif()
 
 file(GLOB SKYBOX_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/textures/skyboxes/*.png")
 
-if(${BUILD_TEXTURES})
+# Build skybox textures.
+#foreach(SKYBOX ${SKYBOX_PNGS})
+#    get_filename_component(SKYBOX_BASENAME "${SKYBOX}" NAME_WE)
+#    set(SKYBOX_DEST "${BUILD_TMP_DIR}/bin/${SKYBOX_BASENAME}_skybox.o")
+#    if(EXTERNAL_DATA EQUAL 1)
+#        add_custom_command(
+#            OUTPUT "${SKYBOX_BASENAME}_skybox.o"
+#            COMMAND "${PYTHON_EXECUTABLE}" "${ZEROTERM_COMMAND}" "${SKYBOX}"
+#            COMMENT "Preprocessing ${SKYBOX}"
+#        )
+#    else()
+#        add_custom_command(
+#            OUTPUT "${SKYBOX_BASENAME}_skybox.o"
+#            COMMAND "${N64GRAPHICS_COMMAND}" "-i" "${SKYBOX_DEST}" "-g" "${SKYBOX}"
+#            COMMENT "Preprocessing ${SKYBOX}"
+#        )
+#        list(APPEND DATA_O_FILES "${SKYBOX_DEST}")
+#    endif()
+#endforeach()
 
-    # Build skybox textures.
-    foreach(SKYBOX ${SKYBOX_PNGS})
-        get_filename_component(SKYBOX_BASENAME "${SKYBOX}" NAME_WE)
-        set(SKYBOX_DEST "${BUILD_TMP_DIR}/bin/${SKYBOX_BASENAME}_skybox.o")
-        if(EXTERNAL_DATA EQUAL 1)
-            add_custom_target(
-                "${SKYBOX_BASENAME}_skybox.o"
-                COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py" "${SKYBOX}"
-                COMMENT "Preprocessing ${SKYBOX}"
-            )
-        else()
-            add_custom_target(
-                "${SKYBOX_BASENAME}_skybox.o"
-                COMMAND "${N64GRAPHICS_COMMAND}" "-i" "${SKYBOX_DEST}" "-g" "${SKYBOX}"
-                COMMENT "Preprocessing ${SKYBOX}"
-            )
-        endif()
-        add_dependencies("${TARGET}" "${SKYBOX_BASENAME}_skybox.o")
-    endforeach()
-
-    # Gather the rest of the textures, remove skyboxes.
-    file(GLOB_RECURSE ACTOR_TEXTURE_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/actors/*.png")
-    file(GLOB_RECURSE LEVEL_TEXTURE_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/levels/*.png")
-    file(GLOB_RECURSE TEXTURE_TEXTURE_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/textures/*.png")
-
-    set(TEXTURE_PNGS ${ACTOR_TEXTURE_PNGS} ${LEVEL_TEXTURE_PNGS} ${TEXTURE_TEXTURE_PNGS})
-    list(REMOVE_DUPLICATES TEXTURE_PNGS)
-    list(REMOVE_ITEM TEXTURE_PNGS ${SKYBOX_PNGS}
-        "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png")
-
-    string(REGEX REPLACE "[.]png" ".inc.c" TEXTURE_INC_CS "${TEXTURE_PNGS}")
-    string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" TEXTURE_INC_CS "${TEXTURE_INC_CS}")
-
-    foreach(TEXTURE_PNG ${TEXTURE_PNGS})
-        # Get the useful parts of the texture name/path.
-        string(REGEX REPLACE "[.]png$" "" TEXTURE_BASE_PATH_FULL "${TEXTURE_PNG}")
-        get_filename_component(TEXTURE_DIRECTORY_FULL "${TEXTURE_PNG}" DIRECTORY)
-        string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_DIRECTORY "${TEXTURE_DIRECTORY_FULL}")
-        string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_BASE_PATH "${TEXTURE_BASE_PATH_FULL}")
-        # RGBA32, RGBA16, IA16, IA8, IA4, IA1, I8, I4
-        string(REGEX REPLACE "^.*\\.([a-z0-9]*).png$" "\\1" TEXTURE_FMT "${TEXTURE_PNG}")
-        file(MAKE_DIRECTORY "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
-        string(REGEX REPLACE "/" "_" TEXTURE_TARGET_BASE "${TEXTURE_BASE_PATH}")
-        
-        
-        if(EXTERNAL_DATA EQUAL 1)
-            #$(BUILD_DIR)/%: %.png
-            #	$(ZEROTERM) "$(patsubst %.png,%,$^)" > $@
-        else()
-       
-            # Convert the PNG into correct format.
-            add_custom_command(
-                OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
-                COMMAND "${N64GRAPHICS_COMMAND}" "-i" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" "-g" "${TEXTURE_PNG}" "-f" "${TEXTURE_FMT}"
-                MAIN_DEPENDENCY "${TEXTURE_PNG}"
-                COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.png"
-                VERBATIM
-            )
-            
-            # Convert the converted PNG into a hex dump in C.
-            add_custom_command(
-                OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
-                COMMAND "hexdump" "-v" "-e" "1/1 \"0x%X,\"" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" > "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
-                MAIN_DEPENDENCY "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
-                COMMENT "Translating ${TEXTURE_BASE_PATH}"
-                VERBATIM
-            )
-        endif()
-    endforeach()
-
-    add_custom_target("texture_inc_cs" ALL DEPENDS "${TEXTURE_INC_CS}")
-    
-    # Add the converted texture to target deps.
-    add_dependencies("${TARGET}" "texture_inc_cs")
-endif()
+set(SKYBOX_C_FILES)
+foreach(SKYBOX_PNG_PATH ${SKYBOX_PNGS})
+    get_filename_component(SKYBOX_BASENAME "${SKYBOX_PNG_PATH}" NAME_WE)
+    set(SKYBOX_C_PATH "${BUILD_TMP_DIR}/bin/${SKYBOX_BASENAME}_skybox.c")
+    add_custom_command(
+        OUTPUT "${SKYBOX_C_PATH}"
+        COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}" "--type" "sky" "--split"
+            "${SKYBOX_PNG_PATH}"
+            "${BUILD_TMP_DIR}/bin"
+        MAIN_DEPENDENCY "${SKYBOX_PNG_PATH}"
+        COMMENT "Preprocessing ${SKYBOX_PNG_PATH}"
+        VERBATIM
+    )
+    list(APPEND DATA_C_FILES "${SKYBOX_C_PATH}")
+endforeach()
 
 # Ending cake textures are generated in a special way
 add_custom_command(
@@ -676,8 +614,59 @@ add_custom_command(
     COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.png"
     VERBATIM
 )
-add_custom_target("cake_inc_c" ALL DEPENDS "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
-add_dependencies("${TARGET}" "cake_inc_c")
+
+# Gather the rest of the textures, remove skyboxes.
+file(GLOB_RECURSE ACTOR_TEXTURE_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/actors/*.png")
+file(GLOB_RECURSE LEVEL_TEXTURE_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/levels/*.png")
+file(GLOB_RECURSE TEXTURE_TEXTURE_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/textures/*.png")
+
+set(TEXTURE_PNGS ${ACTOR_TEXTURE_PNGS} ${LEVEL_TEXTURE_PNGS} ${TEXTURE_TEXTURE_PNGS})
+list(REMOVE_DUPLICATES TEXTURE_PNGS)
+list(REMOVE_ITEM TEXTURE_PNGS ${SKYBOX_PNGS}
+    "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png")
+
+string(REGEX REPLACE "[.]png" ".inc.c" TEXTURE_INC_CS "${TEXTURE_PNGS}")
+string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" TEXTURE_INC_CS "${TEXTURE_INC_CS}")
+
+foreach(TEXTURE_PNG ${TEXTURE_PNGS})
+    # Get the useful parts of the texture name/path.
+    string(REGEX REPLACE "[.]png$" "" TEXTURE_BASE_PATH_FULL "${TEXTURE_PNG}")
+    get_filename_component(TEXTURE_DIRECTORY_FULL "${TEXTURE_PNG}" DIRECTORY)
+    string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_DIRECTORY "${TEXTURE_DIRECTORY_FULL}")
+    string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_BASE_PATH "${TEXTURE_BASE_PATH_FULL}")
+    # RGBA32, RGBA16, IA16, IA8, IA4, IA1, I8, I4
+    string(REGEX REPLACE "^.*\\.([a-z0-9]*).png$" "\\1" TEXTURE_FMT "${TEXTURE_PNG}")
+    file(MAKE_DIRECTORY "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
+    string(REGEX REPLACE "/" "_" TEXTURE_TARGET_BASE "${TEXTURE_BASE_PATH}")
+    
+    
+    if(EXTERNAL_DATA EQUAL 1)
+        #$(BUILD_DIR)/%: %.png
+        #	$(ZEROTERM) "$(patsubst %.png,%,$^)" > $@
+    else()
+    
+        # Convert the PNG into correct format.
+        add_custom_command(
+            OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
+            COMMAND "${N64GRAPHICS_COMMAND}" "-i" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" "-g" "${TEXTURE_PNG}" "-f" "${TEXTURE_FMT}"
+            MAIN_DEPENDENCY "${TEXTURE_PNG}"
+            COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.png"
+            VERBATIM
+        )
+        
+        # Convert the converted PNG into a hex dump in C.
+        add_custom_command(
+            OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
+            COMMAND "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" > "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
+            MAIN_DEPENDENCY "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
+            COMMENT "Translating ${TEXTURE_BASE_PATH}"
+            VERBATIM
+        )
+    endif()
+endforeach()
+
+# Add the converted texture to target deps.
+add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS} "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
 
 # -= Levels Header =-
 
@@ -688,10 +677,10 @@ add_custom_command(
     COMMENT "Preprocessing level_headers.h"
     VERBATIM)
 add_custom_target("level_headers" ALL DEPENDS "${BUILD_TMP_DIR}/include/level_headers.h")
-add_dependencies("${TARGET}" "level_headers")
 
 # -= Text/Course Data =-
 
+set(TEXT_DATA_INC_C_FILES)
 foreach(DATA_VERSION us)
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
@@ -699,8 +688,11 @@ foreach(DATA_VERSION us)
         MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h"
         COMMENT "Preprocessing define_courses.inc.c"
         VERBATIM)
-    add_custom_target("define_courses.inc.c" ALL DEPENDS "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
-    add_dependencies("${TARGET}" "define_courses.inc.c")
+    #add_custom_target("define_courses.inc.c" ALL DEPENDS "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
+    #add_dependencies("${TARGET}" "define_courses.inc.c")
+    #list(APPEND DATA_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
+
+    list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
 
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
@@ -708,9 +700,14 @@ foreach(DATA_VERSION us)
 	    COMMAND cpp -P ${VERSION_CFLAGS} "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c" -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" && "${TEXTCONV_COMMAND}" "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c" "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
         COMMENT "Preprocessing define_text.inc.c"
         VERBATIM)
-    add_custom_target("define_text.inc.c" ALL DEPENDS "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
-    add_dependencies("${TARGET}" "define_text.inc.c")
+    #add_custom_target("define_text.inc.c" ALL DEPENDS "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
+    #add_dependencies("${TARGET}" "define_text.inc.c")
+    #list(APPEND DATA_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
+
+    list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
 endforeach()
+
+add_custom_target("text_data_inc_cs" ALL DEPENDS ${TEXT_DATA_INC_C_FILES})
 
 # -= Localized Headers =-
 
@@ -726,6 +723,47 @@ foreach(HEADER ${LOCALIZE_HEADERS})
         BYPRODUCTS "${BUILD_TMP_DIR}/include/${HEADER}"
         RESULT_VARIABLE TEXTCONV_RESULT)
 endforeach()
+
+# -= Executable Target =-
+
+foreach(FLAG ${VERSION_CFLAGS} ${BACKEND_CFLAGS})
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
+endforeach()
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${BACKEND_CFLAGS} ${VERSION_CFLAGS}")
+#separate_arguments(VERSION_CFLAGS)
+
+add_executable("${TARGET}" "${DATA_O_FILES};${C_FILES};${CXX_FILES};${LEVEL_C_FILES};${ULTRA_C_FILES};${DATA_C_FILES}")
+
+set_source_files_properties(
+    ${DATA_O_FILES}
+    PROPERTIES
+    EXTERNAL_OBJECT True
+    GENERATED True
+)
+
+if(${USE_PYTHON})
+    set(Python_ADDITIONAL_VERSIONS 3.6)
+    find_package(PythonLibs 3.6 REQUIRED)
+    target_link_libraries("${TARGET}" ${PYTHON_LIBRARIES})
+    target_include_directories("${TARGET}" PUBLIC ${PYTHON_INCLUDE_DIRS})
+endif()
+
+if("${WINDOW_API}" MATCHES "SDL2")
+    #set(SDL_USED 2)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries("${TARGET}" OpenGL::GL)
+    #target_include_directories("${TARGET}" OpenGL::GL)
+
+    find_package(SDL2 REQUIRED)
+    target_include_directories("${TARGET}" PUBLIC ${SDL2_INCLUDE_DIRS})
+    target_link_libraries("${TARGET}" ${SDL2_LIBRARIES})
+endif()
+
+target_include_directories("${TARGET}" PUBLIC ${INCLUDE_DIRS})
+
+add_dependencies("${TARGET}" "texture_inc_cs")
+add_dependencies("${TARGET}" "level_headers")
+add_dependencies("${TARGET}" "text_data_inc_cs")
 
 #GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c $(BUILD_DIR)/assets/demo_data.c \
 #  $(addprefix $(BUILD_DIR)/bin/,$(addsuffix _skybox.c,$(notdir $(basename $(wildcard textures/skyboxes/*.png)))))
