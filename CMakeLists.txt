@@ -198,7 +198,6 @@ macro(hexdump_binary_assets bin_file c_file array_name array_sz)
         COMMENT "Generating ${c_file} from ${bin_file}"
         VERBATIM
     )
-    list(APPEND DATA_C_FILES "${c_file}")
 endmacro()
 
 # -= Endian and Bitwidth Tests =-
@@ -496,7 +495,7 @@ endforeach()
         # 	$(PYTHON) tools/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
     else()
         add_custom_command(
-            OUTPUT "${SEQUENCES_BIN_PATH}"
+            OUTPUT "${SEQUENCES_BIN_PATH}" "${BANK_SETS_PATH}"
             COMMAND "${PYTHON_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
                 "--sequences"
@@ -514,35 +513,77 @@ endforeach()
         )
     endif()
 
-    hexdump_binary_assets(
-        "${SOUND_DATA_CTL_PATH}"
-        "${SOUND_DATA_CTL_PATH}.c"
-        "gSoundDataADSR" ""
+    #hexdump_binary_assets(
+    #    "${SOUND_DATA_CTL_PATH}"
+    #    "${SOUND_DATA_CTL_PATH}.c"
+    #    "gSoundDataADSR" ""
+    #)
+    add_custom_command(
+        OUTPUT "${c_file}"
+        COMMAND 
+            "echo" "unsigned char ${array_name}[${array_sz}] = {" > "${c_file}" &&
+            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${bin_file}" >> 
+                "${c_file}" &&
+            "echo" "};" >> "${c_file}"
+        DEPENDS "${bin_file}"
+        COMMENT "Generating ${c_file} from ${bin_file}"
+        VERBATIM
     )
+    list(APPEND DATA_C_FILES "${SOUND_DATA_CTL_PATH}.c")
 
-    hexdump_binary_assets(
-        "${SOUND_DATA_TBL_PATH}"
-        "${SOUND_DATA_TBL_PATH}.c"
-        "gSoundDataRaw" ""
+    #hexdump_binary_assets(
+    #    "${SOUND_DATA_TBL_PATH}"
+    #    "${SOUND_DATA_TBL_PATH}.c"
+    #    "gSoundDataRaw" ""
+    #)
+    add_custom_command(
+        OUTPUT "${SOUND_DATA_TBL_PATH}.c"
+        COMMAND 
+            "echo" "unsigned char gSoundDataRaw[] = {" > "${SOUND_DATA_TBL_PATH}.c" &&
+            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${SOUND_DATA_TBL_PATH}" >> 
+                "${SOUND_DATA_TBL_PATH}.c" &&
+            "echo" "};" >> "${SOUND_DATA_TBL_PATH}.c"
+        MAIN_DEPENDENCY "${SOUND_DATA_TBL_PATH}"
+        COMMENT "Generating ${SOUND_DATA_TBL_PATH}.c from ${SOUND_DATA_TBL_PATH}"
+        VERBATIM
     )
+    list(APPEND DATA_C_FILES "${SOUND_DATA_TBL_PATH}.c")
 
-    hexdump_binary_assets(
-        "${SOUND_DATA_TBL_PATH}"
-        "${SOUND_DATA_TBL_PATH}.c"
-        "gSoundDataRaw" ""
+    #hexdump_binary_assets(
+    #    "${SEQUENCES_BIN_PATH}"
+    #    "${SEQUENCES_BIN_PATH}.c"
+    #    "gMusicData" ""
+    #)
+    add_custom_command(
+        OUTPUT "${SEQUENCES_BIN_PATH}.c"
+        COMMAND 
+            "echo" "unsigned char gMusicData}[] = {" > "${SEQUENCES_BIN_PATH}.c" &&
+            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${SEQUENCES_BIN_PATH}" >> 
+                "${SEQUENCES_BIN_PATH}.c" &&
+            "echo" "};" >> "${SEQUENCES_BIN_PATH}.c"
+        MAIN_DEPENDENCY "${SEQUENCES_BIN_PATH}"
+        COMMENT "Generating ${SEQUENCES_BIN_PATH}.c from ${SEQUENCES_BIN_PATH}"
+        VERBATIM
     )
+    list(APPEND DATA_C_FILES "${SEQUENCES_BIN_PATH}.c")
 
-    hexdump_binary_assets(
-        "${SEQUENCES_BIN_PATH}"
-        "${SEQUENCES_BIN_PATH}.c"
-        "gMusicData" ""
+    #hexdump_binary_assets(
+    #    "${BANK_SETS_PATH}"
+    #    "${BANK_SETS_PATH}.c"
+    #    "gBankSetsData" "0x100"
+    #)
+    add_custom_command(
+        OUTPUT "${BANK_SETS_PATH}.c"
+        COMMAND 
+            "echo" "unsigned char gBankSetsData[0x100] = {" > "${BANK_SETS_PATH}.c" &&
+            "${HEXDUMP_COMMAND}" ${HEXDUMP_ARGS} "${BANK_SETS_PATH}" >> 
+                "${BANK_SETS_PATH}.c" &&
+            "echo" "};" >> "${BANK_SETS_PATH}.c"
+        MAIN_DEPENDENCY "${BANK_SETS_PATH}"
+        COMMENT "Generating ${BANK_SETS_PATH}.c from ${BANK_SETS_PATH}"
+        VERBATIM
     )
-
-    hexdump_binary_assets(
-        "${BANK_SETS_PATH}"
-        "${BANK_SETS_PATH}.c"
-        "gBankSetsData" "0x100"
-    )
+    list(APPEND DATA_C_FILES "${BANK_SETS_PATH}.c")
 
 #endif()
 
@@ -761,11 +802,13 @@ add_custom_target("localize_text" ALL DEPENDS ${TEXT_DATA_INC_C_FILES} ${LOCALIZ
 
 # -= Executable Target =-
 
+message(STATUS "data c : ${DATA_C_FILES}")
+
 foreach(FLAG ${VERSION_CFLAGS} ${BACKEND_CFLAGS})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
 endforeach()
 
-add_executable("${TARGET}" "${DATA_O_FILES};${C_FILES};${CXX_FILES};${LEVEL_C_FILES};${ULTRA_C_FILES};${GODDARD_C_FILES};${DATA_C_FILES}")
+add_executable("${TARGET}" "${DATA_C_FILES};${DATA_O_FILES};${C_FILES};${CXX_FILES};${LEVEL_C_FILES};${ULTRA_C_FILES};${GODDARD_C_FILES}")
 
 set_source_files_properties(
     ${DATA_O_FILES}
