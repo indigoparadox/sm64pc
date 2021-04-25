@@ -9,6 +9,10 @@ endif()
 #set(tools_CFLAGS "-Llib -Iinclude -I../include -I . -Wall -Wextra -Wno-unused-parameter $(OSX_BUILD) -pedantic -std=c99 $(OPT_FLAG) -s")
 set(tools_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
+# -= mkheader =-
+
+add_executable("mkheader" "mkheader.c")
+
 # -= n64graphics =-
 
 set(n64graphics_SOURCES n64graphics.c utils.c)
