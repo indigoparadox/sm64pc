@@ -212,7 +212,12 @@ if(EXTERNAL_DATA)
     # Tell skyconv to write names instead of actual texture data
     # and save the split tiles so we can use them later.
     set(SKYTILE_DIR "${BUILD_TMP_DIR}/gfx/textures/skybox_tiles")
-    list(APPEND BUILD_TMP_DIR_CHILDREN "${BUILD_TMP_DIR}/textures/skybox_tiles")
+    
+    add_custom_command(
+        OUTPUT "${SKYTILE_DIR}"
+        COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${SKYTILE_DIR}" 
+    )
+
     set(SKYCONV_ARGS  "--store-names" "--write-tiles" "${SKYTILE_DIR}")
 endif()
 
@@ -694,14 +699,21 @@ set(SKYBOX_C_FILES)
 foreach(SKYBOX_PNG_PATH ${SKYBOX_PNGS})
     get_filename_component(SKYBOX_BASENAME "${SKYBOX_PNG_PATH}" NAME_WE)
     set(SKYBOX_C_PATH "${BUILD_TMP_DIR}/bin/${SKYBOX_BASENAME}_skybox.c")
+
+    set(SKYBOX_DEPENDS
+        "${SKYBOX_PNG_PATH}"
+        "${SKYCONV_TARGET}")
+    
+    if(EXTERNAL_DATA)
+        list(APPEND SKYBOX_DEPENDS "${SKYTILE_DIR}")
+    endif()
+
     add_custom_command(
         OUTPUT "${SKYBOX_C_PATH}"
         COMMAND "${SKYCONV_COMMAND}" ${SKYCONV_ARGS} "--type" "sky" "--split"
             "${SKYBOX_PNG_PATH}"
             "${BUILD_TMP_DIR}/bin"
-        DEPENDS
-            "${SKYBOX_PNG_PATH}"
-            "${SKYCONV_TARGET}"
+        DEPENDS ${SKYBOX_DEPENDS}
         COMMENT "Preprocessing ${SKYBOX_PNG_PATH}"
         VERBATIM
     )
