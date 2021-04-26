@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.0.0)
 project(sm64pc VERSION 0.1.0)
 enable_language(C ASM)
@@ -191,7 +192,11 @@ if(USE_PYTHON)
 endif()
 
 set(BUILD_TMP_DIR "${CMAKE_BINARY_DIR}/tmp")
-set(TOOLS_BIN_DIR "${CMAKE_BINARY_DIR}/tools")
+if(MSVC)
+   set(TOOLS_BIN_DIR "${CMAKE_BINARY_DIR}/tools/Debug")
+else()
+   set(TOOLS_BIN_DIR "${CMAKE_BINARY_DIR}/tools")
+endif()
 message(STATUS "Using ${BUILD_TMP_DIR} for intermediate build files.")
 
 set(TARGET)
@@ -213,7 +218,8 @@ else()
     message(STATUS "NOT using Force Standalone")
 endif()
 
-if("${VERSION}" MATCHES "us")
+# This gets clobbered below, but that's how it is in the original Makefile...
+if(VERSION MATCHES "us")
     list(APPEND VERSION_CFLAGS "-DVERSION_US")
     #set(VERSION_AS_FLAGS "--defsym VERSION_US=1")
     set(GRUCODE_CFLAGS "-DF3D_OLD")
@@ -258,6 +264,21 @@ endif()
 
 if(NON_MATCHING)
     list(APPEND VERSION_CFLAGS "-DNON_MATCHING")
+endif()
+
+if(RENDER_API MATCHES "D3D11" OR RENDER_API MATCHES "D3D12")
+    if(NOT WINDOW_API MATCHES "DXGI")
+        message(WARNING "DirectX renderers require DXGI; forcing WINDOW_API value.")
+        set(WINDOW_API DXGI)
+    endif()
+else()
+    if(WINDOW_API MATCHES "DXGI")
+        message(error "DXGI can only be used with DirectX renderers.")
+    endif()
+endif()
+
+if(WINDOW_API MATCHES "SDL2")
+    list(APPEND BACKEND_CFLAGS "-DHAVE_SDL2=1")
 endif()
 
 # Texture Fix
@@ -323,12 +344,34 @@ separate_arguments(CMAKE_ASFLAGS)
 #  VERSION_CFLAGS += -DNIGHTLY -DGIT_HASH="\"$(GIT_HASH)\"" -DCOMPILE_TIME="\"$(COMPILE_TIME)\""
 #endif
 
-if("${GRUCODE}" MATCHES "f3dex2e")
+# This clobbers the CFLAGS from the version-based check above.
+if(GRUCODE MATCHES "f3dex") # Fast3DEX
     set(GRUCODE_CFLAGS "-DF3DEX_GBI")
-    set(GRUCODE_ASFLAGS "--defsym F3DEX_GBI_SHARED=1 --defsym F3DEX_GBI=1")
+    #set(GRUCODE_ASFLAGS "--defsym F3DEX_GBI_SHARED=1" "--defsym F3DEX_GBI=1")
     set(TARGET "${TARGET}.f3dex")
-    #COMPARE := 0
+
+elseif(GRUCODE MATCHES "f3dex2") # Fast3DEX2
+    set(GRUCODE_CFLAGS "-DF3DEX_GBI_2")
+    #set(GRUCODE_ASFLAGS "--defsym F3DEX_GBI_SHARED=1" "--defsym F3DEX_GBI_2=1")
+    set(TARGET "${TARGET}.f3dex2")
+
+elseif(GRUCODE MATCHES "f3dex2e") # Fast3DEX2 Extended (PC default)
+    set(GRUCODE_CFLAGS "-DF3DEX_GBI_2E")
+    set(TARGET "${TARGET}.f3dex2e")
+
+elseif(GRUCODE MATCHES "f3d_new") # Fast3D 2.0H (Shindou)
+    set(GRUCODE_CFLAGS "-DF3D_NEW")
+    #set(GRUCODE_ASFLAGS "--defsym F3D_NEW=1")
+    set(TARGET "${TARGET}.f3d_new")
+
+elseif(GRUCODE MATCHES "f3dzex") # Fast3DZEX (2.0J / Animal Forest - Dōbutsu no Mori)
+    message(warning "Fast3DZEX is experimental. Try at your own risk.")
+    set(GRUCODE_CFLAGS "-DF3DEX_GBI_2")
+    #set(GRUCODE_ASFLAGS "--defsym F3DEX_GBI_SHARED=1" "--defsym F3DZEX_GBI=1")
+    set(TARGET "${TARGET}.f3dzex")
 endif()
+
+message(STATUS "Using ${GRUCODE} microcode.")
 
 set(SOUND_BIN_REL_DIR "sound")
 set(SOUND_BIN_DIR "${BUILD_TMP_DIR}/${SOUND_BIN_REL_DIR}")
@@ -346,7 +389,12 @@ set(MARIO_ANIM_DATA_C_PATH "${ASSETS_BIN_DIR}/mario_anim_data.c")
 set(DEMO_DATA_C_PATH "${ASSETS_BIN_DIR}/demo_data.c")
 set(CHARMAP_TXT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt")
 
-set(CPP_COMMAND "cpp")
+if(MSVC)
+   set(CPP_COMMAND "cl")
+else()
+   set(CPP_COMMAND "cpp")
+endif()
+set(CPP_ARGS "-P")
 set(TEXTCONV_COMMAND "${TOOLS_BIN_DIR}/textconv")
 set(TEXTCONV_TARGET "textconv")
 set(N64GRAPHICS_COMMAND "${TOOLS_BIN_DIR}/n64graphics")
@@ -415,34 +463,6 @@ set(BACKEND_CFLAGS
 foreach(CAPI ${CONTROLLER_API})
     list(APPEND BACKEND_CFLAGS "-DCAPI_${CAPI}=1")
 endforeach()
-
-set(BACKEND_LDFLAGS)
-set(SDL2_USED 0)
-
-# For now, it's either SDL+GL or DXGI+DirectX, so choose based on WAPI.
-#if(${WINDOW_API} EQUAL DXGI)
-#    set(DXBITS `cat $(ENDIAN_BITWIDTH) | tr ' ' '\n' | tail -1`
-#  ifeq ($(RENDER_API),D3D11)
-#    BACKEND_LDFLAGS += -ld3d11
-#  else ifeq ($(RENDER_API),D3D12)
-#    BACKEND_LDFLAGS += -ld3d12
-#    BACKEND_CFLAGS += -Iinclude/dxsdk
-#  endif
-#  BACKEND_LDFLAGS += -ld3dcompiler -ldxgi -ldxguid
-#  BACKEND_LDFLAGS += -lsetupapi -ldinput8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lwinmm -lversion -luuid -static
-#if("${WINDOW_API}" EQUAL SDL2)
-    #if(${WIN32})
-    #    set(BACKEND_LDFLAGS "${BACKEND_LDFLAGS} -lglew32 -lglu32 -lopengl32")
-    #elseif(${TARGET_RPI} EQUAL 1)
-    #    set(BACKEND_LDFLAGS "${BACKEND_LDFLAGS} -lGLESv2")
-    #elseif(${OSX_BUILD),1)
-    #BACKEND_LDFLAGS += -framework OpenGL `pkg-config --libs glew`
-    #else
-    #    BACKEND_LDFLAGS += -lGL
-    #endif
- #   set(SDL_USED 2)
- #   find_package(OpenGL)
-#endif()
 
 # -= Sources =-
 
@@ -560,7 +580,7 @@ list(REMOVE_ITEM ULTRA_C_FILES
 
 file(GLOB SOUND_BANK_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/*.json")
 
-if(${VERSION} MATCHES "sh")
+if(VERSION MATCHES "sh")
 #    file(GLOB SOUND_SEQUENCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/jp/*.s"
 #        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/*.s"
 #        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences/jp/*.m64"
@@ -656,7 +676,7 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     )
 endforeach()
 
-if("${VERSION}" MATCHES "sh")
+if(VERSION MATCHES "sh")
 # $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/jp/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
 # 	$(PYTHON) tools/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
 else()
@@ -893,7 +913,7 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
         # Convert the PNG into correct format using the correct tool.
         set(TEXTURE_N64GRAPHICS_COMMAND "${N64GRAPHICS_COMMAND}")
         set(TEXTURE_N64GRAPHICS_TARGET "${N64GRAPHICS_TARGET}")
-        if("${TEXTURE_FMT}" MATCHES "ci8" OR "${TEXTURE_FMT}" MATCHES "ci4")
+        if(TEXTURE_FMT MATCHES "ci8" OR TEXTURE_FMT MATCHES "ci4")
             set(TEXTURE_N64GRAPHICS_COMMAND "${N64GRAPHICS_CI_COMMAND}")
             set(TEXTURE_N64GRAPHICS_TARGET "${N64GRAPHICS_CI_TARGET}")
         endif()
@@ -937,7 +957,8 @@ make_directory_target("${BUILD_TMP_DIR}/include")
 add_custom_command(
     OUTPUT "${BUILD_TMP_DIR}/include/level_headers.h"
     COMMAND 
-        "${CPP_COMMAND}" -P -I "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CPP_COMMAND}" ${CPP_ARGS}
+            -I "${CMAKE_CURRENT_SOURCE_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in" |
         "${PYTHON_EXECUTABLE}" "${OUTPUT_LEVEL_HEADERS_PY}" >
         "${BUILD_TMP_DIR}/include/level_headers.h"
@@ -960,7 +981,7 @@ foreach(DATA_VERSION us)
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
         COMMAND
-            "${CPP_COMMAND}" -P ${VERSION_CFLAGS}
+            "${CPP_COMMAND}" ${CPP_ARGS} ${VERSION_CFLAGS}
                 "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c"
                 -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" &&
@@ -1028,7 +1049,7 @@ add_custom_target("localize_text" ALL DEPENDS ${TEXT_DATA_INC_C_FILES} ${LOCALIZ
 
 # -= Executable Target =-
 
-foreach(FLAG ${VERSION_CFLAGS} ${BACKEND_CFLAGS} ${MISC_CFLAGS})
+foreach(FLAG ${VERSION_CFLAGS} ${BACKEND_CFLAGS} ${GRUCODE_CFLAGS} ${MISC_CFLAGS})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
 endforeach()
 
@@ -1054,8 +1075,7 @@ if(USE_PYTHON)
     target_include_directories("${TARGET}" PUBLIC ${PYTHON_INCLUDE_DIRS})
 endif()
 
-if("${WINDOW_API}" MATCHES "SDL2")
-    #set(SDL_USED 2)
+if(WINDOW_API MATCHES "SDL2")
     if(MINGW)
         pkg_check_modules(GLEW REQUIRED glew)
         target_include_directories("${TARGET}" PUBLIC ${GLEW_INCLUDE_DIRS})
@@ -1072,6 +1092,10 @@ if("${WINDOW_API}" MATCHES "SDL2")
     endif()
     target_include_directories("${TARGET}" PUBLIC ${SDL2_INCLUDE_DIRS})
     target_link_libraries("${TARGET}" ${SDL2_LIBRARIES})
+elseif(RENDERER MATCHES "D3D11")
+    target_link_libraries("${TARGET}" d3d11.lib)
+elseif(RENDERER MATCHES "D3D12")
+    target_link_libraries("${TARGET}" d3d12.lib)
 endif()
 
 target_include_directories("${TARGET}" PUBLIC ${INCLUDE_DIRS})
