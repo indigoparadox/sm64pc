@@ -6,7 +6,11 @@ if(NOT DEFINED QUIET_CMAKE)
     set(QUIET_CMAKE True)
 endif()
 
-if(${QUIET_CMAKE})
+if(NOT DEFINED REALLY_QUIET_CMAKE)
+    set(REALLY_QUIET_CMAKE False)
+endif()
+
+if(REALLY_QUIET_CMAKE)
     function(message)
         list(GET ARGV 0 MessageType)
         if(MessageType STREQUAL FATAL_ERROR OR
@@ -17,7 +21,9 @@ if(${QUIET_CMAKE})
             _message(${MessageType} "${ARGV}")
         endif()
     endfunction()
-else()
+endif()
+
+if(NOT QUIET_CMAKE)
     set(CMAKE_VERBOSE_MAKEFILE True)
 endif()
 
@@ -27,16 +33,26 @@ add_subdirectory("tools")
 #set(DEBUG 1)
 # Version of the game to build
 set(VERSION "us")
+
 # Graphics microcode used
-set(GRUCODE f3dex2e)
+if(NOT DEFINED GRUCODE)
+    set(GRUCODE "f3dex2e")
+endif()
+
 # If COMPARE is 1, check the output sha1sum when building 'all'
 #set(COMPARE 1)
+
 # If NON_MATCHING is 1, define the NON_MATCHING and AVOID_UB macros when building (recommended)
 set(NON_MATCHING True)
+
 # Build and optimize for Raspberry Pi(s)
 #set(TARGET_RPI ?= 0
+
 # Build with python support.
-set(USE_PYTHON True)
+if(NOT DEFINED USE_PYTHON)
+    set(USE_PYTHON True)
+endif()
+
 # Build for Emscripten/WebGL
 #TARGET_WEB ?= 0
 # Makeflag to enable OSX fixes
@@ -44,37 +60,74 @@ set(USE_PYTHON True)
 # Specify the target you are building for, TARGET_BITS=0 means native
 #TARGET_ARCH ?= native
 #TARGET_BITS ?= 0
+
 # Disable better camera by default
-set(BETTERCAMERA False)
+if(NOT DEFINED USE_PYTHON)
+    set(BETTERCAMERA False)
+endif()
+
 # Disable no drawing distance by default
-set(NODRAWINGDISTANCE False)
+if(NOT DEFINED NODRAWINGDISTANCE)
+    set(NODRAWINGDISTANCE False)
+endif()
+
 # Disable texture fixes by default (helps with them purists)
-set(TEXTURE_FIX False)
+if(NOT DEFINED TEXTURE_FIX)
+    set(TEXTURE_FIX False)
+endif()
+
 # Enable extended options menu by default
-set(EXT_OPTIONS_MENU 1)
+if(NOT DEFINED EXT_OPTIONS_MENU)
+    set(EXT_OPTIONS_MENU True)
+endif()
+
 # Disable text-based save-files by default
-set(TEXTSAVES False)
+if(NOT DEFINED TEXTSAVES)
+    set(TEXTSAVES False)
+endif()
+
 # Load resources from external files
-set(EXTERNAL_DATA False)
+if(NOT DEFINED EXTERNAL_DATA)
+    set(EXTERNAL_DATA False)
+endif()
+
 # Enable Discord Rich Presence
-set(DISCORDRPC False)
+#set(DISCORDRPC False)
+
 # Various workarounds for weird toolchains
 #set(NO_BZERO_BCOPY 0)
 #set(NO_LDIV 0)
-# Backend selection
-# Renderers: GL, GL_LEGACY, D3D11, D3D12
-set(RENDER_API GL)
-# Window managers: SDL2, DXGI (forced if D3D11 or D3D12 in RENDER_API)
-set(WINDOW_API SDL2)
-# Audio backends: SDL2
-set(AUDIO_API SDL2)
-# Controller backends (can have multiple, space separated): SDL2
-set(CONTROLLER_API SDL2)
-# Misc settings for EXTERNAL_DATA
-set(BASEDIR res)
-set(BASEPACK base.zip)
 
-set(NOEXTRACT False)
+# -= Backend selection =-
+
+# Renderers: GL, GL_LEGACY, D3D11, D3D12
+if(NOT DEFINED RENDER_API)
+    set(RENDER_API GL)
+endif()
+
+# Window managers: SDL2, DXGI (forced if D3D11 or D3D12 in RENDER_API)
+if(NOT DEFINED WINDOW_API)
+    set(WINDOW_API SDL2)
+endif()
+
+# Audio backends: SDL2
+if(NOT DEFINED AUDIO_API)
+    set(AUDIO_API SDL2)
+endif()
+
+# Controller backends (can have multiple, space separated): SDL2
+if(NOT DEFINED CONTROLLER_API)
+    set(CONTROLLER_API SDL2)
+endif()
+
+# Misc settings for EXTERNAL_DATA
+if(NOT DEFINED BASEDIR)
+    set(BASEDIR res)
+endif()
+
+if(NOT DEFINED BASEPACK)
+    set(BASEPACK base.zip)
+endif()
 
 if(NOT DEFINED BUILD_TEXTURES)
     set(BUILD_TEXTURES True)
@@ -90,6 +143,7 @@ set(BUILD_TMP_DIR_CHILDREN
     "${BUILD_TMP_DIR}/sound/sequences"
     "${BUILD_TMP_DIR}/include"
     "${BUILD_TMP_DIR}/text"
+    "${BUILD_TMP_DIR}/textures"
     "${BUILD_TMP_DIR}/levels"
     "${BUILD_TMP_DIR}/levels/ending"
     "${BUILD_TMP_DIR}/text/us"
@@ -102,7 +156,9 @@ Set(INCLUDE_DIRS
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
 set(VERSION_CFLAGS)
+set(MISC_CFLAGS)
 
 if("${VERSION}" MATCHES "us")
     list(APPEND VERSION_CFLAGS "-DVERSION_US")
@@ -112,24 +168,59 @@ if("${VERSION}" MATCHES "us")
     set(TARGET "sm64.us")
 endif()
 
-if(${USE_PYTHON})
+if(USE_PYTHON)
     list(APPEND VERSION_CFLAGS "-DUSE_PYTHON")
 endif()
 
-if(WIN32 OR UNIX)
+if(BETTERCAMERA)
+    list(APPEND MISC_CFLAGS "-DBETTERCAMERA")
+    set(EXT_OPTIONS_MENU True)
+endif()
+
+if(TEXTSAVES)
+    list(APPEND MISC_CFLAGS "-DTEXTSAVES")
+endif()
+
+if(NODRAWINGDISTANCE)
+    list(APPEND MISC_CFLAGS "-DNODRAWINGDISTANCE")
+endif()
+
+if(WIN32 OR UNIX OR MINGW)
     list(APPEND VERSION_CFLAGS "-DAVOID_UB")
     set(NON_MATCHING True)
 endif()
 
-if(${NON_MATCHING})
+if(NON_MATCHING)
     list(APPEND VERSION_CFLAGS "-DNON_MATCHING")
+endif()
+
+# Texture Fix
+if(TEXTURE_FIX)
+    list(APPEND MISC_CFLAGS "-DTEXTURE_FIX")
+endif()
+
+# Extended Options Menu
+if($(EXT_OPTIONS_MENU),1)
+    list(APPEND MISC_CFLAGS "-DEXT_OPTIONS_MENU")
+endif()
+
+# Load External Textures
+set(SKYCONV_ARGS)
+if(EXTERNAL_DATA)
+    list(APPEND MISC_CFLAGS "-DEXTERNAL_DATA" "-DFS_BASEDIR=\"\\\"${BASEDIR}\\\"\"")
+    
+    # Tell skyconv to write names instead of actual texture data
+    # and save the split tiles so we can use them later.
+    set(SKYTILE_DIR "${BUILD_TMP_DIR}/gfx/textures/skybox_tiles")
+    list(APPEND BUILD_TMP_DIR_CHILDREN "${BUILD_TMP_DIR}/textures/skybox_tiles")
+    set(SKYCONV_ARGS  "--store-names" "--write-tiles" "${SKYTILE_DIR}")
 endif()
 
 #if(NOT ${TARGET_BITS} EQUAL 0)
 #  set(BITS "-m${TARGET_BITS}")
 #endif()
 
-# TODO: Figure out how to make this smarter.
+# TODO: Figure out how to make this smarter?
 set(CMAKE_ASM_COMPILER "as")
 
 set(VERSION_ASFLAGS "--defsym AVOID_UB=1")
@@ -152,26 +243,27 @@ if("${GRUCODE}" MATCHES "f3dex2e")
     #COMPARE := 0
 endif()
 
-set(SKYTILE_DIR "${BUILD_TMP_DIR}/textures/skybox_tiles")
-
-set(SOUND_DATA_CTL_PATH "${BUILD_TMP_DIR}/sound/sound_data.ctl")
-set(SOUND_DATA_TBL_PATH "${BUILD_TMP_DIR}/sound/sound_data.tbl")
-set(SEQUENCES_BIN_PATH "${BUILD_TMP_DIR}/sound/sequences.bin")
-set(BANK_SETS_PATH "${BUILD_TMP_DIR}/sound/bank_sets")
+set(SOUND_DATA_CTL_REL_PATH "sound/sound_data.ctl")
+set(SOUND_DATA_CTL_PATH "${BUILD_TMP_DIR}/${SOUND_DATA_CTL_REL_PATH}")
+set(SOUND_DATA_TBL_REL_PATH "sound/sound_data.tbl")
+set(SOUND_DATA_TBL_PATH "${BUILD_TMP_DIR}/${SOUND_DATA_TBL_REL_PATH}")
+set(SEQUENCES_BIN_REL_PATH "sound/sequences.bin")
+set(SEQUENCES_BIN_PATH "${BUILD_TMP_DIR}/${SEQUENCES_BIN_REL_PATH}")
+set(BANK_SETS_REL_PATH "sound/bank_sets")
+set(BANK_SETS_PATH "${BUILD_TMP_DIR}/${BANK_SETS_REL_PATH}")
 set(MARIO_ANIM_DATA_C_PATH "${BUILD_TMP_DIR}/assets/mario_anim_data.c")
 set(DEMO_DATA_C_PATH "${BUILD_TMP_DIR}/assets/demo_data.c")
 set(CHARMAP_TXT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt")
-
-#set(ENDIAN_BITWIDTH "${BUILD_TMP_DIR}/endian-and-bitwidth")
 
 set(CPP_COMMAND "cpp")
 set(TEXTCONV_COMMAND "${BUILD_TMP_DIR}/tools/textconv")
 set(TEXTCONV_TARGET "textconv")
 set(N64GRAPHICS_COMMAND "${BUILD_TMP_DIR}/tools/n64graphics")
 set(N64GRAPHICS_TARGET "n64graphics")
+set(N64GRAPHICS_CI_COMMAND "${BUILD_TMP_DIR}/tools/n64graphics_ci")
+set(N64GRAPHICS_CI_TARGET "n64graphics_ci")
 set(SKYCONV_COMMAND "${BUILD_TMP_DIR}/tools/skyconv")
 set(SKYCONV_TARGET "skyconv")
-set(SKYCONV_ARGS "--store-names --write-tiles \"${SKYTILE_DIR}\"")
 set(AIFF_EXTRACT_CODEBOOK_COMMAND "${BUILD_TMP_DIR}/tools/aiff_extract_codebook")
 set(AIFF_EXTRACT_CODEBOOK_TARGET "aiff_extract_codebook")
 set(VADPCM_ENC_COMMAND "${BUILD_TMP_DIR}/tools/vadpcm_enc")
@@ -183,8 +275,13 @@ set(MARIO_ANIMS_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/mario_anims_conv
 set(DEMO_DATA_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/demo_data_converter.py")
 set(OUTPUT_LEVEL_HEADERS_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/output_level_headers.py")
 
-set(DATA_C_FILES)
 set(DATA_O_FILES)
+
+set(DATA_C_FILES
+    "${SOUND_DATA_CTL_PATH}.c"
+    "${SOUND_DATA_TBL_PATH}.c"
+    "${SEQUENCES_BIN_PATH}.c"
+    "${BANK_SETS_PATH}.c")
 
 macro(hexdump_binary_assets bin_file c_file array_name array_sz)
     add_custom_command(
@@ -195,7 +292,6 @@ macro(hexdump_binary_assets bin_file c_file array_name array_sz)
         COMMENT "Generating ${c_file} from ${bin_file}"
         VERBATIM
     )
-    list(APPEND DATA_C_FILES "${c_file}")
 endmacro()
 
 # -= Endian and Bitwidth Tests =-
@@ -303,14 +399,6 @@ foreach(SRC_DIR ${ULTRA_SRC_DIRS})
     file(GLOB DIR_C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.c")
     list(APPEND ULTRA_C_FILES ${DIR_C_FILES})
 endforeach()
-
-#set(AsmSources)
-#foreach(AsmDir ${AsmDirs})
-#    file(GLOB CXXFiles "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.s")
-#    set(AsmSources ${AsmSources} ${AsmFiles})
-#endforeach()
-
-#S_FILES := $(foreach dir,$(ASM_DIRS),$(wildcard $(dir)/*.s))
 
 list(REMOVE_ITEM ULTRA_C_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/sqrtf.c
@@ -424,7 +512,6 @@ endforeach()
 
 # TODO: Make these into targets.
 foreach(CHILD in ${BUILD_TMP_DIR_CHILDREN})
-    message(STATUS "Creating subdirectory ${CHILD}...")
     file(MAKE_DIRECTORY "${CHILD}")
 endforeach()
 
@@ -433,22 +520,13 @@ endforeach()
 find_package(PythonInterp 3)
 
 # Make sure assets exist
-if(NOT ${NOEXTRACT})
-    execute_process(
-        COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/extract_assets.py" "${VERSION}"
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-    message(STATUS "Assets extracted.")
-endif()
-
-# TODO
-# Make tools if out of date
-#DUMMY != make -C tools >&2 || echo FAIL
-#ifeq ($(DUMMY),FAIL)
-#  $(error Failed to build tools)
-#endif
+execute_process(
+    COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/extract_assets.py" "${VERSION}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "Assets extracted.")
 
 add_custom_command(
-    OUTPUT "${SOUND_DATA_CTL_PATH}"
+    OUTPUT "${SOUND_DATA_CTL_PATH}" "${SOUND_DATA_TBL_PATH}"
     COMMAND "${PYTHON_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
         "${BUILD_TMP_DIR}/sound/samples/"
@@ -484,62 +562,102 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     )
 endforeach()
 
-#if(${EXTERNAL_DATA})
+if("${VERSION}" MATCHES "sh")
+# $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/jp/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
+# 	$(PYTHON) tools/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
+else()
+add_custom_command(
+    OUTPUT "${SEQUENCES_BIN_PATH}" "${BANK_SETS_PATH}"
+    COMMAND "${PYTHON_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
+        "--sequences"
+        "${SEQUENCES_BIN_PATH}"
+        "${BANK_SETS_PATH}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences.json"
+        ${SOUND_SEQUENCE_FILES}
+        ${VERSION_CFLAGS}
+        ${BITWIDTH_ENDIAN_ARGS}
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py" ${SOUND_SEQUENCE_FILES}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Preprocessing sound_data.ctl"
+    VERBATIM
+)
+endif()
 
-#else()
+if(EXTERNAL_DATA)
 
-    if(${VERSION} MATCHES "sh")
-        # $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/jp/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
-        # 	$(PYTHON) tools/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(VERSION_CFLAGS) $$(cat $(ENDIAN_BITWIDTH))
-    else()
-        add_custom_command(
-            OUTPUT "${SEQUENCES_BIN_PATH}" "${BANK_SETS_PATH}"
-            COMMAND "${PYTHON_EXECUTABLE}"
-                "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
-                "--sequences"
-                "${SEQUENCES_BIN_PATH}"
-                "${BANK_SETS_PATH}"
-                "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/"
-                "${CMAKE_CURRENT_SOURCE_DIR}/sound/sequences.json"
-                ${SOUND_SEQUENCE_FILES}
-                ${VERSION_CFLAGS}
-                ${BITWIDTH_ENDIAN_ARGS}
-            DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py" ${SOUND_SEQUENCE_FILES}
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            COMMENT "Preprocessing sound_data.ctl"
-            VERBATIM
-        )
-    endif()
+    add_custom_command(
+        OUTPUT "${SOUND_DATA_CTL_PATH}.c"
+        COMMAND "${MKHEADER_COMMAND}" "-e"
+            "${SOUND_DATA_CTL_REL_PATH}"
+            "${SOUND_DATA_CTL_PATH}.c"
+            "gSoundDataADSR"
+        DEPENDS "${SOUND_DATA_CTL_PATH}" "${MKHEADER_TARGET}"
+        COMMENT "Generating ${SOUND_DATA_CTL_PATH}.c from ${SOUND_DATA_CTL_PATH}"
+        VERBATIM
+    )
+
+    add_custom_command(
+        OUTPUT "${SOUND_DATA_TBL_PATH}.c"
+        COMMAND "${MKHEADER_COMMAND}" "-e"
+            "${SOUND_DATA_TBL_REL_PATH}"
+            "${SOUND_DATA_TBL_PATH}.c"
+            "gSoundDataRaw"
+        DEPENDS "${SOUND_DATA_TBL_PATH}" "${MKHEADER_TARGET}"
+        COMMENT "Generating ${SOUND_DATA_TBL_PATH}.c from ${SOUND_DATA_TBL_PATH}"
+        VERBATIM
+    )
+
+    add_custom_command(
+        OUTPUT "${SEQUENCES_BIN_PATH}.c"
+        COMMAND "${MKHEADER_COMMAND}" "-e"
+            "${SEQUENCES_BIN_REL_PATH}"
+            "${SEQUENCES_BIN_PATH}.c"
+            "gMusicData"
+        DEPENDS "${SEQUENCES_BIN_PATH}" "${MKHEADER_TARGET}"
+        COMMENT "Generating ${SEQUENCES_BIN_PATH}.c from ${SEQUENCES_BIN_PATH}"
+        VERBATIM
+    )
+
+    add_custom_command(
+        OUTPUT "${BANK_SETS_PATH}.c"
+        COMMAND "${MKHEADER_COMMAND}" "-e"
+            "${BANK_SETS_REL_PATH}"
+            "${BANK_SETS_PATH}.c"
+            "gBankSetsData"
+        DEPENDS "${BANK_SETS_PATH}" "${MKHEADER_TARGET}"
+        COMMENT "Generating ${BANK_SETS_PATH}.c from ${BANK_SETS_PATH}"
+        VERBATIM
+    )
+
+else()
 
     hexdump_binary_assets(
         "${SOUND_DATA_CTL_PATH}"
         "${SOUND_DATA_CTL_PATH}.c"
         "gSoundDataADSR" ""
     )
-    #list(APPEND DATA_C_FILES "${SOUND_DATA_CTL_PATH}.c")
 
     hexdump_binary_assets(
         "${SOUND_DATA_TBL_PATH}"
         "${SOUND_DATA_TBL_PATH}.c"
         "gSoundDataRaw" ""
     )
-    #list(APPEND DATA_C_FILES "${SOUND_DATA_TBL_PATH}.c")
 
     hexdump_binary_assets(
         "${SEQUENCES_BIN_PATH}"
         "${SEQUENCES_BIN_PATH}.c"
         "gMusicData" ""
     )
-    #list(APPEND DATA_C_FILES "${SEQUENCES_BIN_PATH}.c")
 
     hexdump_binary_assets(
         "${BANK_SETS_PATH}"
         "${BANK_SETS_PATH}.c"
         "gBankSetsData" "0x100"
     )
-    #list(APPEND DATA_C_FILES "${BANK_SETS_PATH}.c")
 
-#endif()
+endif()
 
 file(GLOB MARIO_ANIM_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/anims/*.inc.c")
 add_custom_command(
@@ -553,8 +671,6 @@ add_custom_command(
     VERBATIM
 )
 list(APPEND DATA_C_FILES "${MARIO_ANIM_DATA_C_PATH}")
-
-# $(BUILD_DIR)/levels/scripts.o: $(BUILD_DIR)/include/level_headers.h
 
 file(GLOB MARIO_DEMO_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/demos/*.bin" )
 add_custom_command(
@@ -580,7 +696,7 @@ foreach(SKYBOX_PNG_PATH ${SKYBOX_PNGS})
     set(SKYBOX_C_PATH "${BUILD_TMP_DIR}/bin/${SKYBOX_BASENAME}_skybox.c")
     add_custom_command(
         OUTPUT "${SKYBOX_C_PATH}"
-        COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}" "--type" "sky" "--split"
+        COMMAND "${SKYCONV_COMMAND}" ${SKYCONV_ARGS} "--type" "sky" "--split"
             "${SKYBOX_PNG_PATH}"
             "${BUILD_TMP_DIR}/bin"
         DEPENDS
@@ -593,20 +709,6 @@ foreach(SKYBOX_PNG_PATH ${SKYBOX_PNGS})
     # These are each their own translation unit, and must be compiled.
     list(APPEND DATA_C_FILES "${SKYBOX_C_PATH}")
 endforeach()
-
-# Ending cake textures are generated in a special way
-add_custom_command(
-    OUTPUT "${BUILD_TMP_DIR}/levels/ending/cake.inc.c"
-    COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}"
-        "--type" "cake" "--split"
-        "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png"
-        "${BUILD_TMP_DIR}/levels/ending"
-    DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png"
-        "${SKYCONV_TARGET}"
-    COMMENT "Preprocessing cake.png"
-    VERBATIM
-)
 
 # Gather the rest of the textures, remove skyboxes.
 file(GLOB_RECURSE ACTOR_TEXTURE_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/actors/*.png")
@@ -621,37 +723,68 @@ list(REMOVE_ITEM TEXTURE_PNGS ${SKYBOX_PNGS}
 string(REGEX REPLACE "[.]png" ".inc.c" TEXTURE_INC_CS "${TEXTURE_PNGS}")
 string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" TEXTURE_INC_CS "${TEXTURE_INC_CS}")
 
+# Ending cake textures are generated in a special way
+add_custom_command(
+    OUTPUT "${BUILD_TMP_DIR}/levels/ending/cake.inc.c"
+    COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}"
+        "--type" "cake" "--split"
+        "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png"
+        "${BUILD_TMP_DIR}/levels/ending"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png"
+        "${SKYCONV_TARGET}"
+    COMMENT "Preprocessing cake.png"
+    VERBATIM
+)
+list(APPEND TEXTURE_INC_CS "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
+
 foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     # Get the useful parts of the texture name/path.
-    string(REGEX REPLACE "[.]png$" "" TEXTURE_BASE_PATH_FULL "${TEXTURE_PNG}")
+    string(REGEX REPLACE "[.]png$" "" TEXTURE_BASE_PATH "${TEXTURE_PNG}")
     get_filename_component(TEXTURE_DIRECTORY_FULL "${TEXTURE_PNG}" DIRECTORY)
     string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_DIRECTORY "${TEXTURE_DIRECTORY_FULL}")
-    string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_BASE_PATH "${TEXTURE_BASE_PATH_FULL}")
+    string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_BASE_PATH "${TEXTURE_BASE_PATH}")
     # RGBA32, RGBA16, IA16, IA8, IA4, IA1, I8, I4
     string(REGEX REPLACE "^.*\\.([a-z0-9]*).png$" "\\1" TEXTURE_FMT "${TEXTURE_PNG}")
     file(MAKE_DIRECTORY "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
     string(REGEX REPLACE "/" "_" TEXTURE_TARGET_BASE "${TEXTURE_BASE_PATH}")
     
-    if(${EXTERNAL_DATA})
-        #$(BUILD_DIR)/%: %.png
-        #	$(ZEROTERM) "$(patsubst %.png,%,$^)" > $@
+    if(EXTERNAL_DATA)
+        # Convert the filename into a hex dump in C.
+        add_custom_command(
+            OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
+            COMMAND "${MKHEADER_COMMAND}" "-e" "-x"
+                "${TEXTURE_BASE_PATH}"
+                "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
+            DEPENDS "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" "${MKHEADER_TARGET}"
+            COMMENT "Translating ${TEXTURE_BASE_PATH}"
+            VERBATIM
+        )
+
     else()
     
-        # Convert the PNG into correct format.
+        # Convert the PNG into correct format using the correct tool.
+        set(TEXTURE_N64GRAPHICS_COMMAND "${N64GRAPHICS_COMMAND}")
+        set(TEXTURE_N64GRAPHICS_TARGET "${N64GRAPHICS_TARGET}")
+        if("${TEXTURE_FMT}" MATCHES "ci8" OR "${TEXTURE_FMT}" MATCHES "ci4")
+            set(TEXTURE_N64GRAPHICS_COMMAND "${N64GRAPHICS_CI_COMMAND}")
+            set(TEXTURE_N64GRAPHICS_TARGET "${N64GRAPHICS_CI_TARGET}")
+        endif()
+    
         add_custom_command(
             OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
             COMMAND
-                "${N64GRAPHICS_COMMAND}"
+                "${TEXTURE_N64GRAPHICS_COMMAND}"
                     "-i" "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}"
                     "-g" "${TEXTURE_PNG}"
                     "-f" "${TEXTURE_FMT}"
             DEPENDS
                 "${TEXTURE_PNG}"
-                "${N64GRAPHICS_TARGET}"
+                "${TEXTURE_N64GRAPHICS_TARGET}"
             COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.png"
             VERBATIM
         )
-        
+
         # Convert the converted PNG into a hex dump in C.
         add_custom_command(
             OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
@@ -661,10 +794,11 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
             VERBATIM
         )
     endif()
+        
 endforeach()
 
 # These are includes, and will be pulled into other translation units.
-add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS} "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
+add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS})
 
 # -= Levels Header =-
 
@@ -756,7 +890,7 @@ add_custom_target("localize_text" ALL DEPENDS ${TEXT_DATA_INC_C_FILES} ${LOCALIZ
 
 # -= Executable Target =-
 
-foreach(FLAG ${VERSION_CFLAGS} ${BACKEND_CFLAGS})
+foreach(FLAG ${VERSION_CFLAGS} ${BACKEND_CFLAGS} ${MISC_CFLAGS})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
 endforeach()
 
@@ -771,9 +905,11 @@ set_source_files_properties(
 
 # -= Other Dependencies =-
 
-include(FindPkgConfig)
+if(MINGW)
+    include(FindPkgConfig)
+endif()
 
-if(${USE_PYTHON})
+if(USE_PYTHON)
     set(Python_ADDITIONAL_VERSIONS 3.6)
     find_package(PythonLibs 3.6 REQUIRED)
     target_link_libraries("${TARGET}" ${PYTHON_LIBRARIES})
@@ -782,15 +918,20 @@ endif()
 
 if("${WINDOW_API}" MATCHES "SDL2")
     #set(SDL_USED 2)
-    #find_package(OpenGL REQUIRED)
-    #target_link_libraries("${TARGET}" OpenGL::GL)
-    #target_include_directories("${TARGET}" OpenGL::GL)
-    pkg_check_modules(GLEW REQUIRED glew)
-    target_include_directories("${TARGET}" PUBLIC ${GLEW_INCLUDE_DIRS})
-    target_link_libraries("${TARGET}" ${GLEW_LIBRARIES} "opengl32")
+    if(MINGW)
+        pkg_check_modules(GLEW REQUIRED glew)
+        target_include_directories("${TARGET}" PUBLIC ${GLEW_INCLUDE_DIRS})
+        target_link_libraries("${TARGET}" ${GLEW_LIBRARIES} "opengl32")
+    else()
+        find_package(OpenGL REQUIRED)
+        target_link_libraries("${TARGET}" OpenGL::GL)
+    endif()
 
-    #find_package(SDL2 REQUIRED)
-    pkg_check_modules(SDL2 REQUIRED sdl2)
+    if(MINGW)
+        pkg_check_modules(SDL2 REQUIRED sdl2)
+    else()
+        find_package(SDL2 REQUIRED)
+    endif()
     target_include_directories("${TARGET}" PUBLIC ${SDL2_INCLUDE_DIRS})
     target_link_libraries("${TARGET}" ${SDL2_LIBRARIES})
 endif()
