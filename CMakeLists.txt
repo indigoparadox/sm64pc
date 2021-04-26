@@ -91,6 +91,10 @@ if(NOT DEFINED EXTERNAL_DATA)
     set(EXTERNAL_DATA False)
 endif()
 
+if(NOT DEFINED CONFIGFILE_DEFAULT)
+    set(CONFIGFILE_DEFAULT "sm64config.txt")
+endif()
+
 # Enable Discord Rich Presence
 #set(DISCORDRPC False)
 
@@ -133,21 +137,24 @@ if(NOT DEFINED BUILD_TEXTURES)
     set(BUILD_TEXTURES True)
 endif()
 
-set(BUILD_TMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
+# -= Process Configuration =-
+
+set(BUILD_TMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/tmp")
+set(TOOLS_BIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/tools")
 message(STATUS "Using ${BUILD_TMP_DIR} for intermediate build files.")
 
-set(BUILD_TMP_DIR_CHILDREN
-    "${BUILD_TMP_DIR}/assets"
-    "${BUILD_TMP_DIR}/sound"
-    "${BUILD_TMP_DIR}/sound/samples"
-    "${BUILD_TMP_DIR}/sound/sequences"
-    "${BUILD_TMP_DIR}/include"
-    "${BUILD_TMP_DIR}/text"
-    "${BUILD_TMP_DIR}/textures"
-    "${BUILD_TMP_DIR}/levels"
-    "${BUILD_TMP_DIR}/levels/ending"
-    "${BUILD_TMP_DIR}/text/us"
-    "${BUILD_TMP_DIR}/bin")
+#set(BUILD_TMP_DIR_CHILDREN
+#    "${BUILD_TMP_DIR}/assets"
+#    "${BUILD_TMP_DIR}/sound"
+#    "${BUILD_TMP_DIR}/sound/samples"
+#    "${BUILD_TMP_DIR}/sound/sequences"
+#    "${BUILD_TMP_DIR}/include"
+#    "${BUILD_TMP_DIR}/text"
+#    "${BUILD_TMP_DIR}/textures"
+#    "${BUILD_TMP_DIR}/levels"
+#    "${BUILD_TMP_DIR}/levels/ending"
+#    "${BUILD_TMP_DIR}/text/us"
+#    "${BUILD_TMP_DIR}/bin")
 
 set(TARGET)
 Set(INCLUDE_DIRS
@@ -159,6 +166,8 @@ Set(INCLUDE_DIRS
 
 set(VERSION_CFLAGS)
 set(MISC_CFLAGS)
+
+list(APPEND MISC_CFLAGS "-DCONFIGFILE_DEFAULT=\"\\\"${CONFIGFILE_DEFAULT}\\\"\"")
 
 if("${VERSION}" MATCHES "us")
     list(APPEND VERSION_CFLAGS "-DVERSION_US")
@@ -248,32 +257,36 @@ if("${GRUCODE}" MATCHES "f3dex2e")
     #COMPARE := 0
 endif()
 
-set(SOUND_DATA_CTL_REL_PATH "sound/sound_data.ctl")
+set(SOUND_BIN_REL_DIR "sound")
+set(SOUND_BIN_DIR "${BUILD_TMP_DIR}/${SOUND_BIN_REL_DIR}")
+set(SEQUENCES_BIN_DIR "${BUILD_TMP_DIR}/${SOUND_BIN_REL_DIR}/sequences")
+set(SOUND_DATA_CTL_REL_PATH "${SOUND_BIN_REL_DIR}/sound_data.ctl")
 set(SOUND_DATA_CTL_PATH "${BUILD_TMP_DIR}/${SOUND_DATA_CTL_REL_PATH}")
-set(SOUND_DATA_TBL_REL_PATH "sound/sound_data.tbl")
+set(SOUND_DATA_TBL_REL_PATH "${SOUND_BIN_REL_DIR}/sound_data.tbl")
 set(SOUND_DATA_TBL_PATH "${BUILD_TMP_DIR}/${SOUND_DATA_TBL_REL_PATH}")
-set(SEQUENCES_BIN_REL_PATH "sound/sequences.bin")
+set(SEQUENCES_BIN_REL_PATH "${SOUND_BIN_REL_DIR}/sequences.bin")
 set(SEQUENCES_BIN_PATH "${BUILD_TMP_DIR}/${SEQUENCES_BIN_REL_PATH}")
-set(BANK_SETS_REL_PATH "sound/bank_sets")
+set(BANK_SETS_REL_PATH "${SOUND_BIN_REL_DIR}/bank_sets")
 set(BANK_SETS_PATH "${BUILD_TMP_DIR}/${BANK_SETS_REL_PATH}")
-set(MARIO_ANIM_DATA_C_PATH "${BUILD_TMP_DIR}/assets/mario_anim_data.c")
-set(DEMO_DATA_C_PATH "${BUILD_TMP_DIR}/assets/demo_data.c")
+set(ASSETS_BIN_DIR "${BUILD_TMP_DIR}/assets")
+set(MARIO_ANIM_DATA_C_PATH "${ASSETS_BIN_DIR}/mario_anim_data.c")
+set(DEMO_DATA_C_PATH "${ASSETS_BIN_DIR}/demo_data.c")
 set(CHARMAP_TXT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt")
 
 set(CPP_COMMAND "cpp")
-set(TEXTCONV_COMMAND "${BUILD_TMP_DIR}/tools/textconv")
+set(TEXTCONV_COMMAND "${TOOLS_BIN_DIR}/textconv")
 set(TEXTCONV_TARGET "textconv")
-set(N64GRAPHICS_COMMAND "${BUILD_TMP_DIR}/tools/n64graphics")
+set(N64GRAPHICS_COMMAND "${TOOLS_BIN_DIR}/n64graphics")
 set(N64GRAPHICS_TARGET "n64graphics")
-set(N64GRAPHICS_CI_COMMAND "${BUILD_TMP_DIR}/tools/n64graphics_ci")
+set(N64GRAPHICS_CI_COMMAND "${TOOLS_BIN_DIR}/n64graphics_ci")
 set(N64GRAPHICS_CI_TARGET "n64graphics_ci")
-set(SKYCONV_COMMAND "${BUILD_TMP_DIR}/tools/skyconv")
+set(SKYCONV_COMMAND "${TOOLS_BIN_DIR}/skyconv")
 set(SKYCONV_TARGET "skyconv")
-set(AIFF_EXTRACT_CODEBOOK_COMMAND "${BUILD_TMP_DIR}/tools/aiff_extract_codebook")
+set(AIFF_EXTRACT_CODEBOOK_COMMAND "${TOOLS_BIN_DIR}/aiff_extract_codebook")
 set(AIFF_EXTRACT_CODEBOOK_TARGET "aiff_extract_codebook")
-set(VADPCM_ENC_COMMAND "${BUILD_TMP_DIR}/tools/vadpcm_enc")
+set(VADPCM_ENC_COMMAND "${TOOLS_BIN_DIR}/vadpcm_enc")
 set(VADPCM_ENC_TARGET "vadpcm_enc")
-set(MKHEADER_COMMAND "${BUILD_TMP_DIR}/tools/mkheader")
+set(MKHEADER_COMMAND "${TOOLS_BIN_DIR}/mkheader")
 set(MKHEADER_TARGET "mkheader")
 set(ZEROTERM_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/zeroterm.py")
 set(MARIO_ANIMS_CONVERTER_PY "${CMAKE_CURRENT_SOURCE_DIR}/tools/mario_anims_converter.py")
@@ -297,6 +310,15 @@ macro(hexdump_binary_assets bin_file c_file array_name array_sz)
         COMMENT "Generating ${c_file} from ${bin_file}"
         VERBATIM
     )
+endmacro()
+
+macro(make_directory_target path)
+add_custom_command(
+    OUTPUT "${path}"
+    COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${path}"
+    COMMENT "Creating directory ${path}"
+    VERBATIM
+)
 endmacro()
 
 # -= Endian and Bitwidth Tests =-
@@ -461,7 +483,7 @@ list(REMOVE_ITEM ULTRA_C_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/__osViGetCurrentContext.c
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/__osDevMgrMain)
 
-# -= Data File Lists =-
+# -= Assets Extraction =-
 
 file(GLOB SOUND_BANK_FILES "${CMAKE_CURRENT_SOURCE_DIR}/sound/sound_banks/*.json")
 
@@ -483,7 +505,8 @@ set(SOUND_SAMPLE_TABLES)
 foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
 
     string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" SAMPLE_BUILD_DIR "${SAMPLE_DIR}")
-    list(APPEND BUILD_TMP_DIR_CHILDREN ${SAMPLE_BUILD_DIR})
+
+    make_directory_target("${SAMPLE_BUILD_DIR}")
 
     file(GLOB DIR_AIFFS "${SAMPLE_DIR}/*.aiff")
 
@@ -498,7 +521,7 @@ foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
         add_custom_command(
             OUTPUT "${TABLE}"
             COMMAND "${AIFF_EXTRACT_CODEBOOK_COMMAND}" "${AIFF}" > "${TABLE}"
-            DEPENDS "${AIFF_EXTRACT_CODEBOOK_TARGET}" "${AIFF}"
+            DEPENDS "${AIFF_EXTRACT_CODEBOOK_TARGET}" "${AIFF}" "${SAMPLE_BUILD_DIR}"
             COMMENT "Encoding ${AIFF}"
             VERBATIM
         )
@@ -512,15 +535,6 @@ foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
         )
     endforeach()
 endforeach()
-
-# -= Build Directory Creation =-
-
-# TODO: Make these into targets.
-foreach(CHILD in ${BUILD_TMP_DIR_CHILDREN})
-    file(MAKE_DIRECTORY "${CHILD}")
-endforeach()
-
-# -= Assets Extraction =-
 
 find_package(PythonInterp 3)
 
@@ -550,18 +564,20 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     string(REGEX REPLACE "[.]s$" ".m64" S_M64_FILE "${S_FILE}")
     string(REGEX REPLACE "[.]s$" ".o" S_O_FILE "${S_FILE}")
     string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" S_M64_FILE "${S_M64_FILE}")
+    get_filename_component(S_M64_DIR "${S_M64_FILE}" DIRECTORY)
     list(APPEND SOUND_SEQUENCE_FILES "${S_M64_FILE}")
+    make_directory_target("${S_M64_DIR}")
     add_custom_command(
         OUTPUT "${S_O_FILE}"
         COMMAND "${CMAKE_ASM_COMPILER}" ${CMAKE_ASFLAGS} "-o" "${S_O_FILE}" "${S_FILE}"
-        DEPENDS "${S_FILE}"
+        DEPENDS "${S_FILE}" "${S_M64_DIR}"
         COMMENT "Assembling ${S_FILE}"
         VERBATIM
     )
     add_custom_command(
         OUTPUT "${S_M64_FILE}"
         COMMAND "${CMAKE_OBJCOPY}" "-j" ".rodata" "${S_O_FILE}" "-O" "binary" "${S_M64_FILE}"
-        DEPENDS "${S_O_FILE}"
+        DEPENDS "${S_O_FILE}" 
         COMMENT "Translating ${S_O_FILE}"
         VERBATIM
     )
@@ -583,7 +599,11 @@ add_custom_command(
         ${SOUND_SEQUENCE_FILES}
         ${VERSION_CFLAGS}
         ${BITWIDTH_ENDIAN_ARGS}
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py" ${SOUND_SEQUENCE_FILES}
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/assemble_sound.py"
+        "${SOUND_BIN_DIR}"
+        "${SEQUENCES_BIN_DIR}"
+        ${SOUND_SEQUENCE_FILES}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     COMMENT "Preprocessing sound_data.ctl"
     VERBATIM
@@ -598,7 +618,7 @@ if(EXTERNAL_DATA)
             "${SOUND_DATA_CTL_REL_PATH}"
             "${SOUND_DATA_CTL_PATH}.c"
             "gSoundDataADSR"
-        DEPENDS "${SOUND_DATA_CTL_PATH}" "${MKHEADER_TARGET}"
+        DEPENDS "${SOUND_DATA_CTL_PATH}" "${MKHEADER_TARGET}" "${SOUND_BIN_DIR}"
         COMMENT "Generating ${SOUND_DATA_CTL_PATH}.c from ${SOUND_DATA_CTL_PATH}"
         VERBATIM
     )
@@ -609,7 +629,7 @@ if(EXTERNAL_DATA)
             "${SOUND_DATA_TBL_REL_PATH}"
             "${SOUND_DATA_TBL_PATH}.c"
             "gSoundDataRaw"
-        DEPENDS "${SOUND_DATA_TBL_PATH}" "${MKHEADER_TARGET}"
+        DEPENDS "${SOUND_DATA_TBL_PATH}" "${MKHEADER_TARGET}" "${SOUND_BIN_DIR}"
         COMMENT "Generating ${SOUND_DATA_TBL_PATH}.c from ${SOUND_DATA_TBL_PATH}"
         VERBATIM
     )
@@ -620,7 +640,7 @@ if(EXTERNAL_DATA)
             "${SEQUENCES_BIN_REL_PATH}"
             "${SEQUENCES_BIN_PATH}.c"
             "gMusicData"
-        DEPENDS "${SEQUENCES_BIN_PATH}" "${MKHEADER_TARGET}"
+        DEPENDS "${SEQUENCES_BIN_PATH}" "${MKHEADER_TARGET}" "${SOUND_BIN_DIR}"
         COMMENT "Generating ${SEQUENCES_BIN_PATH}.c from ${SEQUENCES_BIN_PATH}"
         VERBATIM
     )
@@ -631,7 +651,7 @@ if(EXTERNAL_DATA)
             "${BANK_SETS_REL_PATH}"
             "${BANK_SETS_PATH}.c"
             "gBankSetsData"
-        DEPENDS "${BANK_SETS_PATH}" "${MKHEADER_TARGET}"
+        DEPENDS "${BANK_SETS_PATH}" "${MKHEADER_TARGET}" "${SOUND_BIN_DIR}"
         COMMENT "Generating ${BANK_SETS_PATH}.c from ${BANK_SETS_PATH}"
         VERBATIM
     )
@@ -664,13 +684,15 @@ else()
 
 endif()
 
+make_directory_target("${ASSETS_BIN_DIR}")
+
 file(GLOB MARIO_ANIM_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/anims/*.inc.c")
 add_custom_command(
     OUTPUT "${MARIO_ANIM_DATA_C_PATH}"
     COMMAND "${PYTHON_EXECUTABLE}"
         "${MARIO_ANIMS_CONVERTER_PY}" >
         "${MARIO_ANIM_DATA_C_PATH}"
-    DEPENDS ${MARIO_ANIM_DATA_FILES} "${MARIO_ANIMS_CONVERTER_PY}"
+    DEPENDS ${MARIO_ANIM_DATA_FILES} "${MARIO_ANIMS_CONVERTER_PY}" "${ASSETS_BIN_DIR}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     COMMENT "Converting animations"
     VERBATIM
@@ -685,7 +707,11 @@ add_custom_command(
         "${CMAKE_CURRENT_SOURCE_DIR}/assets/demo_data.json"
         ${VERSION_CFLAGS} >
         "${DEMO_DATA_C_PATH}"
-    DEPENDS ${MARIO_DEMO_DATA_FILES} "${CMAKE_CURRENT_SOURCE_DIR}/assets/demo_data.json" "${DEMO_DATA_CONVERTER_PY}"
+    DEPENDS
+        ${MARIO_DEMO_DATA_FILES}
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/demo_data.json"
+        "${DEMO_DATA_CONVERTER_PY}"
+        "${ASSETS_BIN_DIR}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     COMMENT "Converting demo data"
     VERBATIM
@@ -693,6 +719,8 @@ add_custom_command(
 list(APPEND DATA_C_FILES "${DEMO_DATA_C_PATH}")
 
 # -= Texture Generation =-
+
+make_directory_target("${BUILD_TMP_DIR}/bin")
 
 file(GLOB SKYBOX_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/textures/skyboxes/*.png")
 set(SKYBOX_C_FILES)
@@ -702,6 +730,7 @@ foreach(SKYBOX_PNG_PATH ${SKYBOX_PNGS})
 
     set(SKYBOX_DEPENDS
         "${SKYBOX_PNG_PATH}"
+        "${BUILD_TMP_DIR}/bin"
         "${SKYCONV_TARGET}")
     
     if(EXTERNAL_DATA)
@@ -736,6 +765,7 @@ string(REGEX REPLACE "[.]png" ".inc.c" TEXTURE_INC_CS "${TEXTURE_PNGS}")
 string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" TEXTURE_INC_CS "${TEXTURE_INC_CS}")
 
 # Ending cake textures are generated in a special way
+make_directory_target("${BUILD_TMP_DIR}/levels/ending")
 add_custom_command(
     OUTPUT "${BUILD_TMP_DIR}/levels/ending/cake.inc.c"
     COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}"
@@ -745,6 +775,7 @@ add_custom_command(
     DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/levels/ending/cake.png"
         "${SKYCONV_TARGET}"
+        "${BUILD_TMP_DIR}/levels/ending"
     COMMENT "Preprocessing cake.png"
     VERBATIM
 )
@@ -752,15 +783,19 @@ list(APPEND TEXTURE_INC_CS "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
 
 foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     # Get the useful parts of the texture name/path.
+
+    get_filename_component(TEXTURE_DIRECTORY "${TEXTURE_PNG}" DIRECTORY)
+    string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_DIRECTORY "${TEXTURE_DIRECTORY}")
+    
     string(REGEX REPLACE "[.]png$" "" TEXTURE_BASE_PATH "${TEXTURE_PNG}")
-    get_filename_component(TEXTURE_DIRECTORY_FULL "${TEXTURE_PNG}" DIRECTORY)
-    string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_DIRECTORY "${TEXTURE_DIRECTORY_FULL}")
     string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "" TEXTURE_BASE_PATH "${TEXTURE_BASE_PATH}")
+    
     # RGBA32, RGBA16, IA16, IA8, IA4, IA1, I8, I4
     string(REGEX REPLACE "^.*\\.([a-z0-9]*).png$" "\\1" TEXTURE_FMT "${TEXTURE_PNG}")
-    file(MAKE_DIRECTORY "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
     string(REGEX REPLACE "/" "_" TEXTURE_TARGET_BASE "${TEXTURE_BASE_PATH}")
-    
+
+    make_directory_target("${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
+
     if(EXTERNAL_DATA)
         # Convert the filename into a hex dump in C.
         add_custom_command(
@@ -768,7 +803,9 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
             COMMAND "${MKHEADER_COMMAND}" "-e" "-x"
                 "${TEXTURE_BASE_PATH}"
                 "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
-            DEPENDS "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}" "${MKHEADER_TARGET}"
+            DEPENDS
+                "${MKHEADER_TARGET}"
+                "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}"
             COMMENT "Translating ${TEXTURE_BASE_PATH}"
             VERBATIM
         )
@@ -793,6 +830,7 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
             DEPENDS
                 "${TEXTURE_PNG}"
                 "${TEXTURE_N64GRAPHICS_TARGET}"
+                "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}"
             COMMENT "Preprocessing ${TEXTURE_BASE_PATH}.png"
             VERBATIM
         )
@@ -814,6 +852,8 @@ add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS})
 
 # -= Levels Header =-
 
+make_directory_target("${BUILD_TMP_DIR}/include")
+
 add_custom_command(
     OUTPUT "${BUILD_TMP_DIR}/include/level_headers.h"
     COMMAND 
@@ -824,6 +864,7 @@ add_custom_command(
     DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in"
         "${OUTPUT_LEVEL_HEADERS_PY}"
+        "${BUILD_TMP_DIR}/include"
     COMMENT "Preprocessing level_headers.h"
     VERBATIM)
 
@@ -833,6 +874,9 @@ add_custom_target("level_headers.h" ALL DEPENDS "${BUILD_TMP_DIR}/include/level_
 
 set(TEXT_DATA_INC_C_FILES)
 foreach(DATA_VERSION us)
+    
+    make_directory_target("${BUILD_TMP_DIR}/text/${DATA_VERSION}")
+
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
         COMMAND
@@ -849,6 +893,7 @@ foreach(DATA_VERSION us)
             "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c"
             "${TEXTCONV_TARGET}"
             "${CHARMAP_TXT_PATH}"
+            "${BUILD_TMP_DIR}/text/${DATA_VERSION}"
         COMMENT "Preprocessing define_courses.inc.c"
         VERBATIM)
     list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
@@ -870,6 +915,7 @@ foreach(DATA_VERSION us)
             "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/dialogs.h"
             "${CHARMAP_TXT_PATH}"
             "${TEXTCONV_TARGET}"
+            "${BUILD_TMP_DIR}/text/${DATA_VERSION}"
         COMMENT "Preprocessing define_text.inc.c"
         VERBATIM)
     list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
