@@ -781,6 +781,8 @@ add_custom_command(
 )
 list(APPEND TEXTURE_INC_CS "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
 
+set(TEXTURE_PNG_DIRS)
+
 foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     # Get the useful parts of the texture name/path.
 
@@ -796,7 +798,10 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
 
     make_directory_target("${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
 
+    list(APPEND TEXTURE_PNG_DIRS "${TEXTURE_DIRECTORY}")
+
     if(EXTERNAL_DATA)
+
         # Convert the filename into a hex dump in C.
         add_custom_command(
             OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
@@ -846,6 +851,8 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     endif()
         
 endforeach()
+
+list(REMOVE_DUPLICATES TEXTURE_PNG_DIRS)
 
 # These are includes, and will be pulled into other translation units.
 add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS})
@@ -999,3 +1006,34 @@ target_include_directories("${TARGET}" PUBLIC ${INCLUDE_DIRS})
 add_dependencies("${TARGET}" "texture_inc_cs")
 add_dependencies("${TARGET}" "localize_text")
 add_dependencies("${TARGET}" "level_headers.h")
+
+install(
+    TARGETS "${TARGET}"
+    RUNTIME DESTINATION "/"
+)
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/sm64.py" DESTINATION "/")
+
+if(EXTERNAL_DATA)
+    install(
+        DIRECTORY
+            "${CMAKE_CURRENT_SOURCE_DIR}/actors"
+            "${CMAKE_CURRENT_SOURCE_DIR}/levels"
+            "${CMAKE_CURRENT_SOURCE_DIR}/textures"
+        DESTINATION "/gfx"
+        FILES_MATCHING PATTERN "*.png"
+    )
+    install(
+        DIRECTORY "${SKYTILE_DIR}"
+        DESTINATION "/gfx/textures"
+        FILES_MATCHING PATTERN "*.png"
+    )
+    install(
+        FILES
+            "${BUILD_TMP_DIR}/sound/sequences.bin"
+            "${BUILD_TMP_DIR}/sound/sound_data.ctl"
+            "${BUILD_TMP_DIR}/sound/sound_data.tbl"
+            "${BUILD_TMP_DIR}/sound/bank_sets"
+        DESTINATION "/sound"
+    )
+endif()
