@@ -1,4 +1,4 @@
-#include <dirent.h>
+
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -6,11 +6,13 @@
 #include <string.h>
 #include <sys/stat.h>
 #if defined(_MSC_VER) || defined(__MINGW32__)
+  #include "win_dirent.h"
   #include <io.h>
   #include <sys/utime.h>
 #else
   #include <unistd.h>
   #include <utime.h>
+  #include <dirent.h>
 #endif
 
 #include "utils.h"

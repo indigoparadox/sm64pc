@@ -13,6 +13,14 @@
 #include "n64graphics.h"
 #include "utils.h"
 
+#ifndef PATH_MAX
+#define PATH_MAX MAX_PATH
+#endif
+
+#ifdef WIN32
+#define ssize_t SSIZE_T
+#endif
+
 typedef struct {
     rgba *px;
     bool useless;
@@ -423,6 +431,7 @@ fail:
 
 void combine_cakeimg(const char *input, const char *output, bool eu) {
     int W, H, SMALLH, SMALLW;
+    uint8_t* buf = NULL;
     if (eu) {
         W = 5;
         H = 7;
@@ -444,7 +453,7 @@ void combine_cakeimg(const char *input, const char *output, bool eu) {
         for (int i = 0; i < H; i++) {
             for (int j = 0; j < W; j++) {
                 //Read the full tile
-                uint8_t buf[SMALLH * SMALLW * 2];
+                buf = calloc(SMALLH * SMALLW, 2);
                 if (fread(buf, sizeof(buf), 1, file) != 1) goto fail;
                 rgba *tile = raw2rgba(buf, SMALLH, SMALLW, 16);
 
@@ -454,6 +463,7 @@ void combine_cakeimg(const char *input, const char *output, bool eu) {
                         combined[(i*(SMALLH-1) + y) * (SMALLW-1)*W + (j*(SMALLW-1) + x)] = tile[y*(SMALLW) + x];
                     }
                 }
+                free(buf);
             }
         }
         if (!rgba2png(output, combined, (SMALLW-1)*W, (SMALLH-1)*H)) {
@@ -465,7 +475,7 @@ void combine_cakeimg(const char *input, const char *output, bool eu) {
         combined = malloc(SMALLH*H * SMALLW*W * sizeof(rgba));
         for (int i = 0; i < H; i++) {
             for (int j = 0; j < W; j++) {
-                uint8_t buf[SMALLH * SMALLW * 2];
+                buf = calloc(SMALLH * SMALLW, 2 );
                 if (fread(buf, sizeof(buf), 1, file) != 1) goto fail;
                 rgba *tile = raw2rgba(buf, SMALLH, SMALLW, 16);
                 for (int y = 0; y < SMALLH; y++) {
@@ -473,6 +483,7 @@ void combine_cakeimg(const char *input, const char *output, bool eu) {
                         combined[(i*SMALLH + y) * SMALLW*W + (j*SMALLW + x)] = tile[y*SMALLW + x];
                     }
                 }
+                free(buf);
             }
         }
         if (!rgba2png(output, combined, SMALLW*W, SMALLH*H)) {
