@@ -1324,7 +1324,7 @@ def interact_cap( mario_state, interact_type, obj ):
             cap_time = 1800
             cap_music = (4, sounds.SEQ_EVENT_POWERUP) # Priority, Sequence
 
-        if cap_time > mario_state.capTimer:
+        if cap_time > mario_state.get_cap_timer():
             mario_state.set_cap_timer( cap_time )
 
         if mario_state.get_action() & mario.ACT_FLAG_IDLE or \
