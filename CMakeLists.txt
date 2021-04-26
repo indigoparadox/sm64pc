@@ -89,7 +89,11 @@ endif()
 
 # Load resources from external files
 if(NOT DEFINED EXTERNAL_DATA)
-    set(EXTERNAL_DATA False)
+    if(MSVC)
+        set(EXTERNAL_DATA True)
+    else()
+        set(EXTERNAL_DATA False)
+    endif()
 endif()
 
 if(NOT DEFINED CONFIGFILE_DEFAULT)
@@ -433,11 +437,11 @@ macro(hexdump_binary_assets bin_file c_file array_name array_sz)
     )
 endmacro()
 
-macro(make_directory_target path)
+macro(make_directory_target paths)
 add_custom_command(
-    OUTPUT "${path}"
-    COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${path}"
-    COMMENT "Creating directory ${path}"
+    OUTPUT "${paths}"
+    COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" ${paths}
+    COMMENT "Creating directory ${paths}"
     VERBATIM
 )
 endmacro()
@@ -593,13 +597,14 @@ else()
 endif()
 
 file(GLOB SOUND_SAMPLE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/sound/samples/*")
+
+make_directory_target(${SOUND_SAMPLE_DIRS})
+
 set(SOUND_SAMPLE_AIFCS)
 set(SOUND_SAMPLE_TABLES)
 foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
 
     string(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" SAMPLE_BUILD_DIR "${SAMPLE_DIR}")
-
-    make_directory_target("${SAMPLE_BUILD_DIR}")
 
     file(GLOB DIR_AIFFS "${SAMPLE_DIR}/*.aiff")
 
@@ -653,13 +658,14 @@ add_custom_command(
     VERBATIM
 )
 
+set(M64_DIRS)
 foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
     string(REGEX REPLACE "[.]s$" ".m64" S_M64_FILE "${S_FILE}")
     string(REGEX REPLACE "[.]s$" ".o" S_O_FILE "${S_FILE}")
     string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" S_M64_FILE "${S_M64_FILE}")
     get_filename_component(S_M64_DIR "${S_M64_FILE}" DIRECTORY)
+    list(APPEND M64_DIRS "${S_M64_DIR}")
     list(APPEND SOUND_SEQUENCE_FILES "${S_M64_FILE}")
-    make_directory_target("${S_M64_DIR}")
     add_custom_command(
         OUTPUT "${S_O_FILE}"
         COMMAND "${CMAKE_ASM_COMPILER}" ${CMAKE_ASFLAGS} "-o" "${S_O_FILE}" "${S_FILE}"
@@ -675,6 +681,10 @@ foreach(S_FILE ${SOUND_SEQUENCE_S_FILES})
         VERBATIM
     )
 endforeach()
+
+list(REMOVE_DUPLICATES M64_DIRS)
+
+make_directory_target(${M64_DIRS})
 
 if(VERSION MATCHES "sh")
 # $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/jp/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
@@ -875,6 +885,7 @@ add_custom_command(
 list(APPEND TEXTURE_INC_CS "${BUILD_TMP_DIR}/levels/ending/cake.inc.c")
 
 set(TEXTURE_PNG_DIRS)
+set(TEXTURE_PNG_FULL_DIRS)
 
 foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     # Get the useful parts of the texture name/path.
@@ -889,9 +900,8 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     string(REGEX REPLACE "^.*\\.([a-z0-9]*).png$" "\\1" TEXTURE_FMT "${TEXTURE_PNG}")
     string(REGEX REPLACE "/" "_" TEXTURE_TARGET_BASE "${TEXTURE_BASE_PATH}")
 
-    make_directory_target("${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
-
     list(APPEND TEXTURE_PNG_DIRS "${TEXTURE_DIRECTORY}")
+    list(APPEND TEXTURE_PNG_FULL_DIRS "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
 
     if(EXTERNAL_DATA)
 
@@ -946,6 +956,9 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
 endforeach()
 
 list(REMOVE_DUPLICATES TEXTURE_PNG_DIRS)
+list(REMOVE_DUPLICATES TEXTURE_PNG_FULL_DIRS)
+
+make_directory_target(${TEXTURE_PNG_FULL_DIRS})
 
 # These are includes, and will be pulled into other translation units.
 add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS})
