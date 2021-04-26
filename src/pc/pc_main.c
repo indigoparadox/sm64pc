@@ -82,7 +82,7 @@ extern PyObject *gMarioModule;
 
 /* This is the hook called by main() to get ALL of python running. */
 void python_init() {
-    PyObject *pName, *pSysPath, *pCwd, *pFunc;
+    PyObject *pName, *pSysPath, *pCwd, *pFunc, *pScriptPath;
     char cwd[255];
 
     Py_SetProgramName( Py_DecodeLocale( "sm64pc", NULL ) );
@@ -129,6 +129,10 @@ void python_init() {
     getcwd(cwd, 255);
     pCwd = PyUnicode_FromString(cwd);
     PyList_Append(pSysPath, pCwd);
+    #ifdef PYTHON_SCRIPT_PATH
+    pScriptPath = PyUnicode_FromString(PYTHON_SCRIPT_PATH);
+    PyList_Append(pSysPath, pScriptPath);
+    #endif /* PYTHON_SCRIPT_PATH */
     Py_DECREF(pCwd);
     pName = PyUnicode_DecodeFSDefault( "sm64" );
     /* TODO: Error checking of pName left out */

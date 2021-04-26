@@ -62,13 +62,13 @@ endif()
 #TARGET_BITS ?= 0
 
 # Disable better camera by default
-if(NOT DEFINED USE_PYTHON)
-    set(BETTERCAMERA False)
+if(NOT DEFINED BETTER_CAMERA)
+    set(BETTER_CAMERA False)
 endif()
 
 # Disable no drawing distance by default
-if(NOT DEFINED NODRAWINGDISTANCE)
-    set(NODRAWINGDISTANCE False)
+if(NOT DEFINED NO_DRAWING_DISTANCE)
+    set(NO_DRAWING_DISTANCE False)
 endif()
 
 # Disable texture fixes by default (helps with them purists)
@@ -82,8 +82,8 @@ if(NOT DEFINED EXT_OPTIONS_MENU)
 endif()
 
 # Disable text-based save-files by default
-if(NOT DEFINED TEXTSAVES)
-    set(TEXTSAVES False)
+if(NOT DEFINED TEXT_SAVES)
+    set(TEXT_SAVES False)
 endif()
 
 # Load resources from external files
@@ -124,9 +124,54 @@ if(NOT DEFINED CONTROLLER_API)
     set(CONTROLLER_API SDL2)
 endif()
 
+if(NOT DEFINED FORCE_STANDALONE)
+    set(FORCE_STANDALONE False)
+endif()
+
+# INSTALL_*_ROOT will be used relative to the CMAKE_INSTALL_PREFIX by the installer.
+if(NOT DEFINED INSTALL_BIN_ROOT)
+    if(WIN32 OR MINGW OR FORCE_STANDALONE)
+        set(INSTALL_BIN_ROOT "/")
+    elseif(UNIX)
+        set(INSTALL_BIN_ROOT "/bin/")
+    endif()
+endif()
+
+if(NOT DEFINED INSTALL_RES_ROOT)
+    if(WIN32 OR MINGW OR FORCE_STANDALONE)
+        set(INSTALL_RES_ROOT "/")
+    elseif(UNIX)
+        set(INSTALL_RES_ROOT "/share/sm64/")
+    endif()
+endif()
+
+if(NOT DEFINED INSTALL_SCRIPT_ROOT)
+    if(WIN32 OR MINGW OR FORCE_STANDALONE)
+        set(INSTALL_SCRIPT_ROOT "/")
+    else()
+        set(INSTALL_SCRIPT_ROOT "/share/sm64/")
+    endif()
+endif()
+
 # Misc settings for EXTERNAL_DATA
-if(NOT DEFINED BASEDIR)
-    set(BASEDIR res)
+if(NOT DEFINED EXT_BASE_DIR)
+    if(WIN32 OR MINGW)
+        set(EXT_BASE_DIR "res")
+    elseif(UNIX)
+        set(EXT_BASE_DIR "${CMAKE_INSTALL_PREFIX}${INSTALL_RES_ROOT}")
+    endif()
+endif()
+
+if(NOT DEFINED EXT_SOUND_DIR)
+    set(EXT_SOUND_DIR "sound")
+endif()
+
+if(NOT DEFINED EXT_TEXTURE_DIR)
+    set(EXT_TEXTURE_DIR "gfx")
+endif()
+
+if(NOT DEFINED SCRIPT_DIR)
+    set(SCRIPT_DIR "${EXT_BASE_DIR}")
 endif()
 
 if(NOT DEFINED BASEPACK)
@@ -139,22 +184,15 @@ endif()
 
 # -= Process Configuration =-
 
-set(BUILD_TMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/tmp")
-set(TOOLS_BIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/tools")
-message(STATUS "Using ${BUILD_TMP_DIR} for intermediate build files.")
+message(STATUS "Installing binaries to ${CMAKE_INSTALL_PREFIX}${INSTALL_BIN_ROOT}")
+message(STATUS "Installing resources to ${CMAKE_INSTALL_PREFIX}${INSTALL_RES_ROOT}")
+if(USE_PYTHON)
+    message(STATUS "Installing python script to ${SCRIPT_DIR}")
+endif()
 
-#set(BUILD_TMP_DIR_CHILDREN
-#    "${BUILD_TMP_DIR}/assets"
-#    "${BUILD_TMP_DIR}/sound"
-#    "${BUILD_TMP_DIR}/sound/samples"
-#    "${BUILD_TMP_DIR}/sound/sequences"
-#    "${BUILD_TMP_DIR}/include"
-#    "${BUILD_TMP_DIR}/text"
-#    "${BUILD_TMP_DIR}/textures"
-#    "${BUILD_TMP_DIR}/levels"
-#    "${BUILD_TMP_DIR}/levels/ending"
-#    "${BUILD_TMP_DIR}/text/us"
-#    "${BUILD_TMP_DIR}/bin")
+set(BUILD_TMP_DIR "${CMAKE_BINARY_DIR}/tmp")
+set(TOOLS_BIN_DIR "${CMAKE_BINARY_DIR}/tools")
+message(STATUS "Using ${BUILD_TMP_DIR} for intermediate build files.")
 
 set(TARGET)
 Set(INCLUDE_DIRS
@@ -169,6 +207,12 @@ set(MISC_CFLAGS)
 
 list(APPEND MISC_CFLAGS "-DCONFIGFILE_DEFAULT=\"\\\"${CONFIGFILE_DEFAULT}\\\"\"")
 
+if(FORCE_STANDALONE)
+    message(STATUS "Using Force Standalone")
+else()
+    message(STATUS "NOT using Force Standalone")
+endif()
+
 if("${VERSION}" MATCHES "us")
     list(APPEND VERSION_CFLAGS "-DVERSION_US")
     #set(VERSION_AS_FLAGS "--defsym VERSION_US=1")
@@ -178,20 +222,33 @@ if("${VERSION}" MATCHES "us")
 endif()
 
 if(USE_PYTHON)
-    list(APPEND VERSION_CFLAGS "-DUSE_PYTHON")
+    list(APPEND VERSION_CFLAGS
+        "-DUSE_PYTHON"
+        "-DPYTHON_SCRIPT_PATH=\"\\\"\${SCRIPT_DIR}\\\"\"")
+    message(STATUS "Using Python.")
+else()
+    message(STATUS "NOT using Python.")
 endif()
 
-if(BETTERCAMERA)
+if(BETTER_CAMERA)
     list(APPEND MISC_CFLAGS "-DBETTERCAMERA")
     set(EXT_OPTIONS_MENU True)
+    message(STATUS "Using Better Camera.")
+else()
+    message(STATUS "NOT using Better Camera.")
 endif()
 
-if(TEXTSAVES)
+if(TEXT_SAVES)
     list(APPEND MISC_CFLAGS "-DTEXTSAVES")
+    message(STATUS "Using Text Saves.")
+else()
+message(STATUS "NOT using Text Saves.")
 endif()
 
-if(NODRAWINGDISTANCE)
+if(NO_DRAWING_DISTANCE)
     list(APPEND MISC_CFLAGS "-DNODRAWINGDISTANCE")
+else()
+    message(STATUS "NOT using No Drawing Distance.")
 endif()
 
 if(WIN32 OR UNIX OR MINGW)
@@ -206,21 +263,37 @@ endif()
 # Texture Fix
 if(TEXTURE_FIX)
     list(APPEND MISC_CFLAGS "-DTEXTURE_FIX")
+    message(STATUS "Using Texture Fix.")
+else()
+    message(STATUS "NOT using Texture Fix.")
 endif()
 
 # Extended Options Menu
-if($(EXT_OPTIONS_MENU),1)
+if(EXT_OPTIONS_MENU)
     list(APPEND MISC_CFLAGS "-DEXT_OPTIONS_MENU")
+    message(STATUS "Using Extended Options Menu.")
+else()
+    message(STATUS "NOT using Extended Options Menu.")
+endif()
+
+if(EXTERNAL_DATA)
+    message(STATUS "Using External Data.")
+else()
+    message(STATUS "NOT using External Data.")
 endif()
 
 # Load External Textures
 set(SKYCONV_ARGS)
 if(EXTERNAL_DATA)
-    list(APPEND MISC_CFLAGS "-DEXTERNAL_DATA" "-DFS_BASEDIR=\"\\\"${BASEDIR}\\\"\"")
+    list(APPEND MISC_CFLAGS
+        "-DEXTERNAL_DATA"
+        "-DFS_BASEDIR=\"\\\"${EXT_BASE_DIR}\\\"\""
+        "-DFS_TEXTUREDIR=\"\\\"${EXT_TEXTURE_DIR}\\\"\""
+        "-DFS_SOUNDDIR=\"\\\"${EXT_SOUND_DIR}\\\"\"")
     
     # Tell skyconv to write names instead of actual texture data
     # and save the split tiles so we can use them later.
-    set(SKYTILE_DIR "${BUILD_TMP_DIR}/gfx/textures/skybox_tiles")
+    set(SKYTILE_DIR "${BUILD_TMP_DIR}/${EXT_TEXTURE_DIR}/textures/skybox_tiles")
     
     add_custom_command(
         OUTPUT "${SKYTILE_DIR}"
@@ -1009,10 +1082,12 @@ add_dependencies("${TARGET}" "level_headers.h")
 
 install(
     TARGETS "${TARGET}"
-    RUNTIME DESTINATION "/"
+    RUNTIME DESTINATION "${INSTALL_BIN_ROOT}"
 )
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/sm64.py" DESTINATION "/")
+if(USE_PYTHON)
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/sm64.py" DESTINATION "${INSTALL_SCRIPT_ROOT}")
+endif()
 
 if(EXTERNAL_DATA)
     install(
@@ -1020,12 +1095,12 @@ if(EXTERNAL_DATA)
             "${CMAKE_CURRENT_SOURCE_DIR}/actors"
             "${CMAKE_CURRENT_SOURCE_DIR}/levels"
             "${CMAKE_CURRENT_SOURCE_DIR}/textures"
-        DESTINATION "/gfx"
+        DESTINATION "${INSTALL_RES_ROOT}${EXT_TEXTURE_DIR}"
         FILES_MATCHING PATTERN "*.png"
     )
     install(
         DIRECTORY "${SKYTILE_DIR}"
-        DESTINATION "/gfx/textures"
+        DESTINATION "${INSTALL_RES_ROOT}${EXT_TEXTURE_DIR}/textures"
         FILES_MATCHING PATTERN "*.png"
     )
     install(
@@ -1034,6 +1109,6 @@ if(EXTERNAL_DATA)
             "${BUILD_TMP_DIR}/sound/sound_data.ctl"
             "${BUILD_TMP_DIR}/sound/sound_data.tbl"
             "${BUILD_TMP_DIR}/sound/bank_sets"
-        DESTINATION "/sound"
+        DESTINATION "${INSTALL_RES_ROOT}${EXT_SOUND_DIR}"
     )
 endif()

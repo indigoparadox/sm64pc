@@ -17,8 +17,13 @@
 # define FS_BASEPACK_PREFIX "base"
 #endif
 
-#define FS_TEXTUREDIR "gfx"
-#define FS_SOUNDDIR "sound"
+#ifndef FS_TEXTUREDIR
+# define FS_TEXTUREDIR "gfx"
+#endif
+
+#ifndef FS_SOUNDDIR
+# define FS_SOUNDDIR "sound"
+#endif
 
 extern char fs_gamedir[];
 extern char fs_writepath[];
