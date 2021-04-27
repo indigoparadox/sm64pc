@@ -4,6 +4,12 @@ project(sm64pc_tools)
 
 set(CMAKE_C_STANDARD 99)
 
+add_subdirectory("audiofile")
+
+include(CheckLibraryExists)
+
+CHECK_LIBRARY_EXISTS(m sin "" HAVE_LIB_M)
+
 if(NOT DEFINED BUILD_TMP_DIR)
     set(BUILD_TMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
 endif()
@@ -35,7 +41,9 @@ set(n64graphics_ci_SOURCES n64graphics_ci_dir/n64graphics_ci.c n64graphics_ci_di
 
 add_executable("n64graphics_ci" ${n64graphics_ci_SOURCES})
 target_include_directories("n64graphics_ci" PUBLIC ${tools_INCLUDE_DIRS})
-target_link_libraries("n64graphics_ci" PUBLIC m)
+if(HAVE_LIB_M)
+   target_link_libraries("n64graphics_ci" PUBLIC m)
+endif() 
 
 # -= textconv =-
 
@@ -44,12 +52,25 @@ set(textconv_SOURCES textconv.c utf8.c hashtable.c)
 add_executable("textconv" ${textconv_SOURCES})
 target_compile_definitions("textconv" PUBLIC ${tools_DEFINES})
 
+# -= tabledesign =-
+
+set(tabledesign_SOURCES
+   "sdk-tools/tabledesign/codebook.c"
+   "sdk-tools/tabledesign/estimate.c"
+   "sdk-tools/tabledesign/print.c"
+   "sdk-tools/tabledesign/tabledesign.c")
+set(tabledesign_CFLAGS -Wno-uninitialized -Iaudiofile -Laudiofile -laudiofile -lstdc++ -lm)
+
+add_executable("tabledesign" ${tabledesign_SOURCES})
+target_link_libraries("tabledesign" "audiofile")
+
 # -= aiff_extract_codebook =-
 
 set(aiff_extract_codebook_SOURCES aiff_extract_codebook.c)
 
 add_executable("aiff_extract_codebook" ${aiff_extract_codebook_SOURCES})
 target_compile_definitions("aiff_extract_codebook" PUBLIC ${tools_DEFINES})
+add_dependencies("aiff_extract_codebook" "tabledesign")
 
 # -= vadpcm_enc =-
 
@@ -59,10 +80,6 @@ add_executable("vadpcm_enc" ${vadpcm_enc_SOURCES})
 target_compile_definitions("vadpcm_enc" PUBLIC ${tools_DEFINES})
 
 # -= skyconv =-
-
-include(CheckLibraryExists)
-
-CHECK_LIBRARY_EXISTS(m sin "" HAVE_LIB_M)
 
 set(skyconv_SOURCES skyconv.c n64graphics.c utils.c)
 set(skyconv_CFLAGS -lm)

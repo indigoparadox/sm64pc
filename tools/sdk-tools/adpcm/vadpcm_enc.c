@@ -2,7 +2,11 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _MSC_VER
+#include "../../win_getopt.h"
+#else
 #include <getopt.h>
+#endif
 #include "vadpcm.h"
 
 static char usage[] = "[-t -l min_loop_length] -c codebook aifcfile compressedfile";

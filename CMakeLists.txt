@@ -422,7 +422,6 @@ set(DATA_C_FILES
 
 macro(preprocess_to_file inxput_file outxput_file inxclude)
 
-    message(STATUS "p1: ${outxput_file}")
     get_filename_component(preprocess_file_directory "${outxput_file}" DIRECTORY)
 
     if(MSVC)
@@ -649,7 +648,7 @@ foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
             OUTPUT "${TABLE}"
             COMMAND "${AIFF_EXTRACT_CODEBOOK_COMMAND}" "${AIFF}" > "${TABLE}"
             DEPENDS "${AIFF_EXTRACT_CODEBOOK_TARGET}" "${AIFF}" "${SAMPLE_BUILD_DIR}"
-            COMMENT "Encoding ${AIFF}"
+            COMMENT "Extracting codebook from ${AIFF}"
             VERBATIM
         )
     

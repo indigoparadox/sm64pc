@@ -3,12 +3,19 @@
  * by executing tabledesign.
  */
 #define _XOPEN_SOURCE 500
+#if defined(_MSC_VER)
+#else
 #include <unistd.h>
+#endif
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+
+#ifndef TABLEDESIGN_PATH
+#define TABLEDESIGN_PATH "./tools/tabledesign"
+#endif /* TABLEDESIGN_PATH */
 
 typedef short s16;
 typedef int s32;
@@ -39,7 +46,9 @@ static const char *progname, *infilename;
 
 #define checked_fread(a, b, c, d) if (fread(a, b, c, d) != c) fail_parse("error parsing file")
 
+#ifndef _MSC_VER
 NORETURN
+#endif
 void fail_parse(const char *fmt, ...)
 {
     char *formatted = NULL;
@@ -174,7 +183,7 @@ int main(int argc, char **argv)
     fclose(ifile);
 
     if (coefTable == NULL) {
-        execl("./tools/tabledesign", "tabledesign", "-s", "1", infilename, NULL);
+        execl(TABLEDESIGN_PATH, "tabledesign", "-s", "1", infilename, NULL);
     } else {
         printf("%d\n%d\n", order, npredictors);
         for (s32 i = 0; i < npredictors; i++) {
