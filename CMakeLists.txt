@@ -440,7 +440,7 @@ macro(preprocess_to_file inxput_file outxput_file inxclude)
     else()
         add_custom_command(
             OUTPUT "${outxput_file}"
-            COMMAND "${CMAKE_C_COMPILER}" ${VERSION_CFLAGS}
+            COMMAND "cpp" ${VERSION_CFLAGS}
                 -I "${inxclude}"
                 -E "${inxput_file}"
                 -o "${outxput_file}"
@@ -465,13 +465,17 @@ macro(hexdump_binary_assets bin_file c_file array_name array_sz)
     )
 endmacro()
 
-macro(make_directory_target paths)
-add_custom_command(
-    OUTPUT "${paths}"
-    COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" ${paths}
-    COMMENT "Creating directory ${paths}"
-    VERBATIM
-)
+macro(make_directory_target)
+    cmake_parse_arguments(MAKE_DIRECTORY_TARGET "" "" "PATHS" ${ARGN})
+    #message(STATUS "xx ${MAKE_DIRECTORY_TARGET_PATHS}")
+    file(MAKE_DIRECTORY ${MAKE_DIRECTORY_TARGET_PATHS})
+    #separate_arguments("${MAKE_DIRECTORY_TARGET_PATHS}")
+    #add_custom_command(
+    #    OUTPUT ${MAKE_DIRECTORY_TARGET_PATHS}
+    #    COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${MAKE_DIRECTORY_TARGET_PATHS}"
+    #    COMMENT "Creating directory ${MAKE_DIRECTORY_TARGET_PATHS}"
+    #    VERBATIM
+    #)
 endmacro()
 
 # -= Endian and Bitwidth Tests =-
@@ -625,8 +629,9 @@ else()
 endif()
 
 file(GLOB SOUND_SAMPLE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/sound/samples/*")
+string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" SOUND_SAMPLE_BUILD_DIRS "${SOUND_SAMPLE_DIRS}")
 
-make_directory_target(${SOUND_SAMPLE_DIRS})
+make_directory_target(PATHS ${SOUND_SAMPLE_BUILD_DIRS})
 
 set(SOUND_SAMPLE_AIFCS)
 set(SOUND_SAMPLE_TABLES)
@@ -712,7 +717,7 @@ endforeach()
 
 list(REMOVE_DUPLICATES M64_DIRS)
 
-make_directory_target(${M64_DIRS})
+make_directory_target(PATHS ${M64_DIRS})
 
 if(VERSION MATCHES "sh")
 # $(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json sound/sequences/ sound/sequences/jp/ $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
@@ -815,7 +820,7 @@ else()
 
 endif()
 
-make_directory_target("${ASSETS_BIN_DIR}")
+make_directory_target(PATHS ${ASSETS_BIN_DIR})
 
 file(GLOB MARIO_ANIM_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/anims/*.inc.c")
 add_custom_command(
@@ -851,7 +856,7 @@ list(APPEND DATA_C_FILES "${DEMO_DATA_C_PATH}")
 
 # -= Texture Generation =-
 
-make_directory_target("${BUILD_TMP_DIR}/bin")
+make_directory_target(PATHS "${BUILD_TMP_DIR}/bin")
 
 file(GLOB SKYBOX_PNGS "${CMAKE_CURRENT_SOURCE_DIR}/textures/skyboxes/*.png")
 set(SKYBOX_C_FILES)
@@ -896,7 +901,7 @@ string(REGEX REPLACE "[.]png" ".inc.c" TEXTURE_INC_CS "${TEXTURE_PNGS}")
 string(REGEX REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${BUILD_TMP_DIR}" TEXTURE_INC_CS "${TEXTURE_INC_CS}")
 
 # Ending cake textures are generated in a special way
-make_directory_target("${BUILD_TMP_DIR}/levels/ending")
+make_directory_target(PATHS "${BUILD_TMP_DIR}/levels/ending")
 add_custom_command(
     OUTPUT "${BUILD_TMP_DIR}/levels/ending/cake.inc.c"
     COMMAND "${SKYCONV_COMMAND}" "${SKYCONV_ARGS}"
@@ -930,7 +935,7 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
 
     list(APPEND TEXTURE_PNG_DIRS "${TEXTURE_DIRECTORY}")
     list(APPEND TEXTURE_PNG_FULL_DIRS "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}")
-
+    
     if(EXTERNAL_DATA)
 
         # Convert the filename into a hex dump in C.
@@ -997,12 +1002,14 @@ endforeach()
 list(REMOVE_DUPLICATES TEXTURE_PNG_DIRS)
 list(REMOVE_DUPLICATES TEXTURE_PNG_FULL_DIRS)
 
-make_directory_target(${TEXTURE_PNG_FULL_DIRS})
+make_directory_target(PATHS ${TEXTURE_PNG_FULL_DIRS})
 
 # These are includes, and will be pulled into other translation units.
 add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS})
 
 # -= Levels Header =-
+
+make_directory_target(PATHS "${BUILD_TMP_DIR}/include")
 
 preprocess_to_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in"
@@ -1039,7 +1046,7 @@ add_custom_target("level_headers.h" ALL DEPENDS "${BUILD_TMP_DIR}/include/level_
 set(TEXT_DATA_INC_C_FILES)
 foreach(DATA_VERSION us)
     
-    make_directory_target("${BUILD_TMP_DIR}/text/${DATA_VERSION}")
+    make_directory_target(PATHS "${BUILD_TMP_DIR}/text/${DATA_VERSION}")
 
     preprocess_to_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c"
