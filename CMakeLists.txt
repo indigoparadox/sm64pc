@@ -393,12 +393,6 @@ set(MARIO_ANIM_DATA_C_PATH "${ASSETS_BIN_DIR}/mario_anim_data.c")
 set(DEMO_DATA_C_PATH "${ASSETS_BIN_DIR}/demo_data.c")
 set(CHARMAP_TXT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/charmap.txt")
 
-if(MSVC)
-   set(CPP_COMMAND "cl")
-else()
-   set(CPP_COMMAND "cpp")
-endif()
-set(CPP_ARGS "-P")
 set(TEXTCONV_COMMAND "${TOOLS_BIN_DIR}/textconv")
 set(TEXTCONV_TARGET "textconv")
 set(N64GRAPHICS_COMMAND "${TOOLS_BIN_DIR}/n64graphics")
@@ -425,6 +419,41 @@ set(DATA_C_FILES
     "${SOUND_DATA_TBL_PATH}.c"
     "${SEQUENCES_BIN_PATH}.c"
     "${BANK_SETS_PATH}.c")
+
+macro(preprocess_to_file inxput_file outxput_file inxclude)
+
+    message(STATUS "p1: ${outxput_file}")
+    get_filename_component(preprocess_file_directory "${outxput_file}" DIRECTORY)
+
+    if(MSVC)
+        add_custom_command(
+            OUTPUT "${outxput_file}"
+            COMMAND "${CMAKE_C_COMPILER}" ${VERSION_CFLAGS} /P
+                /Fi${outxput_file}
+                /I "${inxclude}"
+                "${inxput_file}"
+            DEPENDS
+                "${inxput_file}"
+                "${preprocess_file_directory}"
+            COMMENT "Preprocessing ${inxput_file}"
+            VERBATIM
+        )
+    else()
+        add_custom_command(
+            OUTPUT "${outxput_file}"
+            COMMAND "${CMAKE_C_COMPILER}" ${VERSION_CFLAGS}
+                -I "${inxclude}"
+                -E "${inxput_file}"
+                -o "${outxput_file}"
+            DEPENDS
+                "${inxput_file}"
+                "${preprocess_file_directory}"
+            COMMENT "Preprocessing ${inxput_file}"
+            VERBATIM
+        )
+    endif()
+
+endmacro()
 
 macro(hexdump_binary_assets bin_file c_file array_name array_sz)
     add_custom_command(
@@ -906,17 +935,28 @@ foreach(TEXTURE_PNG ${TEXTURE_PNGS})
     if(EXTERNAL_DATA)
 
         # Convert the filename into a hex dump in C.
-        add_custom_command(
-            OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
-            COMMAND "${MKHEADER_COMMAND}" "-e" "-x"
-                "${TEXTURE_BASE_PATH}"
-                "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
-            DEPENDS
-                "${MKHEADER_TARGET}"
-                "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}"
-            COMMENT "Translating ${TEXTURE_BASE_PATH}"
-            VERBATIM
-        )
+        if(CMAKE_VERSION VERSION_LESS "3.18.0")
+            add_custom_command(
+                OUTPUT "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
+                COMMAND "${MKHEADER_COMMAND}" "-e" "-x"
+                    "${TEXTURE_BASE_PATH}"
+                    "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c"
+                DEPENDS
+                    "${MKHEADER_TARGET}"
+                    "${BUILD_TMP_DIR}${TEXTURE_DIRECTORY}"
+                COMMENT "Translating ${TEXTURE_BASE_PATH}"
+                VERBATIM
+            )
+        else()
+            if(NOT EXISTS "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c")
+                string(HEX "${TEXTURE_BASE_PATH}" TEXTURE_PATH_HEX)
+                string(REGEX MATCHALL "([A-Fa-f0-9][A-Fa-f0-9])" TEXTURE_PATH_HEX "${TEXTURE_PATH_HEX}")
+                list(JOIN TEXTURE_PATH_HEX ",0x" TEXTURE_PATH_HEX)
+                string(PREPEND TEXTURE_PATH_HEX "0x")
+                message(STATUS "Writing ${TEXTURE_PATH_HEX} to ${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c")
+                file(WRITE "${BUILD_TMP_DIR}${TEXTURE_BASE_PATH}.inc.c" "${TEXTURE_PATH_HEX}")
+            endif()
+        endif()
 
     else()
     
@@ -965,24 +1005,35 @@ add_custom_target("texture_inc_cs" ALL DEPENDS ${TEXTURE_INC_CS})
 
 # -= Levels Header =-
 
-make_directory_target("${BUILD_TMP_DIR}/include")
+preprocess_to_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in"
+    "${BUILD_TMP_DIR}/include/level_headers.h.list"
+    "${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_custom_command(
     OUTPUT "${BUILD_TMP_DIR}/include/level_headers.h"
-    COMMAND 
-        "${CPP_COMMAND}" ${CPP_ARGS}
-            -I "${CMAKE_CURRENT_SOURCE_DIR}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in" |
-        "${PYTHON_EXECUTABLE}" "${OUTPUT_LEVEL_HEADERS_PY}" >
+    COMMAND "${PYTHON_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/postproc_level_headers.py"
+        "${BUILD_TMP_DIR}/include/level_headers.h.list"
         "${BUILD_TMP_DIR}/include/level_headers.h"
-    DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/levels/level_headers.h.in"
-        "${OUTPUT_LEVEL_HEADERS_PY}"
-        "${BUILD_TMP_DIR}/include"
-    COMMENT "Preprocessing level_headers.h"
-    VERBATIM)
+    DEPENDS "${BUILD_TMP_DIR}/include/level_headers.h.list"
+)
 
 add_custom_target("level_headers.h" ALL DEPENDS "${BUILD_TMP_DIR}/include/level_headers.h")
+
+#     execute_process(
+#     COMMAND 
+#         "${CMAKE_C_COMPILER}"
+#             -I "${CMAKE_CURRENT_SOURCE_DIR}"
+#             -EP ""
+#     OUTPUT_VARIABLE LEVEL_HEADERS
+# )
+
+# string(REGEX REPLACE "\n" ";" LEVEL_HEADERS "${LEVEL_HEADERS}")
+# file(WRITE  "")
+# foreach(LEVEL_HEADER ${LEVEL_HEADERS})
+#     file(APPEND "${BUILD_TMP_DIR}/include/level_headers.h" "#include \"${LEVEL_HEADER}\"\n")
+# endforeach()
 
 # -= Text/Course Data =-
 
@@ -991,47 +1042,46 @@ foreach(DATA_VERSION us)
     
     make_directory_target("${BUILD_TMP_DIR}/text/${DATA_VERSION}")
 
+    preprocess_to_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c"
+        "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c.preconv"
+        "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/")
+
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
-        COMMAND
-            "${CPP_COMMAND}" ${CPP_ARGS} ${VERSION_CFLAGS}
-                "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c"
-                -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
-                -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" &&
-            "${TEXTCONV_COMMAND}"
-                "${CHARMAP_TXT_PATH}"
-                "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
-                "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
+        COMMAND "${TEXTCONV_COMMAND}"
+            "${CHARMAP_TXT_PATH}"
+            "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c.preconv"
+            "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c"
         DEPENDS
-            "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/text/define_courses.inc.c"
             "${TEXTCONV_TARGET}"
             "${CHARMAP_TXT_PATH}"
-            "${BUILD_TMP_DIR}/text/${DATA_VERSION}"
-        COMMENT "Preprocessing define_courses.inc.c"
-        VERBATIM)
+            "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c.preconv"
+        COMMENT "Converting text in define_courses.inc.c"
+        VERBATIM
+    )
+
     list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_courses.inc.c")
+
+    preprocess_to_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c"
+        "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c.preconv"
+        "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/")
 
     add_custom_command(
         OUTPUT "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
-	    COMMAND
-            "${CPP_COMMAND}" -P ${VERSION_CFLAGS}
-                "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c" 
-                -o "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
-                -I "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/" &&
-            "${TEXTCONV_COMMAND}"
+        COMMAND "${TEXTCONV_COMMAND}"
                 "${CHARMAP_TXT_PATH}"
-                "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
+                "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c.preconv"
                 "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c"
         DEPENDS
-            "${CMAKE_CURRENT_SOURCE_DIR}/text/define_text.inc.c"
-            "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/courses.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/text/${DATA_VERSION}/dialogs.h"
+            "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c.preconv"
             "${CHARMAP_TXT_PATH}"
             "${TEXTCONV_TARGET}"
-            "${BUILD_TMP_DIR}/text/${DATA_VERSION}"
-        COMMENT "Preprocessing define_text.inc.c"
-        VERBATIM)
+        COMMENT "Converting text in define_text.inc.c"
+        VERBATIM
+    )
+
     list(APPEND TEXT_DATA_INC_C_FILES "${BUILD_TMP_DIR}/text/${DATA_VERSION}/define_text.inc.c")
 endforeach()
 
