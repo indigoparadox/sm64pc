@@ -1,6 +1,10 @@
 
+#set(CMAKE_TOOLCHAIN_FILE "../vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+
 cmake_minimum_required(VERSION 3.0.0)
 project(sm64pc_tools)
+
+enable_language(C CXX)
 
 set(CMAKE_C_STANDARD 99)
 
@@ -54,22 +58,28 @@ target_compile_definitions("textconv" PUBLIC ${tools_DEFINES})
 
 # -= tabledesign =-
 
+find_path(AUDIOFILE_INCLUDE_DIRS "AudioFile.h")
+
 set(tabledesign_SOURCES
    "sdk-tools/tabledesign/codebook.c"
    "sdk-tools/tabledesign/estimate.c"
    "sdk-tools/tabledesign/print.c"
    "sdk-tools/tabledesign/tabledesign.c")
-set(tabledesign_CFLAGS -Wno-uninitialized -Iaudiofile -Laudiofile -laudiofile -lstdc++ -lm)
 
 add_executable("tabledesign" ${tabledesign_SOURCES})
-target_link_libraries("tabledesign" "audiofile")
+target_include_directories("tabledesign" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/audiofile")
+target_link_libraries("tabledesign" PUBLIC "audiofile")
+#target_include_directories("tabledesign" PRIVATE ${AUDIOFILE_INCLUDE_DIRS})
+if(HAVE_LIB_M)
+   target_link_libraries("tabledesign" PUBLIC m)
+endif()
 
 # -= aiff_extract_codebook =-
 
 set(aiff_extract_codebook_SOURCES aiff_extract_codebook.c)
 
 add_executable("aiff_extract_codebook" ${aiff_extract_codebook_SOURCES})
-target_compile_definitions("aiff_extract_codebook" PUBLIC ${tools_DEFINES})
+target_compile_definitions("aiff_extract_codebook" PUBLIC ${tools_DEFINES} "-DTABLEDESIGN_PATH=\"./tabledesign\"")
 add_dependencies("aiff_extract_codebook" "tabledesign")
 
 # -= vadpcm_enc =-

@@ -1,4 +1,6 @@
 
+#set(CMAKE_TOOLCHAIN_FILE "vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+
 cmake_minimum_required(VERSION 3.0.0)
 project(sm64pc VERSION 0.1.0)
 enable_language(C ASM)
@@ -333,9 +335,15 @@ endif()
 #endif()
 
 # TODO: Figure out how to make this smarter?
-set(CMAKE_ASM_COMPILER "as")
+if(NOT MSVC)
+    set(CMAKE_ASM_COMPILER "as")
+endif()
 
-set(VERSION_ASFLAGS "--defsym AVOID_UB=1")
+if(MSVC)
+    set(VERSION_ASFLAGS "/D AVOID_UB=1")
+else()
+    set(VERSION_ASFLAGS "--defsym AVOID_UB=1")
+endif()
 set(CMAKE_ASFLAGS "${CMAKE_ASFLAGS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -I ${BUILD_TMP_DIR} ${VERSION_ASFLAGS}")
 separate_arguments(CMAKE_ASFLAGS)
 
@@ -403,6 +411,12 @@ set(SKYCONV_COMMAND "${TOOLS_BIN_DIR}/skyconv")
 set(SKYCONV_TARGET "skyconv")
 set(AIFF_EXTRACT_CODEBOOK_COMMAND "${TOOLS_BIN_DIR}/aiff_extract_codebook")
 set(AIFF_EXTRACT_CODEBOOK_TARGET "aiff_extract_codebook")
+if(MSVC)
+set(AIFF_EXTRACT_CODEBOOK_DEPENDS)
+else()
+set(AIFF_EXTRACT_CODEBOOK_DEPENDS
+    "${AIFF_EXTRACT_CODEBOOK_TARGET}")
+endif()
 set(VADPCM_ENC_COMMAND "${TOOLS_BIN_DIR}/vadpcm_enc")
 set(VADPCM_ENC_TARGET "vadpcm_enc")
 set(MKHEADER_COMMAND "${TOOLS_BIN_DIR}/mkheader")
@@ -419,6 +433,38 @@ set(DATA_C_FILES
     "${SOUND_DATA_TBL_PATH}.c"
     "${SEQUENCES_BIN_PATH}.c"
     "${BANK_SETS_PATH}.c")
+
+macro(encode_aiff_sample)
+    if(MSVC)
+        if(NOT EXISTS "${AIFC}" OR NOT EXISTS "${TABLE}")
+            execute_process(
+                COMMAND "${AIFF_EXTRACT_CODEBOOK_COMMAND}" "${AIFF}" > "${TABLE}"
+                COMMENT "Extracting codebook from ${AIFF}"
+            )
+
+            execute_process(
+                COMMAND "${VADPCM_ENC_COMMAND}" -c "${TABLE}" "${AIFF}" "${AIFC}"
+                COMMENT "Encoding ${AIFF}"
+            )
+        endif()
+    else()
+        add_custom_command(
+            OUTPUT "${TABLE}"
+            COMMAND "${AIFF_EXTRACT_CODEBOOK_COMMAND}" "${AIFF}" > "${TABLE}"
+            DEPENDS  "${AIFF}" "${SAMPLE_BUILD_DIR}" ${AIFF_EXTRACT_CODEBOOK_DEPENDS}
+            COMMENT "Extracting codebook from ${AIFF}"
+            VERBATIM
+        )
+
+        add_custom_command(
+            OUTPUT "${AIFC}"
+            COMMAND "${VADPCM_ENC_COMMAND}" -c "${TABLE}" "${AIFF}" "${AIFC}"
+            DEPENDS "${VADPCM_ENC_TARGET}" "${AIFF}" "${TABLE}"
+            COMMENT "Encoding ${AIFF}"
+            VERBATIM
+        )
+    endif()
+endmacro()
 
 macro(preprocess_to_file inxput_file outxput_file inxclude)
 
@@ -649,21 +695,7 @@ foreach(SAMPLE_DIR ${SOUND_SAMPLE_DIRS})
 
         list(APPEND SOUND_SAMPLE_AIFCS ${AIFC})
         
-        add_custom_command(
-            OUTPUT "${TABLE}"
-            COMMAND "${AIFF_EXTRACT_CODEBOOK_COMMAND}" "${AIFF}" > "${TABLE}"
-            DEPENDS "${AIFF_EXTRACT_CODEBOOK_TARGET}" "${AIFF}" "${SAMPLE_BUILD_DIR}"
-            COMMENT "Extracting codebook from ${AIFF}"
-            VERBATIM
-        )
-    
-        add_custom_command(
-            OUTPUT "${AIFC}"
-            COMMAND "${VADPCM_ENC_COMMAND}" -c "${TABLE}" "${AIFF}" "${AIFC}"
-            DEPENDS "${VADPCM_ENC_TARGET}" "${AIFF}" "${TABLE}"
-            COMMENT "Encoding ${AIFF}"
-            VERBATIM
-        )
+        encode_aiff_sample(${AIFF} ${TABLE} ${AIFC}})
     endforeach()
 endforeach()
 
@@ -1180,6 +1212,10 @@ install(
 
 if(USE_PYTHON)
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/sm64.py" DESTINATION "${INSTALL_SCRIPT_ROOT}")
+
+    if(WIN32)
+
+    endif()
 endif()
 
 if(EXTERNAL_DATA)
